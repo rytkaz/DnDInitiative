@@ -8,4 +8,7 @@ public interface IStatBlockRepository
     Task SaveAsync(StatBlock statBlock, CancellationToken cancellationToken = default);
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Adds or replaces many stat blocks in one write.</summary>
+    Task SaveManyAsync(IReadOnlyCollection<StatBlock> statBlocks, CancellationToken cancellationToken = default);
 }

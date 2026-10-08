@@ -30,4 +30,15 @@ internal sealed class InMemoryStatBlockRepository : IStatBlockRepository
         _statBlocks.RemoveAll(existing => existing.Id == id);
         return Task.CompletedTask;
     }
+
+    public Task SaveManyAsync(IReadOnlyCollection<StatBlock> statBlocks, CancellationToken cancellationToken = default)
+    {
+        foreach (StatBlock statBlock in statBlocks)
+        {
+            _statBlocks.RemoveAll(existing => existing.Id == statBlock.Id);
+            _statBlocks.Add(statBlock);
+        }
+
+        return Task.CompletedTask;
+    }
 }

@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             xmlns:formatting="clr-namespace:DnDInitiative.App.Formatting"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:StatBlocksViewModel}"
              d:DesignWidth="900"
@@ -16,7 +17,7 @@
         <DataTemplate x:Key="LabeledValueTemplate">
             <TextBlock Margin="0,2" TextWrapping="Wrap">
                 <Run FontWeight="Bold" Text="{Binding Label, Mode=OneWay}" />
-                <Run Text="{Binding Value, Mode=OneWay}" />
+                <Span formatting:MarkdownText.Text="{Binding Value}" />
             </TextBlock>
         </DataTemplate>
     </UserControl.Resources>
@@ -56,6 +57,10 @@
                 <Button Padding="12,4"
                         Command="{Binding DeleteCommand}"
                         Content="Delete" />
+                <Button Margin="8,0,0,0"
+                        Padding="12,4"
+                        Command="{Binding ImportCommand}"
+                        Content="Import..." />
             </WrapPanel>
             <TextBlock DockPanel.Dock="Bottom"
                        Margin="0,8,0,0"

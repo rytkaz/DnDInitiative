@@ -48,4 +48,32 @@ public sealed class JsonStatBlockRepository : IStatBlockRepository
             await _store.WriteAsync(statBlocks, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    public async Task SaveManyAsync(IReadOnlyCollection<StatBlock> statBlocks, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(statBlocks);
+
+        List<StatBlock> stored = await _store.ReadAsync(cancellationToken).ConfigureAwait(false);
+
+        var indexById = new Dictionary<Guid, int>();
+        for (int i = 0; i < stored.Count; i++)
+        {
+            indexById[stored[i].Id] = i;
+        }
+
+        foreach (StatBlock statBlock in statBlocks)
+        {
+            if (indexById.TryGetValue(statBlock.Id, out int index))
+            {
+                stored[index] = statBlock;
+            }
+            else
+            {
+                indexById[statBlock.Id] = stored.Count;
+                stored.Add(statBlock);
+            }
+        }
+
+        await _store.WriteAsync(stored, cancellationToken).ConfigureAwait(false);
+    }
 }

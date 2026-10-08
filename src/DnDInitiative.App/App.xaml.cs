@@ -1,12 +1,14 @@
-﻿using System.Windows;
-using System.IO;
+﻿using System.IO;
+using System.Windows;
 
+using DnDInitiative.App.Services;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Parties;
-using DnDInitiative.Infrastructure.Parties;
 using DnDInitiative.Core.StatBlocks;
+using DnDInitiative.Infrastructure.Import;
+using DnDInitiative.Infrastructure.Parties;
 using DnDInitiative.Infrastructure.StatBlocks;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +38,8 @@ public partial class App : Application
         services.AddSingleton<IDiceRoller, RandomDiceRoller>();
         services.AddSingleton<InitiativeRoller>();
         services.AddSingleton<CombatantFactory>();
+        services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
+        services.AddSingleton<IFolderPicker, FolderPicker>();
 
         // Storage
         string dataDirectory = Path.Combine(

@@ -1,8 +1,11 @@
 ﻿using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using DnDInitiative.App.Services;
 using DnDInitiative.Core.StatBlocks;
 
 namespace DnDInitiative.App.ViewModels;
@@ -10,6 +13,8 @@ namespace DnDInitiative.App.ViewModels;
 public sealed partial class StatBlocksViewModel : PageViewModel
 {
     private readonly IStatBlockRepository _repository;
+    private readonly IStatBlockImporter _importer;
+    private readonly IFolderPicker _folderPicker;
     private List<StatBlock> _all = [];
     private bool _isLoaded;
 
@@ -33,9 +38,11 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
-    public StatBlocksViewModel(IStatBlockRepository repository)
+    public StatBlocksViewModel(IStatBlockRepository repository, IStatBlockImporter importer, IFolderPicker folderPicker)
     {
         _repository = repository;
+        _importer = importer;
+        _folderPicker = folderPicker;
     }
 
     public override string Title => "Stat Blocks";
@@ -167,5 +174,33 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         }
 
         SelectedStatBlock = FilteredStatBlocks.FirstOrDefault(statBlock => statBlock.Id == selectedId);
+    }
+
+    [RelayCommand]
+    private async Task ImportAsync()
+    {
+        string? folder = _folderPicker.PickFolder("Select the folder containing the generated notes");
+        if (folder is null)
+        {
+            return;
+        }
+
+        StatusMessage = "Importing...";
+        try
+        {
+            StatBlockImportResult result = await _importer.ImportFolderAsync(folder);
+            await ReloadAsync(selectId: null);
+            StatusMessage = string.Create(
+                CultureInfo.InvariantCulture,
+                $"Imported {result.Added} new and updated {result.Updated}, from {result.FilesScanned} files.");
+        }
+        catch (IOException exception)
+        {
+            StatusMessage = "Import failed: " + exception.Message;
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            StatusMessage = "Import failed: " + exception.Message;
+        }
     }
 }

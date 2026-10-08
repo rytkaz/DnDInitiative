@@ -9,7 +9,7 @@ public class StatBlocksViewModelTests
     [Fact]
     public async Task LoadCommand_ListsStatBlocksByNameAndShowsTheFirst()
     {
-        var viewModel = new StatBlocksViewModel(new InMemoryStatBlockRepository(Create("Orc"), Create("Goblin")));
+        var viewModel = CreateViewModel(new InMemoryStatBlockRepository(Create("Orc"), Create("Goblin")));
 
         await viewModel.LoadCommand.ExecuteAsync(null);
 
@@ -22,7 +22,7 @@ public class StatBlocksViewModelTests
     [Fact]
     public async Task SearchText_FiltersByNameIgnoringCase()
     {
-        var viewModel = new StatBlocksViewModel(new InMemoryStatBlockRepository(Create("Orc"), Create("Goblin")));
+        var viewModel = CreateViewModel(new InMemoryStatBlockRepository(Create("Orc"), Create("Goblin")));
         await viewModel.LoadCommand.ExecuteAsync(null);
 
         viewModel.SearchText = "OR";
@@ -34,7 +34,7 @@ public class StatBlocksViewModelTests
     public async Task SaveCommand_NewStatBlock_StoresItAndLeavesEditMode()
     {
         var repository = new InMemoryStatBlockRepository();
-        var viewModel = new StatBlocksViewModel(repository);
+        var viewModel = CreateViewModel(repository);
         viewModel.NewCommand.Execute(null);
         Assert.IsType<StatBlockEditorViewModel>(viewModel.Editor).Name = "Owlbear";
 
@@ -50,7 +50,7 @@ public class StatBlocksViewModelTests
     public async Task SaveCommand_BlankName_DoesNotStoreAndStaysInEditMode()
     {
         var repository = new InMemoryStatBlockRepository();
-        var viewModel = new StatBlocksViewModel(repository);
+        var viewModel = CreateViewModel(repository);
         viewModel.NewCommand.Execute(null);
 
         await viewModel.SaveCommand.ExecuteAsync(null);
@@ -64,7 +64,7 @@ public class StatBlocksViewModelTests
     {
         StatBlock goblin = Create("Goblin");
         var repository = new InMemoryStatBlockRepository(goblin);
-        var viewModel = new StatBlocksViewModel(repository);
+        var viewModel = CreateViewModel(repository);
         await viewModel.LoadCommand.ExecuteAsync(null);
 
         await viewModel.CopyCommand.ExecuteAsync(null);
@@ -113,8 +113,44 @@ public class StatBlocksViewModelTests
         Assert.Equal("Nimble Escape", Assert.Single(result.Traits).Name);
     }
 
+    [Fact]
+    public async Task ImportCommand_FolderChosen_ImportsItAndReportsTheResult()
+    {
+        var importer = new FakeStatBlockImporter();
+        var folderPicker = new FakeFolderPicker { FolderToReturn = @"C:\notes" };
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(), importer, folderPicker);
+
+        await viewModel.ImportCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"C:\notes", importer.ImportedFolder);
+        Assert.Contains("3 new", viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCommand_DialogCancelled_DoesNothing()
+    {
+        var importer = new FakeStatBlockImporter();
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(), importer);
+
+        await viewModel.ImportCommand.ExecuteAsync(null);
+
+        Assert.Null(importer.ImportedFolder);
+        Assert.Equal("", viewModel.StatusMessage);
+    }
+
     private static StatBlock Create(string name)
     {
         return new StatBlock { Id = Guid.NewGuid(), Name = name };
+    }
+
+    private static StatBlocksViewModel CreateViewModel(
+    InMemoryStatBlockRepository repository,
+    FakeStatBlockImporter? importer = null,
+    FakeFolderPicker? folderPicker = null)
+    {
+        return new StatBlocksViewModel(
+            repository,
+            importer ?? new FakeStatBlockImporter(),
+            folderPicker ?? new FakeFolderPicker());
     }
 }
