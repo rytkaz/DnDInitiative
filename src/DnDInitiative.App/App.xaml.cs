@@ -5,8 +5,10 @@ using DnDInitiative.App.Services;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
+using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.StatBlocks;
+using DnDInitiative.Infrastructure.Encounters;
 using DnDInitiative.Infrastructure.Import;
 using DnDInitiative.Infrastructure.Parties;
 using DnDInitiative.Infrastructure.StatBlocks;
@@ -48,6 +50,7 @@ public partial class App : Application
 
         services.AddSingleton<IPartyRepository>(_ => new JsonPartyRepository(Path.Combine(dataDirectory, "parties.json")));
         services.AddSingleton<IStatBlockRepository>(_ => new JsonStatBlockRepository(Path.Combine(dataDirectory, "statblocks.json")));
+        services.AddSingleton<IEncounterRepository>(_ => new JsonEncounterRepository(Path.Combine(dataDirectory, "encounters.json")));
 
         // View models
         services.AddSingleton<InitiativeTrackerViewModel>();

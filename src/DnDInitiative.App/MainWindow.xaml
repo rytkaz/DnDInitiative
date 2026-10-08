@@ -36,14 +36,8 @@
                 <DataTemplate DataType="{x:Type viewModels:StatBlocksViewModel}">
                     <views:StatBlocksView />
                 </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:PageViewModel}">
-                    <StackPanel>
-                        <TextBlock FontSize="28"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding Title}" />
-                        <TextBlock Margin="0,8,0,0"
-                                   Text="Nothing here yet." />
-                    </StackPanel>
+                <DataTemplate DataType="{x:Type viewModels:EncounterBuilderViewModel}">
+                    <views:EncounterBuilderView />
                 </DataTemplate>
             </ContentControl.Resources>
         </ContentControl>
