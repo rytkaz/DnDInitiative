@@ -43,4 +43,32 @@ internal sealed class JsonFileStore<T>
         await File.WriteAllTextAsync(temporaryPath, json, cancellationToken).ConfigureAwait(false);
         File.Move(temporaryPath, _filePath, overwrite: true);
     }
+
+    public async Task UpsertAsync(T item, Func<T, Guid> getId, CancellationToken cancellationToken)
+    {
+        List<T> items = await ReadAsync(cancellationToken).ConfigureAwait(false);
+
+        Guid id = getId(item);
+        int index = items.FindIndex(existing => getId(existing) == id);
+        if (index >= 0)
+        {
+            items[index] = item;
+        }
+        else
+        {
+            items.Add(item);
+        }
+
+        await WriteAsync(items, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task RemoveAsync(Guid id, Func<T, Guid> getId, CancellationToken cancellationToken)
+    {
+        List<T> items = await ReadAsync(cancellationToken).ConfigureAwait(false);
+
+        if (items.RemoveAll(existing => getId(existing) == id) > 0)
+        {
+            await WriteAsync(items, cancellationToken).ConfigureAwait(false);
+        }
+    }
 }
