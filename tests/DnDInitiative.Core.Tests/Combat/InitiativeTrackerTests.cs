@@ -269,6 +269,57 @@ public class InitiativeTrackerTests
         Assert.Throws<ArgumentOutOfRangeException>(() => tracker.Move(fromIndex, toIndex));
     }
 
+    [Fact]
+    public void SetInitiative_MovesCombatantToMatchingPlace()
+    {
+        var a = new Combatant("A", initiative: 20);
+        var b = new Combatant("B", initiative: 15);
+        var c = new Combatant("C", initiative: 10);
+        var tracker = TrackerWith(a, b, c);
+
+        tracker.SetInitiative(c, 18);
+
+        Assert.Equal(18, c.Initiative);
+        AssertOrder(tracker, a, c, b);
+    }
+
+    [Fact]
+    public void SetInitiative_TiedWithAnother_GoesAfterIt()
+    {
+        var a = new Combatant("A", initiative: 20);
+        var b = new Combatant("B", initiative: 15);
+        var c = new Combatant("C", initiative: 10);
+        var tracker = TrackerWith(a, b, c);
+
+        tracker.SetInitiative(c, 20);
+
+        AssertOrder(tracker, a, c, b);
+    }
+
+    [Fact]
+    public void SetInitiative_OnCurrentCombatant_KeepsItCurrent()
+    {
+        var a = new Combatant("A", initiative: 20);
+        var b = new Combatant("B", initiative: 15);
+        var tracker = TrackerWith(a, b);
+        tracker.Next();
+
+        tracker.SetInitiative(b, 25);
+
+        AssertOrder(tracker, b, a);
+        Assert.Same(b, tracker.CurrentCombatant);
+        Assert.Equal(1, tracker.Round);
+    }
+
+    [Fact]
+    public void SetInitiative_CombatantNotInTracker_Throws()
+    {
+        var tracker = TrackerWith(new Combatant("A", initiative: 20));
+        var stranger = new Combatant("Stranger", initiative: 10);
+
+        Assert.Throws<ArgumentException>(() => tracker.SetInitiative(stranger, 5));
+    }
+
     private static InitiativeTracker TrackerWith(params Combatant[] combatants)
     {
         var tracker = new InitiativeTracker();

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
+using DnDInitiative.Core.Parties;
 
 namespace DnDInitiative.App.ViewModels;
 
@@ -13,6 +14,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
     private const int MaxQuantity = 50;
 
     private readonly CombatantFactory _combatantFactory;
+    private readonly IPartyRepository _partyRepository;
     private InitiativeTracker _tracker = new();
     private CombatantNamer _namer = new();
 
@@ -22,6 +24,9 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RemoveSelectedCommand))]
     private CombatantViewModel? _selectedCombatant;
+
+    [ObservableProperty]
+    private Party? _selectedParty;
 
     [ObservableProperty]
     private bool _rollWithDisadvantage;
@@ -43,18 +48,38 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
     [ObservableProperty]
     private int? _newArmorClass;
 
-    public InitiativeTrackerViewModel(CombatantFactory combatantFactory)
+    public InitiativeTrackerViewModel(CombatantFactory combatantFactory, IPartyRepository partyRepository)
     {
         _combatantFactory = combatantFactory;
+        _partyRepository = partyRepository;
     }
 
     public override string Title => "Initiative Tracker";
 
     public ObservableCollection<CombatantViewModel> Combatants { get; } = [];
 
+    public ObservableCollection<Party> Parties { get; } = [];
+
     private bool HasSelectedCombatant => SelectedCombatant is not null;
 
     private bool CanAddCreature => !string.IsNullOrWhiteSpace(NewName) && NewMaxHp is null or >= 0;
+
+    [RelayCommand]
+    private async Task LoadPartiesAsync()
+    {
+        // Reloaded every time the page is shown, so parties edited on the
+        // Party Setup page are up to date. The selection is kept by Id.
+        Guid? selectedId = SelectedParty?.Id;
+        IReadOnlyList<Party> parties = await _partyRepository.GetAllAsync();
+
+        Parties.Clear();
+        foreach (Party party in parties)
+        {
+            Parties.Add(party);
+        }
+
+        SelectedParty = Parties.FirstOrDefault(party => party.Id == selectedId);
+    }
 
     [RelayCommand]
     private void Next()
@@ -77,13 +102,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
         List<CombatantBlueprint> blueprints = Enumerable
             .Repeat(blueprint, Math.Clamp(NewQuantity, 1, MaxQuantity))
             .ToList();
-        RollMode rollMode = RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal;
 
-        foreach (Combatant combatant in _combatantFactory.Create(blueprints, _namer, rollMode))
-        {
-            _tracker.Add(combatant);
-        }
-
+        AddCombatants(blueprints, RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal);
         SyncOrder();
     }
 
@@ -93,6 +113,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
         if (SelectedCombatant is { } selected)
         {
             _tracker.Remove(selected.Combatant);
+            SelectedCombatant = null;
             SyncOrder();
         }
     }
@@ -102,23 +123,71 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
     {
         _tracker = new InitiativeTracker();
         _namer = new CombatantNamer();
+
+        if (SelectedParty is { } party)
+        {
+            AddCombatants(party.ToBlueprints(), RollMode.Normal);
+        }
+
         SyncOrder();
     }
 
-    /// <summary>Rebuilds the on-screen list after combatants were added, removed or moved.</summary>
+    private void AddCombatants(IReadOnlyList<CombatantBlueprint> blueprints, RollMode rollMode)
+    {
+        foreach (Combatant combatant in _combatantFactory.Create(blueprints, _namer, rollMode))
+        {
+            _tracker.Add(combatant);
+        }
+    }
+
+    private void ChangeInitiative(Combatant combatant, int initiative)
+    {
+        _tracker.SetInitiative(combatant, initiative);
+        SyncOrder();
+    }
+
+    /// <summary>
+    /// Makes the on-screen rows match the tracker's order, changing as little as possible.
+    /// </summary>
     private void SyncOrder()
     {
-        Dictionary<Combatant, CombatantViewModel> existing = Combatants.ToDictionary(viewModel => viewModel.Combatant);
+        IReadOnlyList<Combatant> order = _tracker.Combatants;
 
-        Combatants.Clear();
-        foreach (Combatant combatant in _tracker.Combatants)
+        for (int i = Combatants.Count - 1; i >= 0; i--)
         {
-            Combatants.Add(existing.TryGetValue(combatant, out CombatantViewModel? viewModel)
-                ? viewModel
-                : new CombatantViewModel(combatant));
+            if (!order.Contains(Combatants[i].Combatant))
+            {
+                Combatants.RemoveAt(i);
+            }
+        }
+
+        for (int i = 0; i < order.Count; i++)
+        {
+            int rowIndex = IndexOfRow(order[i]);
+            if (rowIndex < 0)
+            {
+                Combatants.Insert(i, new CombatantViewModel(order[i], ChangeInitiative));
+            }
+            else if (rowIndex != i)
+            {
+                Combatants.Move(rowIndex, i);
+            }
         }
 
         SyncTurn();
+    }
+
+    private int IndexOfRow(Combatant combatant)
+    {
+        for (int i = 0; i < Combatants.Count; i++)
+        {
+            if (ReferenceEquals(Combatants[i].Combatant, combatant))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     /// <summary>Updates the turn marker and round after anything that can change them.</summary>
@@ -130,5 +199,22 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
         }
 
         Round = _tracker.Round;
+    }
+
+    /// <summary>Moves a row to the position currently held by another row.</summary>
+    public void MoveCombatant(CombatantViewModel row, CombatantViewModel target)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(target);
+
+        int fromIndex = Combatants.IndexOf(row);
+        int toIndex = Combatants.IndexOf(target);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex)
+        {
+            return;
+        }
+
+        _tracker.Move(fromIndex, toIndex);
+        SyncOrder();
     }
 }

@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using System.IO;
+﻿using System.IO;
+using System.Windows;
 
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;

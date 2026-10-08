@@ -7,14 +7,26 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:InitiativeTrackerViewModel}"
              d:DesignWidth="900"
-             d:DesignHeight="600">
+             d:DesignHeight="600"
+             Loaded="OnLoaded">
     <DockPanel>
-        <!-- Header: title, round, turn controls -->
+        <!-- Header: title, party, round, turn controls -->
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
             <StackPanel DockPanel.Dock="Right"
                         VerticalAlignment="Center"
                         Orientation="Horizontal">
-                <TextBlock Margin="0,0,16,0"
+                <TextBlock Margin="0,0,8,0"
+                           VerticalAlignment="Center"
+                           Text="Party" />
+                <ComboBox Width="160"
+                          DisplayMemberPath="Name"
+                          ItemsSource="{Binding Parties}"
+                          SelectedItem="{Binding SelectedParty}" />
+                <Button Margin="8,0,0,0"
+                        Padding="12,4"
+                        Command="{Binding NewCombatCommand}"
+                        Content="New combat" />
+                <TextBlock Margin="24,0,16,0"
                            VerticalAlignment="Center"
                            FontSize="18"
                            Text="{Binding Round, StringFormat='Round {0}'}" />
@@ -25,10 +37,6 @@
                         Padding="12,4"
                         Command="{Binding NextCommand}"
                         Content="Next" />
-                <Button Margin="24,0,0,0"
-                        Padding="12,4"
-                        Command="{Binding NewCombatCommand}"
-                        Content="New combat" />
             </StackPanel>
             <TextBlock FontSize="28"
                        FontWeight="SemiBold"
@@ -75,13 +83,26 @@
         </StackPanel>
 
         <!-- Turn order -->
-        <DataGrid AutoGenerateColumns="False"
+        <DataGrid AllowDrop="True"
+                  AutoGenerateColumns="False"
                   CanUserSortColumns="False"
                   HeadersVisibility="Column"
                   IsReadOnly="True"
                   ItemsSource="{Binding Combatants}"
+                  PreviewDragOver="OnGridPreviewDragOver"
+                  PreviewDrop="OnGridPreviewDrop"
+                  PreviewMouseLeftButtonDown="OnGridPreviewMouseLeftButtonDown"
+                  PreviewMouseMove="OnGridPreviewMouseMove"
                   SelectedItem="{Binding SelectedCombatant}"
                   SelectionMode="Single">
+            <DataGrid.Resources>
+                <!-- Applies to every TextBox inside the grid's cells. -->
+                <Style TargetType="TextBox">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <EventSetter Event="KeyDown" Handler="OnCellTextBoxKeyDown" />
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Style.Triggers>
@@ -93,21 +114,89 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
+                <DataGridTemplateColumn Width="28" CanUserResize="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Cursor="SizeAll"
+                       Tag="DragHandle"
+                       Text="≡"
+                       TextAlignment="Center"
+                       ToolTip="Drag to reorder" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn Width="*"
                                     Binding="{Binding Name, Mode=OneWay}"
                                     Header="Name" />
-                <DataGridTextColumn Width="90"
-                                    Binding="{Binding Initiative, Mode=OneWay}"
-                                    Header="Initiative" />
-                <DataGridTextColumn Width="70"
-                                    Binding="{Binding CurrentHp, Mode=OneWay}"
-                                    Header="HP" />
-                <DataGridTextColumn Width="70"
-                                    Binding="{Binding MaxHp, Mode=OneWay}"
-                                    Header="Max HP" />
-                <DataGridTextColumn Width="70"
-                                    Binding="{Binding ArmorClass, Mode=OneWay}"
-                                    Header="AC" />
+
+                <DataGridTemplateColumn Width="90" Header="Initiative">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Initiative}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="110" Header="HP">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <ToggleButton Content="{Binding HpText}" IsEnabled ="{Binding CanChangeHp}" IsChecked="{Binding IsHpEditorOpen}">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter Property="IsHitTestVisible" Value="False" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsHpEditorOpen, Mode=TwoWay}"
+                                       Opened="OnHpPopupOpened"
+                                       Placement="Bottom"
+                                       StaysOpen="False">
+                                    <Border Padding="8"
+                                            Background="White"
+                                            BorderBrush="Gray"
+                                            BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBox Width="140"
+                                                     BorderThickness="1"
+                                                     Text="{Binding HpChangeAmount, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
+                                            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                                                <Button Padding="8,2"
+                                                        Command="{Binding DamageCommand}"
+                                                        Content="Damage"
+                                                        IsDefault="True" />
+                                                <Button Margin="8,0,0,0"
+                                                        Padding="8,2"
+                                                        Command="{Binding HealCommand}"
+                                                        Content="Heal" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="70" Header="Max HP">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding MaxHp, TargetNullValue=''}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="70" Header="AC">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding ArmorClass, TargetNullValue=''}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

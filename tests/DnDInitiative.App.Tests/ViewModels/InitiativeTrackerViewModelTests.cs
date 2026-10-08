@@ -2,6 +2,7 @@
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
+using DnDInitiative.Core.Parties;
 
 namespace DnDInitiative.App.Tests.ViewModels;
 
@@ -79,10 +80,85 @@ public class InitiativeTrackerViewModelTests
         Assert.Equal("Goblin", Assert.Single(viewModel.Combatants).Name);
     }
 
-    private static InitiativeTrackerViewModel CreateViewModel(int dieResult = 10)
+    [Fact]
+    public void EditingInitiative_MovesRowToMatchingPlace()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelWithGoblins(2);
+
+        viewModel.Combatants[1].Initiative = 20;
+
+        Assert.Equal("Goblin 2", viewModel.Combatants[0].Name);
+        Assert.Equal("Goblin 1", viewModel.Combatants[1].Name);
+        Assert.True(viewModel.Combatants[1].IsCurrent);
+    }
+
+    [Fact]
+    public void DamageCommand_ReducesHpAndClosesEditor()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModel();
+        viewModel.NewName = "Goblin";
+        viewModel.NewMaxHp = 7;
+        viewModel.AddCreatureCommand.Execute(null);
+        CombatantViewModel goblin = Assert.Single(viewModel.Combatants);
+        goblin.IsHpEditorOpen = true;
+        goblin.HpChangeAmount = 3;
+
+        goblin.DamageCommand.Execute(null);
+
+        Assert.Equal("4 / 7", goblin.HpText);
+        Assert.False(goblin.IsHpEditorOpen);
+        Assert.Null(goblin.HpChangeAmount);
+    }
+
+    [Fact]
+    public void DamageCommand_WithoutAmount_CannotExecute()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModel();
+        viewModel.NewName = "Goblin";
+        viewModel.NewMaxHp = 7;
+        viewModel.AddCreatureCommand.Execute(null);
+
+        Assert.False(Assert.Single(viewModel.Combatants).DamageCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task NewCombatCommand_WithSelectedParty_AddsItsMembers()
+    {
+        var party = new Party(
+            Guid.NewGuid(),
+            "Heroes",
+            [new PlayerCharacter("Aria", Level: 3, MaxHp: 24), new PlayerCharacter("Bren", Level: 3)]);
+        InitiativeTrackerViewModel viewModel = CreateViewModel(10, party);
+        await viewModel.LoadPartiesCommand.ExecuteAsync(null);
+        viewModel.SelectedParty = Assert.Single(viewModel.Parties);
+
+        viewModel.NewCombatCommand.Execute(null);
+
+        Assert.Equal(2, viewModel.Combatants.Count);
+        Assert.Contains(viewModel.Combatants, row => row.Name == "Aria");
+        Assert.Contains(viewModel.Combatants, row => row.Name == "Bren");
+    }
+
+    [Fact]
+    public void MoveCombatant_TakesTargetPositionAndKeepsCurrentCombatant()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelWithGoblins(3);
+        CombatantViewModel first = viewModel.Combatants[0];
+        CombatantViewModel last = viewModel.Combatants[2];
+
+        viewModel.MoveCombatant(first, last);
+
+        Assert.Equal("Goblin 2", viewModel.Combatants[0].Name);
+        Assert.Equal("Goblin 3", viewModel.Combatants[1].Name);
+        Assert.Equal("Goblin 1", viewModel.Combatants[2].Name);
+        Assert.True(viewModel.Combatants[2].IsCurrent);
+    }
+
+    private static InitiativeTrackerViewModel CreateViewModel(int dieResult = 10, params Party[] parties)
     {
         return new InitiativeTrackerViewModel(
-            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(dieResult))));
+            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(dieResult))),
+            new InMemoryPartyRepository(parties));
     }
 
     private static InitiativeTrackerViewModel CreateViewModelWithGoblins(int quantity)

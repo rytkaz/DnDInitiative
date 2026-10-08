@@ -125,4 +125,40 @@ public sealed class InitiativeTracker
         // Reordering changes positions, never whose turn it is.
         _currentIndex = _combatants.IndexOf(current);
     }
+
+    /// <summary>
+    /// Changes a combatant's initiative and moves it to the matching place in the order.
+    /// </summary>
+    public void SetInitiative(Combatant combatant, int initiative)
+    {
+        ArgumentNullException.ThrowIfNull(combatant);
+
+        int fromIndex = _combatants.IndexOf(combatant);
+        if (fromIndex < 0)
+        {
+            throw new ArgumentException("Combatant is not in the tracker.", nameof(combatant));
+        }
+
+        combatant.Initiative = initiative;
+
+        // Same rule as Add, applied to everyone else: go before the first
+        // combatant with a strictly lower initiative.
+        int toIndex = 0;
+        foreach (Combatant other in _combatants)
+        {
+            if (ReferenceEquals(other, combatant))
+            {
+                continue;
+            }
+
+            if (other.Initiative < initiative)
+            {
+                break;
+            }
+
+            toIndex++;
+        }
+
+        Move(fromIndex, toIndex);
+    }
 }

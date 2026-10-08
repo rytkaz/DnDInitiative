@@ -1,4 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Globalization;
+
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using DnDInitiative.Core.Combat;
 
@@ -6,23 +9,111 @@ namespace DnDInitiative.App.ViewModels;
 
 public sealed partial class CombatantViewModel : ObservableObject
 {
+    private readonly Action<Combatant, int> _changeInitiative;
+
     [ObservableProperty]
     private bool _isCurrent;
 
-    public CombatantViewModel(Combatant combatant)
+    [ObservableProperty]
+    private bool _isHpEditorOpen;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DamageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(HealCommand))]
+    private int? _hpChangeAmount;
+
+    public CombatantViewModel(Combatant combatant, Action<Combatant, int> changeInitiative)
     {
         Combatant = combatant;
+        _changeInitiative = changeInitiative;
     }
 
     public Combatant Combatant { get; }
 
     public string Name => Combatant.Name;
 
-    public int Initiative => Combatant.Initiative;
+    public int Initiative
+    {
+        get => Combatant.Initiative;
+        set
+        {
+            if (value == Combatant.Initiative)
+            {
+                return;
+            }
+
+            // The tracker owns the order, so the change goes through it.
+            _changeInitiative(Combatant, value);
+            OnPropertyChanged();
+        }
+    }
+
+    public int? ArmorClass
+    {
+        get => Combatant.ArmorClass;
+        set => SetProperty(
+            Combatant.ArmorClass,
+            value,
+            Combatant,
+            static (combatant, armorClass) => combatant.ArmorClass = armorClass);
+    }
+
+    public int? MaxHp
+    {
+        get => Combatant.MaxHp;
+        set
+        {
+            if (value is < 0 || value == Combatant.MaxHp)
+            {
+                return;
+            }
+
+            Combatant.SetMaxHp(value);
+            OnPropertyChanged();
+            OnHpChanged();
+        }
+    }
 
     public int? CurrentHp => Combatant.CurrentHp;
 
-    public int? MaxHp => Combatant.MaxHp;
+    public string HpText => Combatant.TracksHp
+        ? string.Create(CultureInfo.InvariantCulture, $"{Combatant.CurrentHp} / {Combatant.MaxHp}")
+        : "—";
 
-    public int? ArmorClass => Combatant.ArmorClass;
+    private bool CanChangeHp => HpChangeAmount is > 0 && Combatant.TracksHp;
+
+    [RelayCommand(CanExecute = nameof(CanChangeHp))]
+    private void Damage()
+    {
+        if (HpChangeAmount is int amount)
+        {
+            Combatant.TakeDamage(amount);
+            CloseHpEditor();
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanChangeHp))]
+    private void Heal()
+    {
+        if (HpChangeAmount is int amount)
+        {
+            Combatant.Heal(amount);
+            CloseHpEditor();
+        }
+    }
+
+    private void CloseHpEditor()
+    {
+        HpChangeAmount = null;
+        IsHpEditorOpen = false;
+        OnHpChanged();
+    }
+
+    private void OnHpChanged()
+    {
+        OnPropertyChanged(nameof(CurrentHp));
+        OnPropertyChanged(nameof(HpText));
+        DamageCommand.NotifyCanExecuteChanged();
+        HealCommand.NotifyCanExecuteChanged();
+    }
 }
