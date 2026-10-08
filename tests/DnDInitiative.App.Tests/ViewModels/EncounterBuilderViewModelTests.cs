@@ -147,15 +147,33 @@ public class EncounterBuilderViewModelTests
         Assert.All(message.Creatures, creature => Assert.Equal("Goblin", creature.Name));
     }
 
+    [Fact]
+    public async Task CopyLinkCommand_SavesTheEncounterAndCopiesAMarkdownLink()
+    {
+        var encounters = new InMemoryEncounterRepository();
+        var clipboard = new FakeClipboard();
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters, clipboard: clipboard);
+        viewModel.NewEncounterCommand.Execute(null);
+        SelectedEditor(viewModel).Name = "Ambush";
+
+        await viewModel.CopyLinkCommand.ExecuteAsync(null);
+
+        Encounter saved = Assert.Single(encounters.Encounters);
+        var expectedLink = new EncounterLink(saved.Id, _party.Id);
+        Assert.Equal($"[Ambush]({expectedLink})", clipboard.Text);
+    }
+
     private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(
         InMemoryEncounterRepository? encounters = null,
-        IMessenger? messenger = null)
+        IMessenger? messenger = null,
+        FakeClipboard? clipboard = null)
     {
         var viewModel = new EncounterBuilderViewModel(
             encounters ?? new InMemoryEncounterRepository(),
             new InMemoryStatBlockRepository(_goblin),
             new InMemoryPartyRepository(_party),
-            messenger ?? new WeakReferenceMessenger());
+            messenger ?? new WeakReferenceMessenger(),
+            clipboard ?? new FakeClipboard());
         await viewModel.LoadCommand.ExecuteAsync(null);
         return viewModel;
     }

@@ -22,17 +22,28 @@ namespace DnDInitiative.App;
 
 public partial class App : Application
 {
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        HostApplicationBuilder builder = Host.CreateApplicationBuilder(e.Args);
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
         ConfigureServices(builder.Services);
 
         IHost host = builder.Build();
         Exit += (_, _) => host.Dispose();
 
         host.Services.GetRequiredService<MainWindow>().Show();
+
+        if (Environment.ProcessPath is { } executablePath)
+        {
+            UriSchemeRegistrar.Register(EncounterLink.Scheme, executablePath);
+        }
+
+        // When Windows launches the app for a link, the link is the first argument.
+        if (e.Args.Length > 0)
+        {
+            await host.Services.GetRequiredService<EncounterLinkHandler>().HandleAsync(e.Args[0]);
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -45,6 +56,8 @@ public partial class App : Application
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+        services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<EncounterLinkHandler>();
 
         // Storage
         string dataDirectory = Path.Combine(

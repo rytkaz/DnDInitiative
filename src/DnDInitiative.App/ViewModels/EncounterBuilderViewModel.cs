@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
+using DnDInitiative.App.Services;
 using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.StatBlocks;
@@ -16,6 +17,8 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     private readonly IEncounterRepository _encounterRepository;
     private readonly IStatBlockRepository _statBlockRepository;
     private readonly IPartyRepository _partyRepository;
+    private readonly IMessenger _messenger;
+    private readonly IClipboardService _clipboard;
 
     private List<StatBlock> _statBlocks = [];
     private Dictionary<Guid, StatBlock> _statBlocksById = new();
@@ -27,6 +30,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddCreatureCommand))]
     [NotifyCanExecuteChangedFor(nameof(StartEncounterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CopyLinkCommand))]
     private EncounterEditorViewModel? _selectedEncounter;
 
     [ObservableProperty]
@@ -51,18 +55,18 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
-    private readonly IMessenger _messenger;
-
     public EncounterBuilderViewModel(
         IEncounterRepository encounterRepository,
         IStatBlockRepository statBlockRepository,
         IPartyRepository partyRepository,
-        IMessenger messenger)
+        IMessenger messenger,
+        IClipboardService clipboard)
     {
         _encounterRepository = encounterRepository;
         _statBlockRepository = statBlockRepository;
         _partyRepository = partyRepository;
         _messenger = messenger;
+        _clipboard = clipboard;
     }
 
     public override string Title => "Encounter Builder";
@@ -273,5 +277,31 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
         Encounter encounter = editor.ToEncounter();
         _messenger.Send(new StartCombatMessage(encounter.Name, encounter.ToBlueprints(_statBlocksById), SelectedParty));
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedEncounter))]
+    private async Task CopyLinkAsync()
+    {
+        if (SelectedEncounter is not { } editor)
+        {
+            return;
+        }
+
+        if (!editor.Validate())
+        {
+            StatusMessage = "Give the encounter a name before copying a link.";
+            return;
+        }
+
+        // The link only holds an Id, so the encounter has to be stored for it to work.
+        Encounter encounter = editor.ToEncounter();
+        await _encounterRepository.SaveAsync(encounter);
+
+        var link = new EncounterLink(encounter.Id, SelectedParty?.Id);
+        string markdown = $"[{encounter.Name}]({link})";
+
+        StatusMessage = _clipboard.TrySetText(markdown)
+            ? "Saved, and copied a link for your notes."
+            : "Saved, but the clipboard was busy. Try again.";
     }
 }

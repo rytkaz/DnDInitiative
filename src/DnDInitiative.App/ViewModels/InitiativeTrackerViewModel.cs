@@ -219,7 +219,12 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        SelectedParty = message.Party;
+        // No party in the message means "keep whichever party is selected".
+        if (message.Party is not null)
+        {
+            SelectedParty = message.Party;
+        }
+
         StartCombat(message.Name, message.Creatures);
     }
 

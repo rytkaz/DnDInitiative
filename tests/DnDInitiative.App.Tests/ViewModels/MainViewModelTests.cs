@@ -20,7 +20,12 @@ public class MainViewModelTests
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
             parties,
             messenger);
-        var encounterBuilder = new EncounterBuilderViewModel(new InMemoryEncounterRepository(), statBlocks, parties, messenger);
+        var encounterBuilder = new EncounterBuilderViewModel(
+            new InMemoryEncounterRepository(),
+            statBlocks, 
+            parties, 
+            messenger, 
+            new FakeClipboard());
         var viewModel = new MainViewModel(
             tracker,
             new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker()),
