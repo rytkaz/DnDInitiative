@@ -15,9 +15,6 @@ public sealed partial class CombatantViewModel : ObservableObject
     private bool _isCurrent;
 
     [ObservableProperty]
-    private bool _isHpEditorOpen;
-
-    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DamageCommand))]
     [NotifyCanExecuteChangedFor(nameof(HealCommand))]
     private int? _hpChangeAmount;
@@ -76,6 +73,8 @@ public sealed partial class CombatantViewModel : ObservableObject
 
     public int? CurrentHp => Combatant.CurrentHp;
 
+    public bool TracksHp => Combatant.TracksHp;
+
     public string HpText => Combatant.TracksHp
         ? string.Create(CultureInfo.InvariantCulture, $"{Combatant.CurrentHp} / {Combatant.MaxHp}")
         : "—";
@@ -88,7 +87,8 @@ public sealed partial class CombatantViewModel : ObservableObject
         if (HpChangeAmount is int amount)
         {
             Combatant.TakeDamage(amount);
-            CloseHpEditor();
+            HpChangeAmount = null;
+            OnHpChanged();
         }
     }
 
@@ -98,21 +98,16 @@ public sealed partial class CombatantViewModel : ObservableObject
         if (HpChangeAmount is int amount)
         {
             Combatant.Heal(amount);
-            CloseHpEditor();
+            HpChangeAmount = null;
+            OnHpChanged();
         }
-    }
-
-    private void CloseHpEditor()
-    {
-        HpChangeAmount = null;
-        IsHpEditorOpen = false;
-        OnHpChanged();
     }
 
     private void OnHpChanged()
     {
         OnPropertyChanged(nameof(CurrentHp));
         OnPropertyChanged(nameof(HpText));
+        OnPropertyChanged(nameof(TracksHp));
         DamageCommand.NotifyCanExecuteChanged();
         HealCommand.NotifyCanExecuteChanged();
     }

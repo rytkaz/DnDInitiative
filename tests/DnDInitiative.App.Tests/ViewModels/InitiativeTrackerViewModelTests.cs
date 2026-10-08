@@ -96,20 +96,18 @@ public class InitiativeTrackerViewModelTests
     }
 
     [Fact]
-    public void DamageCommand_ReducesHpAndClosesEditor()
+    public void DamageCommand_ReducesHpAndClearsTheAmount()
     {
         InitiativeTrackerViewModel viewModel = CreateViewModel();
         viewModel.NewName = "Goblin";
         viewModel.NewMaxHp = 7;
         viewModel.AddCreatureCommand.Execute(null);
         CombatantViewModel goblin = Assert.Single(viewModel.Combatants);
-        goblin.IsHpEditorOpen = true;
         goblin.HpChangeAmount = 3;
 
         goblin.DamageCommand.Execute(null);
 
         Assert.Equal("4 / 7", goblin.HpText);
-        Assert.False(goblin.IsHpEditorOpen);
         Assert.Null(goblin.HpChangeAmount);
     }
 

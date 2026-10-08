@@ -9,6 +9,34 @@
              d:DesignWidth="900"
              d:DesignHeight="600"
              Loaded="OnLoaded">
+    <UserControl.Resources>
+        <!-- One popup shared by every row. The code-behind points it at the clicked row. -->
+        <Popup x:Key="HpPopup"
+           Opened="OnHpPopupOpened"
+           Placement="Bottom"
+           StaysOpen="False">
+            <Border Padding="8"
+                Background="White"
+                BorderBrush="Gray"
+                BorderThickness="1">
+                <StackPanel>
+                    <TextBox Width="140" Text="{Binding HpChangeAmount, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
+                    <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                        <Button Padding="8,2"
+                            Click="OnHpPopupActionClick"
+                            Command="{Binding DamageCommand}"
+                            Content="Damage"
+                            IsDefault="True" />
+                        <Button Margin="8,0,0,0"
+                            Padding="8,2"
+                            Click="OnHpPopupActionClick"
+                            Command="{Binding HealCommand}"
+                            Content="Heal" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Popup>
+    </UserControl.Resources>
     <DockPanel>
         <!-- Header: title, party, round, turn controls -->
         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
@@ -147,44 +175,9 @@
                 <DataGridTemplateColumn Width="110" Header="HP">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Grid>
-                                <ToggleButton Content="{Binding HpText}" IsEnabled ="{Binding CanChangeHp}" IsChecked="{Binding IsHpEditorOpen}">
-                                    <ToggleButton.Style>
-                                        <Style TargetType="ToggleButton">
-                                            <Style.Triggers>
-                                                <Trigger Property="IsChecked" Value="True">
-                                                    <Setter Property="IsHitTestVisible" Value="False" />
-                                                </Trigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ToggleButton.Style>
-                                </ToggleButton>
-                                <Popup IsOpen="{Binding IsHpEditorOpen, Mode=TwoWay}"
-                                       Opened="OnHpPopupOpened"
-                                       Placement="Bottom"
-                                       StaysOpen="False">
-                                    <Border Padding="8"
-                                            Background="White"
-                                            BorderBrush="Gray"
-                                            BorderThickness="1">
-                                        <StackPanel>
-                                            <TextBox Width="140"
-                                                     BorderThickness="1"
-                                                     Text="{Binding HpChangeAmount, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
-                                            <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
-                                                <Button Padding="8,2"
-                                                        Command="{Binding DamageCommand}"
-                                                        Content="Damage"
-                                                        IsDefault="True" />
-                                                <Button Margin="8,0,0,0"
-                                                        Padding="8,2"
-                                                        Command="{Binding HealCommand}"
-                                                        Content="Heal" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Border>
-                                </Popup>
-                            </Grid>
+                            <Button Click="OnHpButtonClick"
+                    Content="{Binding HpText}"
+                    IsEnabled="{Binding TracksHp}" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

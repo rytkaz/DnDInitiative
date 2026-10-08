@@ -106,4 +106,24 @@ public partial class InitiativeTrackerView : UserControl
 
         return element as DataGridRow;
     }
+
+    private void OnHpButtonClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: CombatantViewModel row } button
+            && Resources["HpPopup"] is Popup popup)
+        {
+            popup.DataContext = row;
+            popup.PlacementTarget = button;
+            popup.IsOpen = true;
+        }
+    }
+
+    // Runs just before the button's command, so the menu closes as the change is applied.
+    private void OnHpPopupActionClick(object sender, RoutedEventArgs e)
+    {
+        if (Resources["HpPopup"] is Popup popup)
+        {
+            popup.IsOpen = false;
+        }
+    }
 }
