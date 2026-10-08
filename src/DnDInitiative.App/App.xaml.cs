@@ -1,11 +1,13 @@
-﻿using System.IO;
-using System.Windows;
+﻿using System.Windows;
+using System.IO;
 
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Infrastructure.Parties;
+using DnDInitiative.Core.StatBlocks;
+using DnDInitiative.Infrastructure.StatBlocks;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,6 +43,7 @@ public partial class App : Application
             "DnDInitiative");
 
         services.AddSingleton<IPartyRepository>(_ => new JsonPartyRepository(Path.Combine(dataDirectory, "parties.json")));
+        services.AddSingleton<IStatBlockRepository>(_ => new JsonStatBlockRepository(Path.Combine(dataDirectory, "statblocks.json")));
 
         // View models
         services.AddSingleton<InitiativeTrackerViewModel>();
@@ -48,7 +51,6 @@ public partial class App : Application
         services.AddSingleton<EncounterBuilderViewModel>();
         services.AddSingleton<PartySetupViewModel>();
         services.AddSingleton<MainViewModel>();
-
         // Windows
         services.AddSingleton<MainWindow>();
     }
