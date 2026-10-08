@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DnDInitiative.App/DnDInitiative.App.csproj" />
+    <Project Path="src/DnDInitiative.Core/DnDInitiative.Core.csproj" />
+    <Project Path="src/DnDInitiative.Infrastructure/DnDInitiative.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DnDInitiative.Core.Tests/DnDInitiative.Core.Tests.csproj" />
+  </Folder>
+</Solution>
