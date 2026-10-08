@@ -1,0 +1,114 @@
+﻿<UserControl x:Class="DnDInitiative.App.Views.InitiativeTrackerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=viewModels:InitiativeTrackerViewModel}"
+             d:DesignWidth="900"
+             d:DesignHeight="600">
+    <DockPanel>
+        <!-- Header: title, round, turn controls -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <StackPanel DockPanel.Dock="Right"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                <TextBlock Margin="0,0,16,0"
+                           VerticalAlignment="Center"
+                           FontSize="18"
+                           Text="{Binding Round, StringFormat='Round {0}'}" />
+                <Button Padding="12,4"
+                        Command="{Binding PreviousCommand}"
+                        Content="Previous" />
+                <Button Margin="8,0,0,0"
+                        Padding="12,4"
+                        Command="{Binding NextCommand}"
+                        Content="Next" />
+                <Button Margin="24,0,0,0"
+                        Padding="12,4"
+                        Command="{Binding NewCombatCommand}"
+                        Content="New combat" />
+            </StackPanel>
+            <TextBlock FontSize="28"
+                       FontWeight="SemiBold"
+                       Text="{Binding Title}" />
+        </DockPanel>
+
+        <!-- Footer: add and remove creatures -->
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Width="200">
+                    <TextBlock Text="Name" />
+                    <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <StackPanel Width="60" Margin="8,0,0,0">
+                    <TextBlock Text="Count" />
+                    <TextBox Text="{Binding NewQuantity, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <StackPanel Width="60" Margin="8,0,0,0">
+                    <TextBlock Text="Init mod" />
+                    <TextBox Text="{Binding NewInitiativeModifier, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <StackPanel Width="60" Margin="8,0,0,0">
+                    <TextBlock Text="Max HP" />
+                    <TextBox Text="{Binding NewMaxHp, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <StackPanel Width="60" Margin="8,0,0,0">
+                    <TextBlock Text="AC" />
+                    <TextBox Text="{Binding NewArmorClass, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+                <Button Margin="8,0,0,0"
+                        Padding="12,4"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding AddCreatureCommand}"
+                        Content="Add" />
+                <Button Margin="24,0,0,0"
+                        Padding="12,4"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding RemoveSelectedCommand}"
+                        Content="Remove selected" />
+            </StackPanel>
+            <CheckBox Margin="0,8,0,0"
+                      Content="Roll initiative with disadvantage"
+                      IsChecked="{Binding RollWithDisadvantage}" />
+        </StackPanel>
+
+        <!-- Turn order -->
+        <DataGrid AutoGenerateColumns="False"
+                  CanUserSortColumns="False"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  ItemsSource="{Binding Combatants}"
+                  SelectedItem="{Binding SelectedCombatant}"
+                  SelectionMode="Single">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                            <Setter Property="Background" Value="#FFF3D6" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Width="*"
+                                    Binding="{Binding Name, Mode=OneWay}"
+                                    Header="Name" />
+                <DataGridTextColumn Width="90"
+                                    Binding="{Binding Initiative, Mode=OneWay}"
+                                    Header="Initiative" />
+                <DataGridTextColumn Width="70"
+                                    Binding="{Binding CurrentHp, Mode=OneWay}"
+                                    Header="HP" />
+                <DataGridTextColumn Width="70"
+                                    Binding="{Binding MaxHp, Mode=OneWay}"
+                                    Header="Max HP" />
+                <DataGridTextColumn Width="70"
+                                    Binding="{Binding ArmorClass, Mode=OneWay}"
+                                    Header="AC" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

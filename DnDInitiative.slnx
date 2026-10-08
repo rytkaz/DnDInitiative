@@ -5,6 +5,7 @@
     <Project Path="src/DnDInitiative.Infrastructure/DnDInitiative.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/DnDInitiative.App.Tests/DnDInitiative.App.Tests.csproj" />
     <Project Path="tests/DnDInitiative.Core.Tests/DnDInitiative.Core.Tests.csproj" />
     <Project Path="tests/DnDInitiative.Infrastructure.Tests/DnDInitiative.Infrastructure.Tests.csproj" />
   </Folder>

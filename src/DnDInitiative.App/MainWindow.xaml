@@ -30,6 +30,9 @@
                 <DataTemplate DataType="{x:Type viewModels:PartySetupViewModel}">
                     <views:PartySetupView />
                 </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:InitiativeTrackerViewModel}">
+                    <views:InitiativeTrackerView />
+                </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:PageViewModel}">
                     <StackPanel>
                         <TextBlock FontSize="28"

@@ -1,10 +1,5 @@
 ﻿namespace DnDInitiative.App.ViewModels;
 
-public sealed class InitiativeTrackerViewModel : PageViewModel
-{
-    public override string Title => "Initiative Tracker";
-}
-
 public sealed class StatBlocksViewModel : PageViewModel
 {
     public override string Title => "Stat Blocks";
