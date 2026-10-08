@@ -26,26 +26,60 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // When Windows launches the app for a link, the link is the first argument.
+        string link = e.Args.FirstOrDefault() ?? "";
+
+        var singleInstance = new SingleInstance("DnDInitiative");
+        Exit += (_, _) => singleInstance.Dispose();
+
+        if (!singleInstance.IsFirstInstance)
+        {
+            // Another copy is running: hand it the link and leave.
+            await singleInstance.SendToFirstInstanceAsync(link);
+            Shutdown();
+            return;
+        }
+
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
         ConfigureServices(builder.Services);
 
         IHost host = builder.Build();
         Exit += (_, _) => host.Dispose();
 
-        host.Services.GetRequiredService<MainWindow>().Show();
+        var window = host.Services.GetRequiredService<MainWindow>();
+        window.Show();
 
         if (Environment.ProcessPath is { } executablePath)
         {
             UriSchemeRegistrar.Register(EncounterLink.Scheme, executablePath);
         }
 
-        // When Windows launches the app for a link, the link is the first argument.
-        if (e.Args.Length > 0)
+        var linkHandler = host.Services.GetRequiredService<EncounterLinkHandler>();
+
+        // Runs for the life of the app; each later launch arrives here.
+        _ = singleInstance.ListenAsync(async message =>
         {
-            await host.Services.GetRequiredService<EncounterLinkHandler>().HandleAsync(e.Args[0]);
-        }
+            BringToFront(window);
+            await linkHandler.HandleAsync(message);
+        });
+
+        await linkHandler.HandleAsync(link);
     }
 
+    private static void BringToFront(Window window)
+    {
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+
+        window.Activate();
+
+        // Windows often refuses to let a background app take focus and only
+        // flashes its taskbar button. Toggling Topmost raises the window anyway.
+        window.Topmost = true;
+        window.Topmost = false;
+    }
     private static void ConfigureServices(IServiceCollection services)
     {
         // Domain services
