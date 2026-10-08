@@ -3,10 +3,39 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:DnDInitiative.App"
+        xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
+        Title="DnD Initiative"
+        Width="1200"
+        Height="720"
+        MinWidth="800"
+        MinHeight="480">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
+        <ListBox Grid.Column="0"
+                 ItemsSource="{Binding Pages}"
+                 SelectedItem="{Binding CurrentPage}"
+                 DisplayMemberPath="Title" />
+
+        <ContentControl Grid.Column="1"
+                        Margin="24"
+                        Content="{Binding CurrentPage}">
+            <ContentControl.Resources>
+                <DataTemplate DataType="{x:Type viewModels:PageViewModel}">
+                    <StackPanel>
+                        <TextBlock FontSize="28"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding Title}" />
+                        <TextBlock Margin="0,8,0,0"
+                                   Text="Nothing here yet." />
+                    </StackPanel>
+                </DataTemplate>
+            </ContentControl.Resources>
+        </ContentControl>
     </Grid>
 </Window>
