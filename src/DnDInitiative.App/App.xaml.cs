@@ -10,4 +10,3 @@ namespace DnDInitiative.App;
 public partial class App : Application
 {
 }
-
