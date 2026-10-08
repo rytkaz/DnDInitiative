@@ -2,7 +2,9 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 
+using DnDInitiative.App.Messages;
 using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.StatBlocks;
@@ -24,6 +26,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddCreatureCommand))]
+    [NotifyCanExecuteChangedFor(nameof(StartEncounterCommand))]
     private EncounterEditorViewModel? _selectedEncounter;
 
     [ObservableProperty]
@@ -48,14 +51,18 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
+    private readonly IMessenger _messenger;
+
     public EncounterBuilderViewModel(
         IEncounterRepository encounterRepository,
         IStatBlockRepository statBlockRepository,
-        IPartyRepository partyRepository)
+        IPartyRepository partyRepository,
+        IMessenger messenger)
     {
         _encounterRepository = encounterRepository;
         _statBlockRepository = statBlockRepository;
         _partyRepository = partyRepository;
+        _messenger = messenger;
     }
 
     public override string Title => "Encounter Builder";
@@ -254,5 +261,17 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
             EncounterDifficulty.AboveHigh => "Above High",
             _ => "Add creatures to see the difficulty.",
         };
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedEncounter))]
+    private void StartEncounter()
+    {
+        if (SelectedEncounter is not { } editor)
+        {
+            return;
+        }
+
+        Encounter encounter = editor.ToEncounter();
+        _messenger.Send(new StartCombatMessage(encounter.Name, encounter.ToBlueprints(_statBlocksById), SelectedParty));
     }
 }

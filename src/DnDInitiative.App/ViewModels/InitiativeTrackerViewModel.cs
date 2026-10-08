@@ -2,14 +2,16 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 
+using DnDInitiative.App.Messages;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Parties;
 
 namespace DnDInitiative.App.ViewModels;
 
-public sealed partial class InitiativeTrackerViewModel : PageViewModel
+public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipient<StartCombatMessage>
 {
     private const int MaxQuantity = 50;
 
@@ -17,6 +19,9 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
     private readonly IPartyRepository _partyRepository;
     private InitiativeTracker _tracker = new();
     private CombatantNamer _namer = new();
+
+    [ObservableProperty]
+    private string _combatName = "";
 
     [ObservableProperty]
     private int _round = 1;
@@ -48,10 +53,16 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
     [ObservableProperty]
     private int? _newArmorClass;
 
-    public InitiativeTrackerViewModel(CombatantFactory combatantFactory, IPartyRepository partyRepository)
+    public InitiativeTrackerViewModel(
+        CombatantFactory combatantFactory,
+        IPartyRepository partyRepository,
+        IMessenger messenger)
     {
+        ArgumentNullException.ThrowIfNull(messenger);
+
         _combatantFactory = combatantFactory;
         _partyRepository = partyRepository;
+        messenger.Register<StartCombatMessage>(this);
     }
 
     public override string Title => "Initiative Tracker";
@@ -116,20 +127,6 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
             SelectedCombatant = null;
             SyncOrder();
         }
-    }
-
-    [RelayCommand]
-    private void NewCombat()
-    {
-        _tracker = new InitiativeTracker();
-        _namer = new CombatantNamer();
-
-        if (SelectedParty is { } party)
-        {
-            AddCombatants(party.ToBlueprints(), RollMode.Normal);
-        }
-
-        SyncOrder();
     }
 
     private void AddCombatants(IReadOnlyList<CombatantBlueprint> blueprints, RollMode rollMode)
@@ -215,6 +212,35 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel
         }
 
         _tracker.Move(fromIndex, toIndex);
+        SyncOrder();
+    }
+
+    public void Receive(StartCombatMessage message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        SelectedParty = message.Party;
+        StartCombat(message.Name, message.Creatures);
+    }
+
+    [RelayCommand]
+    private void NewCombat()
+    {
+        StartCombat(name: "", creatures: []);
+    }
+
+    private void StartCombat(string name, IReadOnlyList<CombatantBlueprint> creatures)
+    {
+        _tracker = new InitiativeTracker();
+        _namer = new CombatantNamer();
+        CombatName = name;
+
+        if (SelectedParty is { } party)
+        {
+            AddCombatants(party.ToBlueprints(), RollMode.Normal);
+        }
+
+        AddCombatants(creatures, RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal);
         SyncOrder();
     }
 }

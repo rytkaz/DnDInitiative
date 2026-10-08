@@ -83,6 +83,10 @@
                     <Button Padding="24,4"
                             Command="{Binding SaveCommand}"
                             Content="Save" />
+                    <Button Margin="8,0,0,0"
+                            Padding="24,4"
+                            Command="{Binding StartEncounterCommand}"
+                            Content="Start encounter" />
                     <TextBlock Margin="12,0,0,0"
                                VerticalAlignment="Center"
                                Text="{Binding StatusMessage}" />

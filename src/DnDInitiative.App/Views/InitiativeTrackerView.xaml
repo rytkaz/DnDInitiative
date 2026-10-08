@@ -38,9 +38,16 @@
                         Command="{Binding NextCommand}"
                         Content="Next" />
             </StackPanel>
-            <TextBlock FontSize="28"
-                       FontWeight="SemiBold"
-                       Text="{Binding Title}" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock FontSize="28"
+                           FontWeight="SemiBold"
+                           Text="{Binding Title}" />
+                <TextBlock Margin="16,0,0,4"
+                           VerticalAlignment="Bottom"
+                           FontSize="18"
+                           Foreground="Gray"
+                           Text="{Binding CombatName}" />
+            </StackPanel>
         </DockPanel>
 
         <!-- Footer: add and remove creatures -->

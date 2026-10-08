@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Windows;
 
+using CommunityToolkit.Mvvm.Messaging;
+
 using DnDInitiative.App.Services;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
@@ -42,6 +44,7 @@ public partial class App : Application
         services.AddSingleton<CombatantFactory>();
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
         services.AddSingleton<IFolderPicker, FolderPicker>();
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
         // Storage
         string dataDirectory = Path.Combine(

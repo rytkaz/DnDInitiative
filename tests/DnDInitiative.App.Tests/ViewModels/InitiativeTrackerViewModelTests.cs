@@ -1,4 +1,7 @@
-﻿using DnDInitiative.App.Tests.Fakes;
+﻿using CommunityToolkit.Mvvm.Messaging;
+
+using DnDInitiative.App.Messages;
+using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
@@ -154,11 +157,40 @@ public class InitiativeTrackerViewModelTests
         Assert.True(viewModel.Combatants[2].IsCurrent);
     }
 
+    [Fact]
+    public void StartCombatMessage_StartsANewCombatWithThePartyAndCreatures()
+    {
+        var messenger = new WeakReferenceMessenger();
+        InitiativeTrackerViewModel viewModel = CreateViewModel(messenger);
+        viewModel.NewName = "Leftover";
+        viewModel.AddCreatureCommand.Execute(null);
+        var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
+
+        messenger.Send(new StartCombatMessage(
+            "Ambush",
+            [new CombatantBlueprint("Goblin", MaxHp: 7), new CombatantBlueprint("Goblin", MaxHp: 7)],
+            party));
+
+        Assert.Equal("Ambush", viewModel.CombatName);
+        Assert.Same(party, viewModel.SelectedParty);
+        Assert.Equal(3, viewModel.Combatants.Count);
+        Assert.Contains(viewModel.Combatants, row => row.Name == "Aria");
+        Assert.Contains(viewModel.Combatants, row => row.Name == "Goblin 1");
+        Assert.Contains(viewModel.Combatants, row => row.Name == "Goblin 2");
+        Assert.DoesNotContain(viewModel.Combatants, row => row.Name == "Leftover");
+    }
+
     private static InitiativeTrackerViewModel CreateViewModel(int dieResult = 10, params Party[] parties)
+    {
+        return CreateViewModel(new WeakReferenceMessenger(), dieResult, parties);
+    }
+
+    private static InitiativeTrackerViewModel CreateViewModel(IMessenger messenger, int dieResult = 10, params Party[] parties)
     {
         return new InitiativeTrackerViewModel(
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(dieResult))),
-            new InMemoryPartyRepository(parties));
+            new InMemoryPartyRepository(parties),
+            messenger);
     }
 
     private static InitiativeTrackerViewModel CreateViewModelWithGoblins(int quantity)

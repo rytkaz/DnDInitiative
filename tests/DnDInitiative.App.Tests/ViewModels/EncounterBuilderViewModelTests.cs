@@ -1,4 +1,7 @@
-﻿using DnDInitiative.App.Tests.Fakes;
+﻿using CommunityToolkit.Mvvm.Messaging;
+
+using DnDInitiative.App.Messages;
+using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
@@ -122,12 +125,37 @@ public class EncounterBuilderViewModelTests
         Assert.Equal(100, viewModel.TotalXp);
     }
 
-    private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(InMemoryEncounterRepository? encounters = null)
+    [Fact]
+    public async Task StartEncounterCommand_SendsTheCreaturesAndSelectedParty()
+    {
+        var messenger = new WeakReferenceMessenger();
+        var recorder = new MessageRecorder();
+        messenger.Register<StartCombatMessage>(recorder);
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(messenger: messenger);
+        viewModel.NewEncounterCommand.Execute(null);
+        SelectedEditor(viewModel).Name = "Ambush";
+        viewModel.SelectedStatBlock = _goblin;
+        viewModel.AddCreatureCommand.Execute(null);
+        Assert.Single(SelectedEditor(viewModel).Creatures).Quantity = 3;
+
+        viewModel.StartEncounterCommand.Execute(null);
+
+        StartCombatMessage message = Assert.IsType<StartCombatMessage>(recorder.Received);
+        Assert.Equal("Ambush", message.Name);
+        Assert.Same(_party, message.Party);
+        Assert.Equal(3, message.Creatures.Count);
+        Assert.All(message.Creatures, creature => Assert.Equal("Goblin", creature.Name));
+    }
+
+    private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(
+        InMemoryEncounterRepository? encounters = null,
+        IMessenger? messenger = null)
     {
         var viewModel = new EncounterBuilderViewModel(
             encounters ?? new InMemoryEncounterRepository(),
             new InMemoryStatBlockRepository(_goblin),
-            new InMemoryPartyRepository(_party));
+            new InMemoryPartyRepository(_party),
+            messenger ?? new WeakReferenceMessenger());
         await viewModel.LoadCommand.ExecuteAsync(null);
         return viewModel;
     }
