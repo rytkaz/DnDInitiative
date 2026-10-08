@@ -1,8 +1,11 @@
 ﻿using System.Windows;
+using System.IO;
 
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
+using DnDInitiative.Core.Parties;
+using DnDInitiative.Infrastructure.Parties;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +34,13 @@ public partial class App : Application
         services.AddSingleton<IDiceRoller, RandomDiceRoller>();
         services.AddSingleton<InitiativeRoller>();
         services.AddSingleton<CombatantFactory>();
+
+        // Storage
+        string dataDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "DnDInitiative");
+
+        services.AddSingleton<IPartyRepository>(_ => new JsonPartyRepository(Path.Combine(dataDirectory, "parties.json")));
 
         // View models
         services.AddSingleton<InitiativeTrackerViewModel>();

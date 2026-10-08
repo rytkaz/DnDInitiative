@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+        xmlns:views="clr-namespace:DnDInitiative.App.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
         Title="DnD Initiative"
@@ -26,6 +27,9 @@
                         Margin="24"
                         Content="{Binding CurrentPage}">
             <ContentControl.Resources>
+                <DataTemplate DataType="{x:Type viewModels:PartySetupViewModel}">
+                    <views:PartySetupView />
+                </DataTemplate>
                 <DataTemplate DataType="{x:Type viewModels:PageViewModel}">
                     <StackPanel>
                         <TextBlock FontSize="28"
