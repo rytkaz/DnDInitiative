@@ -187,11 +187,10 @@ public class InitiativeTrackerViewModelTests
         viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Goblin");
 
         Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
-        Assert.True(viewModel.IsStatBlockPanelVisible);
     }
 
     [Fact]
-    public void SelectingACombatant_WithoutAStatBlock_HidesThePanel()
+    public void SelectingACombatant_WithoutAStatBlock_EmptiesThePanel()
     {
         InitiativeTrackerViewModel viewModel = CreateViewModelInCombatWithGoblinAndPlayer();
         viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Goblin");
@@ -199,18 +198,6 @@ public class InitiativeTrackerViewModelTests
         viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Aria");
 
         Assert.Null(viewModel.StatBlockDetails);
-        Assert.False(viewModel.IsStatBlockPanelVisible);
-    }
-
-    [Fact]
-    public void ShowStatBlockPanel_TurnedOff_HidesThePanelEvenWithAStatBlock()
-    {
-        InitiativeTrackerViewModel viewModel = CreateViewModelInCombatWithGoblinAndPlayer();
-        viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Goblin");
-
-        viewModel.ShowStatBlockPanel = false;
-
-        Assert.False(viewModel.IsStatBlockPanelVisible);
     }
 
     private static InitiativeTrackerViewModel CreateViewModelInCombatWithGoblinAndPlayer()

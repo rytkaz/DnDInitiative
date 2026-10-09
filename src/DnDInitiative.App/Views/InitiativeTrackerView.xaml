@@ -129,7 +129,7 @@
         Padding="12"
         BorderBrush="LightGray"
         BorderThickness="1"
-        Visibility="{Binding IsStatBlockPanelVisible, Converter={StaticResource BoolToVisibility}}">
+        Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <views:StatBlockDetailsView Margin="0,0,8,0" DataContext="{Binding StatBlockDetails}" />
             </ScrollViewer>

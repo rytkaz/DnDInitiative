@@ -56,11 +56,9 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private int? _newArmorClass;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsStatBlockPanelVisible))]
     private StatBlockDetailsViewModel? _statBlockDetails;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsStatBlockPanelVisible))]
     private bool _showStatBlockPanel = true;
 
     public InitiativeTrackerViewModel(
@@ -86,8 +84,6 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private bool HasSelectedCombatant => SelectedCombatant is not null;
 
     private bool CanAddCreature => !string.IsNullOrWhiteSpace(NewName) && NewMaxHp is null or >= 0;
-
-    public bool IsStatBlockPanelVisible => ShowStatBlockPanel && StatBlockDetails is not null;
 
     [RelayCommand]
     private async Task LoadPartiesAsync()
