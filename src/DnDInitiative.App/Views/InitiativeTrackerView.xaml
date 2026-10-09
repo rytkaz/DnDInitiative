@@ -23,18 +23,23 @@
                 BorderBrush="Gray"
                 BorderThickness="1">
                 <StackPanel>
-                    <TextBox Width="140" Text="{Binding HpChangeAmount, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox MinWidth="140" Text="{Binding HpChangeAmount, TargetNullValue='', UpdateSourceTrigger=PropertyChanged}" />
                     <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
                         <Button Padding="8,2"
-                            Click="OnHpPopupActionClick"
-                            Command="{Binding DamageCommand}"
-                            Content="Damage"
-                            IsDefault="True" />
+                                Click="OnHpPopupActionClick"
+                                Command="{Binding DamageCommand}"
+                                Content="Damage"
+                                IsDefault="True" />
                         <Button Margin="8,0,0,0"
-                            Padding="8,2"
-                            Click="OnHpPopupActionClick"
-                            Command="{Binding HealCommand}"
-                            Content="Heal" />
+                                Padding="8,2"
+                                Click="OnHpPopupActionClick"
+                                Command="{Binding HealCommand}"
+                                Content="Heal" />
+                        <Button Margin="8,0,0,0"
+                                Padding="8,2"
+                                Click="OnHpPopupActionClick"
+                                Command="{Binding SetHpCommand}"
+                                Content="Set to" />
                     </StackPanel>
                 </StackPanel>
             </Border>

@@ -17,6 +17,7 @@ public sealed partial class CombatantViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DamageCommand))]
     [NotifyCanExecuteChangedFor(nameof(HealCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SetHpCommand))]
     private int? _hpChangeAmount;
 
     public CombatantViewModel(Combatant combatant, Action<Combatant, int> changeInitiative)
@@ -81,6 +82,9 @@ public sealed partial class CombatantViewModel : ObservableObject
 
     private bool CanChangeHp => HpChangeAmount is > 0 && Combatant.TracksHp;
 
+    // Unlike damage and healing, zero is a meaningful value to set.
+    private bool CanSetHp => HpChangeAmount is >= 0 && Combatant.TracksHp;
+
     [RelayCommand(CanExecute = nameof(CanChangeHp))]
     private void Damage()
     {
@@ -103,6 +107,18 @@ public sealed partial class CombatantViewModel : ObservableObject
         }
     }
 
+    [RelayCommand(CanExecute = nameof(CanSetHp))]
+    private void SetHp()
+    {
+        if (HpChangeAmount is int amount)
+        {
+            // The combatant clamps the value to its maximum.
+            Combatant.SetCurrentHp(amount);
+            HpChangeAmount = null;
+            OnHpChanged();
+        }
+    }
+
     private void OnHpChanged()
     {
         OnPropertyChanged(nameof(CurrentHp));
@@ -110,5 +126,6 @@ public sealed partial class CombatantViewModel : ObservableObject
         OnPropertyChanged(nameof(TracksHp));
         DamageCommand.NotifyCanExecuteChanged();
         HealCommand.NotifyCanExecuteChanged();
+        SetHpCommand.NotifyCanExecuteChanged();
     }
 }
