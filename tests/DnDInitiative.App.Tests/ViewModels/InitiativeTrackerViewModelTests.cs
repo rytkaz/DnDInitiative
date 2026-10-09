@@ -305,6 +305,71 @@ public class InitiativeTrackerViewModelTests
         Assert.Equal("Leftover", Assert.Single(viewModel.Combatants).Name);
     }
 
+    [Fact]
+    public async Task ClearPartyCommand_UnselectsTheParty_SoTheNextCombatStartsEmpty()
+    {
+        var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
+        InitiativeTrackerViewModel viewModel = CreateViewModel(10, party);
+        await viewModel.LoadPartiesCommand.ExecuteAsync(null);
+        Assert.False(viewModel.ClearPartyCommand.CanExecute(null));
+
+        viewModel.SelectedParty = Assert.Single(viewModel.Parties);
+        Assert.True(viewModel.ClearPartyCommand.CanExecute(null));
+
+        viewModel.ClearPartyCommand.Execute(null);
+        viewModel.NewCombatCommand.Execute(null);
+
+        Assert.Null(viewModel.SelectedParty);
+        Assert.Empty(viewModel.Combatants);
+    }
+
+    [Fact]
+    public void SetHpCommand_SetsCurrentHpAndStaysWithinTheMaximum()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModel();
+        viewModel.NewName = "Goblin";
+        viewModel.NewMaxHp = 7;
+        viewModel.AddCreatureCommand.Execute(null);
+        CombatantViewModel goblin = viewModel.Combatants[0];
+
+        goblin.HpChangeAmount = 3;
+        goblin.SetHpCommand.Execute(null);
+        Assert.Equal(3, goblin.CurrentHp);
+        Assert.Null(goblin.HpChangeAmount);
+
+        goblin.HpChangeAmount = 50;
+        goblin.SetHpCommand.Execute(null);
+        Assert.Equal(7, goblin.CurrentHp);
+    }
+
+    [Fact]
+    public void SetHpCommand_AcceptsZero_UnlikeDamage()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModel();
+        viewModel.NewName = "Goblin";
+        viewModel.NewMaxHp = 7;
+        viewModel.AddCreatureCommand.Execute(null);
+        CombatantViewModel goblin = viewModel.Combatants[0];
+
+        goblin.HpChangeAmount = 0;
+
+        Assert.True(goblin.SetHpCommand.CanExecute(null));
+        Assert.False(goblin.DamageCommand.CanExecute(null));
+    }
+
+    [Theory]
+    [InlineData(500, 500)]
+    [InlineData(10, 260)]
+    [InlineData(5000, 800)]
+    public void StatBlockPanelWidth_IsKeptWithinLimits(double requested, double expected)
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModel();
+
+        viewModel.StatBlockPanelWidth = requested;
+
+        Assert.Equal(expected, viewModel.StatBlockPanelWidth);
+    }
+
     private static InitiativeTrackerViewModel CreateViewModelWithLibrary(params StatBlock[] statBlocks)
     {
         return new InitiativeTrackerViewModel(
