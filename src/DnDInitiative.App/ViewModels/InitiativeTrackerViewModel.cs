@@ -8,6 +8,7 @@ using DnDInitiative.App.Messages;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Parties;
+using DnDInitiative.Core.StatBlocks;
 
 namespace DnDInitiative.App.ViewModels;
 
@@ -17,6 +18,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     private readonly CombatantFactory _combatantFactory;
     private readonly IPartyRepository _partyRepository;
+    private readonly IStatBlockRepository _statBlockRepository;
     private InitiativeTracker _tracker = new();
     private CombatantNamer _namer = new();
 
@@ -53,15 +55,25 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     [ObservableProperty]
     private int? _newArmorClass;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsStatBlockPanelVisible))]
+    private StatBlockDetailsViewModel? _statBlockDetails;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsStatBlockPanelVisible))]
+    private bool _showStatBlockPanel = true;
+
     public InitiativeTrackerViewModel(
         CombatantFactory combatantFactory,
         IPartyRepository partyRepository,
+        IStatBlockRepository statBlockRepository,
         IMessenger messenger)
     {
         ArgumentNullException.ThrowIfNull(messenger);
 
         _combatantFactory = combatantFactory;
         _partyRepository = partyRepository;
+        _statBlockRepository = statBlockRepository;
         messenger.Register<StartCombatMessage>(this);
     }
 
@@ -74,6 +86,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private bool HasSelectedCombatant => SelectedCombatant is not null;
 
     private bool CanAddCreature => !string.IsNullOrWhiteSpace(NewName) && NewMaxHp is null or >= 0;
+
+    public bool IsStatBlockPanelVisible => ShowStatBlockPanel && StatBlockDetails is not null;
 
     [RelayCommand]
     private async Task LoadPartiesAsync()
@@ -247,5 +261,29 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
         AddCombatants(creatures, RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal);
         SyncOrder();
+    }
+
+    partial void OnSelectedCombatantChanged(CombatantViewModel? value)
+    {
+        _ = LoadStatBlockDetailsAsync(value);
+    }
+
+    private async Task LoadStatBlockDetailsAsync(CombatantViewModel? row)
+    {
+        if (row?.Combatant.StatBlockId is not { } statBlockId)
+        {
+            StatBlockDetails = null;
+            return;
+        }
+
+        StatBlock? statBlock = await _statBlockRepository.GetAsync(statBlockId);
+
+        // Another row was selected while this one was loading: drop the stale result.
+        if (!ReferenceEquals(SelectedCombatant, row))
+        {
+            return;
+        }
+
+        StatBlockDetails = statBlock is null ? null : new StatBlockDetailsViewModel(statBlock);
     }
 }

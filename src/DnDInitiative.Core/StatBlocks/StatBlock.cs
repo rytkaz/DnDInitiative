@@ -62,6 +62,6 @@ public sealed record StatBlock
     /// </summary>
     public CombatantBlueprint ToBlueprint(string? displayName = null)
     {
-        return new CombatantBlueprint(displayName ?? Name, InitiativeModifier, HitPoints, ArmorClass);
+        return new CombatantBlueprint(displayName ?? Name, InitiativeModifier, HitPoints, ArmorClass, Id);
     }
 }

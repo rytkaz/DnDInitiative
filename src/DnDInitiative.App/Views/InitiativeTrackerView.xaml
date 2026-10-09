@@ -4,12 +4,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             xmlns:views="clr-namespace:DnDInitiative.App.Views"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:InitiativeTrackerViewModel}"
              d:DesignWidth="900"
              d:DesignHeight="600"
              Loaded="OnLoaded">
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <!-- One popup shared by every row. The code-behind points it at the clicked row. -->
         <Popup x:Key="HpPopup"
            Opened="OnHpPopupOpened"
@@ -115,8 +117,23 @@
             <CheckBox Margin="0,8,0,0"
                       Content="Roll initiative with disadvantage"
                       IsChecked="{Binding RollWithDisadvantage}" />
+            <CheckBox Margin="0,4,0,0"
+                      Content="Show the selected creature's stat block"
+                      IsChecked="{Binding ShowStatBlockPanel}" />
         </StackPanel>
 
+        <!-- Stat block of the selected creature -->
+        <Border DockPanel.Dock="Right"
+        Width="380"
+        Margin="12,0,0,0"
+        Padding="12"
+        BorderBrush="LightGray"
+        BorderThickness="1"
+        Visibility="{Binding IsStatBlockPanelVisible, Converter={StaticResource BoolToVisibility}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <views:StatBlockDetailsView Margin="0,0,8,0" DataContext="{Binding StatBlockDetails}" />
+            </ScrollViewer>
+        </Border>
         <!-- Turn order -->
         <DataGrid AllowDrop="True"
                   AutoGenerateColumns="False"

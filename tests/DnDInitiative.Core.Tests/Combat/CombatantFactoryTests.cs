@@ -74,6 +74,20 @@ public class CombatantFactoryTests
         Assert.Equal(2, dice.RollCount);
     }
 
+    [Fact]
+    public void Create_CarriesTheStatBlockIdOntoTheCombatant()
+    {
+        var factory = FactoryRolling(10, 10);
+        var statBlockId = Guid.NewGuid();
+
+        IReadOnlyList<Combatant> combatants = factory.Create(
+            [new CombatantBlueprint("Goblin", StatBlockId: statBlockId), new CombatantBlueprint("Aria")],
+            new CombatantNamer());
+
+        Assert.Equal(statBlockId, combatants[0].StatBlockId);
+        Assert.Null(combatants[1].StatBlockId);
+    }
+
     private static CombatantFactory FactoryRolling(params int[] dice)
     {
         return new CombatantFactory(new InitiativeRoller(new SequenceDiceRoller(dice)));

@@ -6,6 +6,7 @@ using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Parties;
+using DnDInitiative.Core.StatBlocks;
 
 namespace DnDInitiative.App.Tests.ViewModels;
 
@@ -178,6 +179,54 @@ public class InitiativeTrackerViewModelTests
         Assert.DoesNotContain(viewModel.Combatants, row => row.Name == "Leftover");
     }
 
+    [Fact]
+    public void SelectingACombatant_WithAStatBlock_ShowsItInThePanel()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelInCombatWithGoblinAndPlayer();
+
+        viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Goblin");
+
+        Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
+        Assert.True(viewModel.IsStatBlockPanelVisible);
+    }
+
+    [Fact]
+    public void SelectingACombatant_WithoutAStatBlock_HidesThePanel()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelInCombatWithGoblinAndPlayer();
+        viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Goblin");
+
+        viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Aria");
+
+        Assert.Null(viewModel.StatBlockDetails);
+        Assert.False(viewModel.IsStatBlockPanelVisible);
+    }
+
+    [Fact]
+    public void ShowStatBlockPanel_TurnedOff_HidesThePanelEvenWithAStatBlock()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelInCombatWithGoblinAndPlayer();
+        viewModel.SelectedCombatant = viewModel.Combatants.Single(row => row.Name == "Goblin");
+
+        viewModel.ShowStatBlockPanel = false;
+
+        Assert.False(viewModel.IsStatBlockPanelVisible);
+    }
+
+    private static InitiativeTrackerViewModel CreateViewModelInCombatWithGoblinAndPlayer()
+    {
+        var goblin = new StatBlock { Id = Guid.NewGuid(), Name = "Goblin", HitPoints = 10 };
+        var messenger = new WeakReferenceMessenger();
+        var viewModel = new InitiativeTrackerViewModel(
+            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
+            new InMemoryPartyRepository(),
+            new InMemoryStatBlockRepository(goblin),
+            messenger);
+
+        messenger.Send(new StartCombatMessage("Ambush", [goblin.ToBlueprint(), new CombatantBlueprint("Aria")], Party: null));
+        return viewModel;
+    }
+
     private static InitiativeTrackerViewModel CreateViewModel(int dieResult = 10, params Party[] parties)
     {
         return CreateViewModel(new WeakReferenceMessenger(), dieResult, parties);
@@ -188,6 +237,7 @@ public class InitiativeTrackerViewModelTests
         return new InitiativeTrackerViewModel(
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(dieResult))),
             new InMemoryPartyRepository(parties),
+            new InMemoryStatBlockRepository(),
             messenger);
     }
 

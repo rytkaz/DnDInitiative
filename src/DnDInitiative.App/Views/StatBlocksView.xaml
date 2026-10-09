@@ -6,6 +6,7 @@
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
              xmlns:formatting="clr-namespace:DnDInitiative.App.Formatting"
              xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
+             xmlns:views="clr-namespace:DnDInitiative.App.Views"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:StatBlocksViewModel}"
              d:DesignWidth="900"
@@ -13,14 +14,6 @@
              Loaded="OnLoaded">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
-
-        <!-- "Label value" on one wrapping line, with the label in bold. -->
-        <DataTemplate x:Key="LabeledValueTemplate">
-            <TextBlock Margin="0,2" TextWrapping="Wrap">
-                <Run FontWeight="Bold" Text="{Binding Label, Mode=OneWay}" />
-                <Span formatting:MarkdownText.Text="{Binding Value}" />
-            </TextBlock>
-        </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
@@ -78,50 +71,7 @@
         <ScrollViewer Grid.Column="2"
                       VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding IsBrowsing, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel DataContext="{Binding Details}">
-                <TextBlock FontSize="26"
-                           FontWeight="SemiBold"
-                           Text="{Binding Name}" />
-                <TextBlock Margin="0,0,0,12"
-                           FontStyle="Italic"
-                           Text="{Binding Summary}" />
-
-                <ItemsControl ItemTemplate="{StaticResource LabeledValueTemplate}" ItemsSource="{Binding CoreStats}" />
-
-                <ItemsControl Margin="0,12" ItemsSource="{Binding Abilities}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Rows="1" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel>
-                                <TextBlock HorizontalAlignment="Center"
-                                           FontWeight="Bold"
-                                           Text="{Binding Label}" />
-                                <TextBlock HorizontalAlignment="Center" Text="{Binding Value}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <ItemsControl ItemTemplate="{StaticResource LabeledValueTemplate}" ItemsSource="{Binding OtherStats}" />
-
-                <ItemsControl ItemsSource="{Binding Sections}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="0,16,0,0">
-                                <TextBlock FontSize="18"
-                                           FontWeight="SemiBold"
-                                           Text="{Binding Title}" />
-                                <Separator Margin="0,2,0,6" />
-                                <ItemsControl ItemTemplate="{StaticResource LabeledValueTemplate}" ItemsSource="{Binding Entries}" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
+            <views:StatBlockDetailsView DataContext="{Binding Details}" />
         </ScrollViewer>
 
         <!-- Right: editor -->

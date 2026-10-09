@@ -26,7 +26,9 @@ public class StatBlockTests
 
         CombatantBlueprint blueprint = goblin.ToBlueprint();
 
-        Assert.Equal(new CombatantBlueprint("Goblin", InitiativeModifier: 2, MaxHp: 10, ArmorClass: 15), blueprint);
+        Assert.Equal(
+            new CombatantBlueprint("Goblin", InitiativeModifier: 2, MaxHp: 10, ArmorClass: 15, StatBlockId: goblin.Id),
+            blueprint);
     }
 
     [Fact]

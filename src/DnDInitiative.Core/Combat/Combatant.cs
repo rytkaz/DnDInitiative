@@ -6,15 +6,24 @@
 /// </summary>
 public sealed class Combatant
 {
-    public Combatant(string name, int initiative, int? maxHp = null, int? armorClass = null)
+    public Combatant(
+        string name,
+        int initiative,
+        int? maxHp = null,
+        int? armorClass = null,
+        Guid? statBlockId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         Name = name;
         Initiative = initiative;
         ArmorClass = armorClass;
+        StatBlockId = statBlockId;
         SetMaxHp(maxHp);
     }
+
+    /// <summary>The stat block this combatant was created from, if any.</summary>
+    public Guid? StatBlockId { get; }
 
     public Guid Id { get; } = Guid.NewGuid();
 

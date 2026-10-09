@@ -19,6 +19,7 @@ public class MainViewModelTests
         var tracker = new InitiativeTrackerViewModel(
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
             parties,
+            statBlocks,
             messenger);
         var encounterBuilder = new EncounterBuilderViewModel(
             new InMemoryEncounterRepository(),

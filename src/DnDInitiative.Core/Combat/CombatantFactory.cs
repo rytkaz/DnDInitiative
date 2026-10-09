@@ -30,7 +30,7 @@ public sealed class CombatantFactory
             CombatantBlueprint blueprint = blueprints[i];
             InitiativeRoll roll = _initiativeRoller.Roll(blueprint.InitiativeModifier, rollMode);
 
-            combatants.Add(new Combatant(names[i], roll.Total, blueprint.MaxHp, blueprint.ArmorClass));
+            combatants.Add(new Combatant(names[i], roll.Total, blueprint.MaxHp, blueprint.ArmorClass, blueprint.StatBlockId));
         }
 
         return combatants;
