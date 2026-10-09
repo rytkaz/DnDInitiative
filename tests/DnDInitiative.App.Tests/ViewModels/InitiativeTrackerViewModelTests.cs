@@ -200,6 +200,76 @@ public class InitiativeTrackerViewModelTests
         Assert.Null(viewModel.StatBlockDetails);
     }
 
+    [Fact]
+    public async Task AddFromLibraryCommand_AddsTheSelectedStatBlockWithItsNumbers()
+    {
+        var goblin = new StatBlock
+        {
+            Id = Guid.NewGuid(),
+            Name = "Goblin",
+            HitPoints = 10,
+            ArmorClass = 15,
+            InitiativeModifier = 2,
+        };
+        InitiativeTrackerViewModel viewModel = CreateViewModelWithLibrary(goblin);
+        await viewModel.LoadLibraryCommand.ExecuteAsync(null);
+        viewModel.SelectedLibraryStatBlock = Assert.Single(viewModel.LibraryResults);
+        viewModel.NewQuantity = 2;
+
+        await viewModel.AddFromLibraryCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, viewModel.Combatants.Count);
+        CombatantViewModel first = viewModel.Combatants[0];
+        Assert.Equal("Goblin 1", first.Name);
+        Assert.Equal(12, first.Initiative);
+        Assert.Equal("10 / 10", first.HpText);
+        Assert.Equal(15, first.ArmorClass);
+        Assert.Equal(goblin.Id, first.Combatant.StatBlockId);
+    }
+
+    [Fact]
+    public async Task AddFromLibraryCommand_NothingSelected_CannotExecute()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelWithLibrary(new StatBlock { Id = Guid.NewGuid(), Name = "Goblin" });
+        await viewModel.LoadLibraryCommand.ExecuteAsync(null);
+
+        Assert.False(viewModel.AddFromLibraryCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task LibrarySearchText_FiltersTheLibraryList()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelWithLibrary(
+            new StatBlock { Id = Guid.NewGuid(), Name = "Goblin" },
+            new StatBlock { Id = Guid.NewGuid(), Name = "Ogre" });
+        await viewModel.LoadLibraryCommand.ExecuteAsync(null);
+        Assert.Equal(2, viewModel.LibraryResults.Count);
+
+        viewModel.LibrarySearchText = "og";
+
+        Assert.Equal("Ogre", Assert.Single(viewModel.LibraryResults).Name);
+    }
+
+    [Fact]
+    public async Task SelectingALibraryEntry_ShowsItsStatBlockInThePanel()
+    {
+        InitiativeTrackerViewModel viewModel = CreateViewModelWithLibrary(new StatBlock { Id = Guid.NewGuid(), Name = "Goblin" });
+        await viewModel.LoadLibraryCommand.ExecuteAsync(null);
+
+        viewModel.SelectedLibraryStatBlock = Assert.Single(viewModel.LibraryResults);
+
+        Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
+    }
+
+    private static InitiativeTrackerViewModel CreateViewModelWithLibrary(params StatBlock[] statBlocks)
+    {
+        return new InitiativeTrackerViewModel(
+            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
+            new InMemoryPartyRepository(),
+            new InMemoryStatBlockRepository(statBlocks),
+            new WeakReferenceMessenger());
+    }
+
     private static InitiativeTrackerViewModel CreateViewModelInCombatWithGoblinAndPlayer()
     {
         var goblin = new StatBlock { Id = Guid.NewGuid(), Name = "Goblin", HitPoints = 10 };

@@ -23,6 +23,7 @@ public partial class InitiativeTrackerView : UserControl
         if (DataContext is InitiativeTrackerViewModel viewModel)
         {
             viewModel.LoadPartiesCommand.Execute(null);
+            viewModel.LoadLibraryCommand.Execute(null);
         }
     }
 

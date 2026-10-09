@@ -15,12 +15,33 @@ namespace DnDInitiative.App.ViewModels;
 public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipient<StartCombatMessage>
 {
     private const int MaxQuantity = 50;
+    private const int LibraryPageSize = 50;
 
     private readonly CombatantFactory _combatantFactory;
     private readonly IPartyRepository _partyRepository;
     private readonly IStatBlockRepository _statBlockRepository;
     private InitiativeTracker _tracker = new();
     private CombatantNamer _namer = new();
+
+    private int _libraryVersion;
+    private bool _hasMoreLibraryResults;
+
+    // Increased for every stat block shown, so a slow load cannot overwrite a newer one.
+    private int _statBlockDetailsVersion;
+
+    public ObservableCollection<StatBlockSummary> LibraryResults { get; } = [];
+
+    private bool HasSelectedLibraryStatBlock => SelectedLibraryStatBlock is not null;
+
+    [ObservableProperty]
+    private bool _isLibraryExpanded = true;
+
+    [ObservableProperty]
+    private string _librarySearchText = "";
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddFromLibraryCommand))]
+    private StatBlockSummary? _selectedLibraryStatBlock;
 
     [ObservableProperty]
     private string _combatName = "";
@@ -261,25 +282,114 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     partial void OnSelectedCombatantChanged(CombatantViewModel? value)
     {
-        _ = LoadStatBlockDetailsAsync(value);
+        _ = ShowStatBlockAsync(value?.Combatant.StatBlockId);
     }
 
-    private async Task LoadStatBlockDetailsAsync(CombatantViewModel? row)
+    partial void OnSelectedLibraryStatBlockChanged(StatBlockSummary? value)
     {
-        if (row?.Combatant.StatBlockId is not { } statBlockId)
+        // The list clears its selection whenever it is refilled. That should not blank the panel.
+        if (value is not null)
+        {
+            _ = ShowStatBlockAsync(value.Id);
+        }
+    }
+
+    private async Task ShowStatBlockAsync(Guid? statBlockId)
+    {
+        int version = ++_statBlockDetailsVersion;
+
+        if (statBlockId is not { } id)
         {
             StatBlockDetails = null;
             return;
         }
 
-        StatBlock? statBlock = await _statBlockRepository.GetAsync(statBlockId);
+        StatBlock? statBlock = await _statBlockRepository.GetAsync(id);
 
-        // Another row was selected while this one was loading: drop the stale result.
-        if (!ReferenceEquals(SelectedCombatant, row))
+        // Something else was selected while this one was loading: drop the stale result.
+        if (version != _statBlockDetailsVersion)
         {
             return;
         }
 
         StatBlockDetails = statBlock is null ? null : new StatBlockDetailsViewModel(statBlock);
+    }
+
+    partial void OnLibrarySearchTextChanged(string value)
+    {
+        _ = RefreshLibraryAsync();
+    }
+
+    [RelayCommand]
+    private Task LoadLibraryAsync()
+    {
+        return RefreshLibraryAsync();
+    }
+
+    [RelayCommand]
+    private async Task LoadMoreLibraryResultsAsync()
+    {
+        if (!_hasMoreLibraryResults)
+        {
+            return;
+        }
+
+        int version = _libraryVersion;
+        IReadOnlyList<StatBlockSummary> page = await _statBlockRepository.SearchAsync(
+            LibrarySearchText,
+            LibraryPageSize,
+            skip: LibraryResults.Count);
+
+        if (version == _libraryVersion)
+        {
+            AppendLibraryPage(page);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedLibraryStatBlock))]
+    private async Task AddFromLibraryAsync()
+    {
+        if (SelectedLibraryStatBlock is not { } summary)
+        {
+            return;
+        }
+
+        StatBlock? statBlock = await _statBlockRepository.GetAsync(summary.Id);
+        if (statBlock is null)
+        {
+            return;
+        }
+
+        List<CombatantBlueprint> blueprints = Enumerable
+            .Repeat(statBlock.ToBlueprint(), Math.Clamp(NewQuantity, 1, MaxQuantity))
+            .ToList();
+
+        AddCombatants(blueprints, RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal);
+        SyncOrder();
+    }
+
+    private async Task RefreshLibraryAsync()
+    {
+        int version = ++_libraryVersion;
+        IReadOnlyList<StatBlockSummary> firstPage = await _statBlockRepository.SearchAsync(LibrarySearchText, LibraryPageSize);
+
+        // A newer refresh started while this one was waiting: let it fill the list.
+        if (version != _libraryVersion)
+        {
+            return;
+        }
+
+        LibraryResults.Clear();
+        AppendLibraryPage(firstPage);
+    }
+
+    private void AppendLibraryPage(IReadOnlyList<StatBlockSummary> page)
+    {
+        foreach (StatBlockSummary summary in page)
+        {
+            LibraryResults.Add(summary);
+        }
+
+        _hasMoreLibraryResults = page.Count == LibraryPageSize;
     }
 }

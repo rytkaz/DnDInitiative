@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
              xmlns:views="clr-namespace:DnDInitiative.App.Views"
+             xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:InitiativeTrackerViewModel}"
              d:DesignWidth="900"
@@ -118,11 +119,11 @@
                       Content="Roll initiative with disadvantage"
                       IsChecked="{Binding RollWithDisadvantage}" />
             <CheckBox Margin="0,4,0,0"
-                      Content="Show the selected creature's stat block"
+                      Content="Show the library and stat block panel"
                       IsChecked="{Binding ShowStatBlockPanel}" />
         </StackPanel>
 
-        <!-- Stat block of the selected creature -->
+        <!-- Library picker, and the stat block of whatever was clicked last -->
         <Border DockPanel.Dock="Right"
         Width="380"
         Margin="12,0,0,0"
@@ -130,9 +131,52 @@
         BorderBrush="LightGray"
         BorderThickness="1"
         Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <views:StatBlockDetailsView Margin="0,0,8,0" DataContext="{Binding StatBlockDetails}" />
-            </ScrollViewer>
+            <DockPanel>
+                <Expander DockPanel.Dock="Top" IsExpanded="{Binding IsLibraryExpanded}">
+                    <Expander.Header>
+                        <TextBlock FontWeight="SemiBold" Text="Add from library" />
+                    </Expander.Header>
+
+                    <DockPanel Height="190" Margin="0,4,0,0">
+                        <TextBox DockPanel.Dock="Top"
+                 Margin="0,0,0,4"
+                 Text="{Binding LibrarySearchText, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <StackPanel DockPanel.Dock="Bottom"
+                    Margin="0,4,0,0"
+                    Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="Count" />
+                            <TextBox Width="40"
+                     Margin="8,0,0,0"
+                     VerticalContentAlignment="Center"
+                     Text="{Binding NewQuantity, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Margin="8,0,0,0"
+                    Padding="12,4"
+                    Command="{Binding AddFromLibraryCommand}"
+                    Content="Add to combat" />
+                        </StackPanel>
+
+                        <ListBox behaviors:LoadMoreOnScroll.Command="{Binding LoadMoreLibraryResultsCommand}"
+                 ItemsSource="{Binding LibraryResults}"
+                 SelectedItem="{Binding SelectedLibraryStatBlock}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock>
+                        <Run Text="{Binding Name, Mode=OneWay}" />
+                        <Run Foreground="Gray" Text="{Binding ChallengeRating, Mode=OneWay, StringFormat='CR {0}'}" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Expander>
+
+                <Separator DockPanel.Dock="Top" Margin="0,12" />
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <views:StatBlockDetailsView Margin="0,0,8,0" DataContext="{Binding StatBlockDetails}" />
+                </ScrollViewer>
+            </DockPanel>
         </Border>
         <!-- Turn order -->
         <DataGrid AllowDrop="True"
