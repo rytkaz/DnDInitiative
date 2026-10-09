@@ -121,6 +121,84 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
         Assert.Equal(keep.Id, Assert.Single(await repository.GetAllAsync()).Id);
     }
 
+    [Fact]
+    public async Task SearchAsync_FindsNamesContainingTheTextIgnoringCaseSortedByName()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        await repository.SaveManyAsync([Create("Hobgoblin"), Create("Ogre"), Create("goblin"), Create("Goblin Boss")]);
+
+        IReadOnlyList<StatBlockSummary> results = await repository.SearchAsync("GOB", limit: 10);
+
+        Assert.Equal(["goblin", "Goblin Boss", "Hobgoblin"], results.Select(summary => summary.Name));
+    }
+
+    [Fact]
+    public async Task SearchAsync_EmptyText_ReturnsEverythingUpToTheLimit()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        await repository.SaveManyAsync([Create("Cat"), Create("Ape"), Create("Bat")]);
+
+        IReadOnlyList<StatBlockSummary> results = await repository.SearchAsync("  ", limit: 2);
+
+        Assert.Equal(["Ape", "Bat"], results.Select(summary => summary.Name));
+    }
+
+    [Fact]
+    public async Task SearchAsync_ReturnsTheSummaryFields()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        StatBlock goblin = Create("Goblin") with { ChallengeRating = "1/4", Source = "MM" };
+        await repository.SaveAsync(goblin);
+
+        StatBlockSummary summary = Assert.Single(await repository.SearchAsync("goblin", limit: 10));
+
+        Assert.Equal(new StatBlockSummary(goblin.Id, "Goblin", "1/4", "MM"), summary);
+    }
+
+    [Theory]
+    [InlineData("%", "100% Ooze")]
+    [InlineData("_", "Half_Dragon")]
+    public async Task SearchAsync_WildcardCharacters_AreMatchedLiterally(string searchText, string expectedName)
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        await repository.SaveManyAsync([Create("100% Ooze"), Create("Half_Dragon"), Create("Goblin")]);
+
+        IReadOnlyList<StatBlockSummary> results = await repository.SearchAsync(searchText, limit: 10);
+
+        Assert.Equal(expectedName, Assert.Single(results).Name);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsTheFullStatBlockOrNull()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        StatBlock goblin = Create("Goblin") with { Actions = [new StatBlockFeature("Scimitar", "Melee.")] };
+        await repository.SaveAsync(goblin);
+
+        StatBlock? loaded = await repository.GetAsync(goblin.Id);
+
+        Assert.Equal("Goblin", loaded?.Name);
+        Assert.Equal("Scimitar", Assert.Single(loaded?.Actions ?? []).Name);
+        Assert.Null(await repository.GetAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task GetManyAsync_ReturnsOnlyTheRequestedStatBlocksThatExist()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        StatBlock goblin = Create("Goblin");
+        StatBlock ogre = Create("Ogre");
+        StatBlock troll = Create("Troll");
+        await repository.SaveManyAsync([goblin, ogre, troll]);
+
+        IReadOnlyList<StatBlock> loaded = await repository.GetManyAsync([goblin.Id, troll.Id, Guid.NewGuid()]);
+
+        Assert.Equal(2, loaded.Count);
+        Assert.Contains(loaded, statBlock => statBlock.Id == goblin.Id);
+        Assert.Contains(loaded, statBlock => statBlock.Id == troll.Id);
+        Assert.Empty(await repository.GetManyAsync([]));
+    }
+
     private static StatBlock Create(string name)
     {
         return new StatBlock { Id = Guid.NewGuid(), Name = name };

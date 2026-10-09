@@ -9,6 +9,8 @@ namespace DnDInitiative.Infrastructure.StatBlocks;
 
 internal sealed class SqliteStatBlockRepository : IStatBlockRepository
 {
+    private const string LikeEscape = "\\";
+
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
     public SqliteStatBlockRepository(IDbContextFactory<AppDbContext> contextFactory)
@@ -162,5 +164,81 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository
         return string.IsNullOrEmpty(json)
             ? []
             : JsonSerializer.Deserialize<List<StatBlockFeature>>(json) ?? [];
+    }
+
+    public async Task<IReadOnlyList<StatBlockSummary>> SearchAsync(
+        string searchText,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(searchText);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        IQueryable<StatBlockEntity> query = db.StatBlocks.AsNoTracking();
+
+        string trimmed = searchText.Trim();
+        if (trimmed.Length > 0)
+        {
+            string pattern = "%" + EscapeLike(trimmed) + "%";
+            query = query.Where(statBlock => EF.Functions.Like(statBlock.Name, pattern, LikeEscape));
+        }
+
+        return await query
+            .OrderBy(statBlock => statBlock.Name)
+            .Take(limit)
+            .Select(statBlock => new StatBlockSummary(
+                statBlock.Id,
+                statBlock.Name,
+                statBlock.ChallengeRating,
+                statBlock.Source))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<StatBlock?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        StatBlockEntity? entity = await db.StatBlocks
+            .AsNoTracking()
+            .SingleOrDefaultAsync(statBlock => statBlock.Id == id, cancellationToken)
+            .ConfigureAwait(false);
+
+        return entity is null ? null : ToDomain(entity);
+    }
+
+    public async Task<IReadOnlyList<StatBlock>> GetManyAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(ids);
+
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        List<Guid> distinctIds = ids.Distinct().ToList();
+
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        List<StatBlockEntity> entities = await db.StatBlocks
+            .AsNoTracking()
+            .Where(statBlock => distinctIds.Contains(statBlock.Id))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return entities.Select(ToDomain).ToList();
+    }
+
+    // In a LIKE pattern, % and _ are wildcards. Typed by a user, they should match themselves.
+    private static string EscapeLike(string text)
+    {
+        return text
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
     }
 }

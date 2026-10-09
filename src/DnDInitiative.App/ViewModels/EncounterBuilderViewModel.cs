@@ -14,14 +14,16 @@ namespace DnDInitiative.App.ViewModels;
 
 public sealed partial class EncounterBuilderViewModel : PageViewModel
 {
+    private const int SearchLimit = 200;
+
     private readonly IEncounterRepository _encounterRepository;
     private readonly IStatBlockRepository _statBlockRepository;
     private readonly IPartyRepository _partyRepository;
     private readonly IMessenger _messenger;
     private readonly IClipboardService _clipboard;
 
-    private List<StatBlock> _statBlocks = [];
-    private Dictionary<Guid, StatBlock> _statBlocksById = new();
+    // Only the stat blocks that encounters on this page actually use.
+    private readonly Dictionary<Guid, StatBlock> _statBlocksById = new();
     private bool _encountersLoaded;
 
     [ObservableProperty]
@@ -41,7 +43,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCreatureCommand))]
-    private StatBlock? _selectedStatBlock;
+    private StatBlockSummary? _selectedStatBlock;
 
     [ObservableProperty]
     private XpBudget _budget = new(0, 0, 0);
@@ -75,7 +77,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     public ObservableCollection<Party> Parties { get; } = [];
 
-    public ObservableCollection<StatBlock> FilteredStatBlocks { get; } = [];
+    public ObservableCollection<StatBlockSummary> FilteredStatBlocks { get; } = [];
 
     public bool HasSelectedEncounter => SelectedEncounter is not null;
 
@@ -93,7 +95,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     partial void OnStatBlockSearchTextChanged(string value)
     {
-        ApplyStatBlockFilter();
+        _ = RefreshStatBlockListAsync();
     }
 
     [RelayCommand]
@@ -101,10 +103,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     {
         // Stat blocks and parties are edited on other pages, so they are
         // re-read every time this page is shown.
-        IReadOnlyList<StatBlock> statBlocks = await _statBlockRepository.GetAllAsync();
-        _statBlocks = statBlocks.OrderBy(statBlock => statBlock.Name, StringComparer.OrdinalIgnoreCase).ToList();
-        _statBlocksById = _statBlocks.ToDictionary(statBlock => statBlock.Id);
-        ApplyStatBlockFilter();
+        await RefreshStatBlockListAsync();
 
         Guid? selectedPartyId = SelectedParty?.Id;
         IReadOnlyList<Party> parties = await _partyRepository.GetAllAsync();
@@ -116,11 +115,22 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
         SelectedParty = Parties.FirstOrDefault(party => party.Id == selectedPartyId) ?? Parties.FirstOrDefault();
 
-        // Encounters are read once, so unsaved edits survive leaving the page.
-        if (!_encountersLoaded)
+        if (_encountersLoaded)
         {
+            await CacheStatBlocksAsync(_statBlocksById.Keys.ToList());
+        }
+        else
+        {
+            // Encounters are read once, so unsaved edits survive leaving the page.
             _encountersLoaded = true;
-            foreach (Encounter encounter in await _encounterRepository.GetAllAsync())
+            IReadOnlyList<Encounter> encounters = await _encounterRepository.GetAllAsync();
+            await CacheStatBlocksAsync(encounters
+                .SelectMany(encounter => encounter.Creatures)
+                .Select(creature => creature.StatBlockId)
+                .Distinct()
+                .ToList());
+
+            foreach (Encounter encounter in encounters)
             {
                 Encounters.Add(CreateEditor(encounter));
             }
@@ -173,9 +183,9 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     }
 
     [RelayCommand(CanExecute = nameof(CanAddCreature))]
-    private void AddCreature()
+    private async Task AddCreatureAsync()
     {
-        if (SelectedEncounter is not { } encounter || SelectedStatBlock is not { } statBlock)
+        if (SelectedEncounter is not { } encounter || SelectedStatBlock is not { } summary)
         {
             return;
         }
@@ -183,17 +193,28 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         // Adding the same stat block again raises the count on its row,
         // unless that row was given a custom name and so is its own thing.
         EncounterCreatureViewModel? existing = encounter.Creatures.FirstOrDefault(row =>
-            row.StatBlockId == statBlock.Id && string.IsNullOrWhiteSpace(row.CustomName));
+            row.StatBlockId == summary.Id && string.IsNullOrWhiteSpace(row.CustomName));
 
         if (existing is not null)
         {
             existing.Quantity++;
+            return;
         }
-        else
+
+        // The list only holds summaries, so fetch the full stat block the first time it is used.
+        if (!_statBlocksById.ContainsKey(summary.Id))
         {
-            encounter.Creatures.Add(CreateRow(new EncounterCreature(statBlock.Id)));
-            Recalculate();
+            StatBlock? statBlock = await _statBlockRepository.GetAsync(summary.Id);
+            if (statBlock is null)
+            {
+                return;
+            }
+
+            _statBlocksById[statBlock.Id] = statBlock;
         }
+
+        encounter.Creatures.Add(CreateRow(new EncounterCreature(summary.Id)));
+        Recalculate();
     }
 
     [RelayCommand]
@@ -203,68 +224,6 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         {
             Recalculate();
         }
-    }
-
-    private EncounterEditorViewModel CreateEditor(Encounter encounter)
-    {
-        var editor = new EncounterEditorViewModel(encounter.Id) { Name = encounter.Name };
-        foreach (EncounterCreature creature in encounter.Creatures)
-        {
-            editor.Creatures.Add(CreateRow(creature));
-        }
-
-        return editor;
-    }
-
-    private EncounterCreatureViewModel CreateRow(EncounterCreature creature)
-    {
-        _statBlocksById.TryGetValue(creature.StatBlockId, out StatBlock? statBlock);
-        return new EncounterCreatureViewModel(creature, statBlock, Recalculate);
-    }
-
-    private void ApplyStatBlockFilter()
-    {
-        string search = StatBlockSearchText.Trim();
-
-        FilteredStatBlocks.Clear();
-        foreach (StatBlock statBlock in _statBlocks)
-        {
-            if (search.Length == 0 || statBlock.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
-            {
-                FilteredStatBlocks.Add(statBlock);
-            }
-        }
-    }
-
-    private void Recalculate()
-    {
-        Budget = SelectedParty is { } party
-            ? XpBudget.ForParty(party.Members.Select(member => member.Level))
-            : new XpBudget(0, 0, 0);
-        TotalXp = SelectedEncounter?.ToEncounter().TotalXp(_statBlocksById) ?? 0;
-        DifficultyText = DescribeDifficulty();
-    }
-
-    private string DescribeDifficulty()
-    {
-        if (SelectedEncounter is null)
-        {
-            return "";
-        }
-
-        if (SelectedParty is null || SelectedParty.Members.Count == 0)
-        {
-            return "Select a party with members to see the difficulty.";
-        }
-
-        return Budget.Classify(TotalXp) switch
-        {
-            EncounterDifficulty.Low => "Low",
-            EncounterDifficulty.Moderate => "Moderate",
-            EncounterDifficulty.High => "High",
-            EncounterDifficulty.AboveHigh => "Above High",
-            _ => "Add creatures to see the difficulty.",
-        };
     }
 
     [RelayCommand(CanExecute = nameof(HasSelectedEncounter))]
@@ -303,5 +262,79 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         StatusMessage = _clipboard.TrySetText(markdown)
             ? "Saved, and copied a link for your notes."
             : "Saved, but the clipboard was busy. Try again.";
+    }
+
+    private EncounterEditorViewModel CreateEditor(Encounter encounter)
+    {
+        var editor = new EncounterEditorViewModel(encounter.Id) { Name = encounter.Name };
+        foreach (EncounterCreature creature in encounter.Creatures)
+        {
+            editor.Creatures.Add(CreateRow(creature));
+        }
+
+        return editor;
+    }
+
+    private EncounterCreatureViewModel CreateRow(EncounterCreature creature)
+    {
+        _statBlocksById.TryGetValue(creature.StatBlockId, out StatBlock? statBlock);
+        return new EncounterCreatureViewModel(creature, statBlock, Recalculate);
+    }
+
+    private async Task CacheStatBlocksAsync(List<Guid> ids)
+    {
+        foreach (StatBlock statBlock in await _statBlockRepository.GetManyAsync(ids))
+        {
+            _statBlocksById[statBlock.Id] = statBlock;
+        }
+    }
+
+    private async Task RefreshStatBlockListAsync()
+    {
+        string search = StatBlockSearchText;
+        IReadOnlyList<StatBlockSummary> results = await _statBlockRepository.SearchAsync(search, SearchLimit);
+
+        // The user typed again while this search was running: a newer one will fill the list.
+        if (search != StatBlockSearchText)
+        {
+            return;
+        }
+
+        FilteredStatBlocks.Clear();
+        foreach (StatBlockSummary summary in results)
+        {
+            FilteredStatBlocks.Add(summary);
+        }
+    }
+
+    private void Recalculate()
+    {
+        Budget = SelectedParty is { } party
+            ? XpBudget.ForParty(party.Members.Select(member => member.Level))
+            : new XpBudget(0, 0, 0);
+        TotalXp = SelectedEncounter?.ToEncounter().TotalXp(_statBlocksById) ?? 0;
+        DifficultyText = DescribeDifficulty();
+    }
+
+    private string DescribeDifficulty()
+    {
+        if (SelectedEncounter is null)
+        {
+            return "";
+        }
+
+        if (SelectedParty is null || SelectedParty.Members.Count == 0)
+        {
+            return "Select a party with members to see the difficulty.";
+        }
+
+        return Budget.Classify(TotalXp) switch
+        {
+            EncounterDifficulty.Low => "Low",
+            EncounterDifficulty.Moderate => "Moderate",
+            EncounterDifficulty.High => "High",
+            EncounterDifficulty.AboveHigh => "Above High",
+            _ => "Add creatures to see the difficulty.",
+        };
     }
 }

@@ -38,7 +38,7 @@ public class EncounterBuilderViewModelTests
     {
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
         viewModel.NewEncounterCommand.Execute(null);
-        viewModel.SelectedStatBlock = _goblin;
+        viewModel.SelectedStatBlock = Assert.Single(viewModel.FilteredStatBlocks);
 
         viewModel.AddCreatureCommand.Execute(null);
 
@@ -53,7 +53,7 @@ public class EncounterBuilderViewModelTests
     {
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
         viewModel.NewEncounterCommand.Execute(null);
-        viewModel.SelectedStatBlock = _goblin;
+        viewModel.SelectedStatBlock = Assert.Single(viewModel.FilteredStatBlocks);
 
         viewModel.AddCreatureCommand.Execute(null);
         viewModel.AddCreatureCommand.Execute(null);
@@ -71,7 +71,7 @@ public class EncounterBuilderViewModelTests
     {
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
         viewModel.NewEncounterCommand.Execute(null);
-        viewModel.SelectedStatBlock = _goblin;
+        viewModel.SelectedStatBlock = Assert.Single(viewModel.FilteredStatBlocks);
         viewModel.AddCreatureCommand.Execute(null);
 
         Assert.Single(SelectedEditor(viewModel).Creatures).Quantity = quantity;
@@ -85,7 +85,7 @@ public class EncounterBuilderViewModelTests
     {
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
         viewModel.NewEncounterCommand.Execute(null);
-        viewModel.SelectedStatBlock = _goblin;
+        viewModel.SelectedStatBlock = Assert.Single(viewModel.FilteredStatBlocks);
         viewModel.AddCreatureCommand.Execute(null);
 
         viewModel.RemoveCreatureCommand.Execute(Assert.Single(SelectedEditor(viewModel).Creatures));
@@ -101,7 +101,7 @@ public class EncounterBuilderViewModelTests
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
         viewModel.NewEncounterCommand.Execute(null);
         SelectedEditor(viewModel).Name = "Ambush";
-        viewModel.SelectedStatBlock = _goblin;
+        viewModel.SelectedStatBlock = Assert.Single(viewModel.FilteredStatBlocks);
         viewModel.AddCreatureCommand.Execute(null);
         Assert.Single(SelectedEditor(viewModel).Creatures).Quantity = 3;
 
@@ -134,7 +134,7 @@ public class EncounterBuilderViewModelTests
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(messenger: messenger);
         viewModel.NewEncounterCommand.Execute(null);
         SelectedEditor(viewModel).Name = "Ambush";
-        viewModel.SelectedStatBlock = _goblin;
+        viewModel.SelectedStatBlock = Assert.Single(viewModel.FilteredStatBlocks);
         viewModel.AddCreatureCommand.Execute(null);
         Assert.Single(SelectedEditor(viewModel).Creatures).Quantity = 3;
 

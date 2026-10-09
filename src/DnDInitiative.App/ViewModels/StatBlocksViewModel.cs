@@ -12,11 +12,15 @@ namespace DnDInitiative.App.ViewModels;
 
 public sealed partial class StatBlocksViewModel : PageViewModel
 {
+    private const int SearchLimit = 200;
+
     private readonly IStatBlockRepository _repository;
     private readonly IStatBlockImporter _importer;
     private readonly IFolderPicker _folderPicker;
-    private List<StatBlock> _all = [];
     private bool _isLoaded;
+
+    // The full stat block behind the selected list row, loaded when the selection changes.
+    private StatBlock? _selectedDetails;
 
     [ObservableProperty]
     private string _searchText = "";
@@ -25,7 +29,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     [NotifyCanExecuteChangedFor(nameof(EditCommand))]
     [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
-    private StatBlock? _selectedStatBlock;
+    private StatBlockSummary? _selectedStatBlock;
 
     [ObservableProperty]
     private StatBlockDetailsViewModel? _details;
@@ -47,7 +51,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
 
     public override string Title => "Stat Blocks";
 
-    public ObservableCollection<StatBlock> FilteredStatBlocks { get; } = [];
+    public ObservableCollection<StatBlockSummary> FilteredStatBlocks { get; } = [];
 
     public bool IsEditing => Editor is not null;
 
@@ -57,12 +61,12 @@ public sealed partial class StatBlocksViewModel : PageViewModel
 
     partial void OnSearchTextChanged(string value)
     {
-        ApplyFilter();
+        _ = RefreshListAsync(SelectedStatBlock?.Id);
     }
 
-    partial void OnSelectedStatBlockChanged(StatBlock? value)
+    partial void OnSelectedStatBlockChanged(StatBlockSummary? value)
     {
-        Details = value is null ? null : new StatBlockDetailsViewModel(value);
+        _ = LoadDetailsAsync(value);
     }
 
     [RelayCommand]
@@ -74,7 +78,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         }
 
         _isLoaded = true;
-        await ReloadAsync(selectId: null);
+        await RefreshListAsync(selectId: null);
     }
 
     [RelayCommand]
@@ -87,7 +91,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private void Edit()
     {
-        if (SelectedStatBlock is { } selected)
+        if (_selectedDetails is { } selected)
         {
             Editor = new StatBlockEditorViewModel(selected);
             StatusMessage = "";
@@ -97,14 +101,14 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     [RelayCommand(CanExecute = nameof(HasSelection))]
     private async Task CopyAsync()
     {
-        if (SelectedStatBlock is not { } selected)
+        if (_selectedDetails is not { } selected)
         {
             return;
         }
 
         StatBlock copy = selected with { Id = Guid.NewGuid(), Name = selected.Name + " (Copy)" };
         await _repository.SaveAsync(copy);
-        await ReloadAsync(copy.Id);
+        await RefreshListAsync(copy.Id);
         StatusMessage = $"Copied {selected.Name}.";
     }
 
@@ -117,7 +121,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         }
 
         await _repository.DeleteAsync(selected.Id);
-        await ReloadAsync(selectId: null);
+        await RefreshListAsync(selectId: null);
         StatusMessage = $"Deleted {selected.Name}.";
     }
 
@@ -138,7 +142,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         StatBlock statBlock = editor.ToStatBlock();
         await _repository.SaveAsync(statBlock);
         Editor = null;
-        await ReloadAsync(statBlock.Id);
+        await RefreshListAsync(statBlock.Id);
         StatusMessage = $"Saved {statBlock.Name}.";
     }
 
@@ -147,33 +151,6 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     {
         Editor = null;
         StatusMessage = "";
-    }
-
-    private async Task ReloadAsync(Guid? selectId)
-    {
-        IReadOnlyList<StatBlock> stored = await _repository.GetAllAsync();
-        _all = stored.OrderBy(statBlock => statBlock.Name, StringComparer.OrdinalIgnoreCase).ToList();
-
-        ApplyFilter();
-        SelectedStatBlock = FilteredStatBlocks.FirstOrDefault(statBlock => statBlock.Id == selectId)
-            ?? FilteredStatBlocks.FirstOrDefault();
-    }
-
-    private void ApplyFilter()
-    {
-        Guid? selectedId = SelectedStatBlock?.Id;
-        string search = SearchText.Trim();
-
-        FilteredStatBlocks.Clear();
-        foreach (StatBlock statBlock in _all)
-        {
-            if (search.Length == 0 || statBlock.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
-            {
-                FilteredStatBlocks.Add(statBlock);
-            }
-        }
-
-        SelectedStatBlock = FilteredStatBlocks.FirstOrDefault(statBlock => statBlock.Id == selectedId);
     }
 
     [RelayCommand]
@@ -189,7 +166,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         try
         {
             StatBlockImportResult result = await _importer.ImportFolderAsync(folder);
-            await ReloadAsync(selectId: null);
+            await RefreshListAsync(SelectedStatBlock?.Id);
             StatusMessage = string.Create(
                 CultureInfo.InvariantCulture,
                 $"Imported {result.Added} new and updated {result.Updated}, from {result.FilesScanned} files.");
@@ -202,5 +179,53 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         {
             StatusMessage = "Import failed: " + exception.Message;
         }
+    }
+
+    /// <summary>
+    /// Re-runs the current search and selects the given stat block, or the first result.
+    /// </summary>
+    private async Task RefreshListAsync(Guid? selectId)
+    {
+        string search = SearchText;
+        IReadOnlyList<StatBlockSummary> results = await _repository.SearchAsync(search, SearchLimit);
+
+        // The user typed again while this search was running: a newer one will fill the list.
+        if (search != SearchText)
+        {
+            return;
+        }
+
+        FilteredStatBlocks.Clear();
+        foreach (StatBlockSummary summary in results)
+        {
+            FilteredStatBlocks.Add(summary);
+        }
+
+        SelectedStatBlock = FilteredStatBlocks.FirstOrDefault(summary => summary.Id == selectId)
+            ?? FilteredStatBlocks.FirstOrDefault();
+
+        // Reload even if the same row is selected again: its contents may just have been saved.
+        await LoadDetailsAsync(SelectedStatBlock);
+    }
+
+    private async Task LoadDetailsAsync(StatBlockSummary? summary)
+    {
+        if (summary is null)
+        {
+            _selectedDetails = null;
+            Details = null;
+            return;
+        }
+
+        StatBlock? statBlock = await _repository.GetAsync(summary.Id);
+
+        // The selection moved on while this one was loading: drop the stale result.
+        if (SelectedStatBlock?.Id != summary.Id)
+        {
+            return;
+        }
+
+        _selectedDetails = statBlock;
+        Details = statBlock is null ? null : new StatBlockDetailsViewModel(statBlock);
     }
 }

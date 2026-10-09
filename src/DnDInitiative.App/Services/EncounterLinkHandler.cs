@@ -43,7 +43,8 @@ public sealed class EncounterLinkHandler
             return false;
         }
 
-        IReadOnlyList<StatBlock> statBlocks = await _statBlockRepository.GetAllAsync();
+        List<Guid> statBlockIds = encounter.Creatures.Select(creature => creature.StatBlockId).Distinct().ToList();
+        IReadOnlyList<StatBlock> statBlocks = await _statBlockRepository.GetManyAsync(statBlockIds);
 
         Party? party = null;
         if (link.PartyId is { } partyId)

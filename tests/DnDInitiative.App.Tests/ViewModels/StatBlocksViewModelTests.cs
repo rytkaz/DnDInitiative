@@ -138,6 +138,21 @@ public class StatBlocksViewModelTests
         Assert.Equal("", viewModel.StatusMessage);
     }
 
+    [Fact]
+    public async Task SaveCommand_EditThatLeavesTheListRowUnchanged_StillRefreshesTheDetails()
+    {
+        StatBlock goblin = Create("Goblin") with { ArmorClass = 15 };
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(goblin));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        viewModel.EditCommand.Execute(null);
+        Assert.IsType<StatBlockEditorViewModel>(viewModel.Editor)
+            .NumberFields.Single(field => field.Label == "Armor Class").Value = 18;
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+
+        Assert.Contains(new LabeledValue("Armor Class", "18"), viewModel.Details?.CoreStats ?? []);
+    }
+
     private static StatBlock Create(string name)
     {
         return new StatBlock { Id = Guid.NewGuid(), Name = name };

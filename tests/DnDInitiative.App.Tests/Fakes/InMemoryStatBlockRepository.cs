@@ -41,4 +41,32 @@ internal sealed class InMemoryStatBlockRepository : IStatBlockRepository
 
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<StatBlockSummary>> SearchAsync(
+    string searchText,
+    int limit,
+    CancellationToken cancellationToken = default)
+    {
+        string trimmed = searchText.Trim();
+        List<StatBlockSummary> results = _statBlocks
+            .Where(statBlock => trimmed.Length == 0 || statBlock.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(statBlock => statBlock.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(limit)
+            .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source))
+            .ToList();
+
+        return Task.FromResult<IReadOnlyList<StatBlockSummary>>(results);
+    }
+
+    public Task<StatBlock?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_statBlocks.Find(statBlock => statBlock.Id == id));
+    }
+
+    public Task<IReadOnlyList<StatBlock>> GetManyAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<StatBlock>>(_statBlocks.Where(statBlock => ids.Contains(statBlock.Id)).ToList());
+    }
 }
