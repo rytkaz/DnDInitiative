@@ -35,6 +35,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IStatBlockRepository, SqliteStatBlockRepository>();
         services.AddSingleton<IEncounterRepository, SqliteEncounterRepository>();
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
+        services.AddSingleton<IProcessRunner, ProcessRunner>();
+        services.AddSingleton<IStatBlockConverter, TtrpgConvertConverter>();
+        services.AddSingleton<IConversionSettingsStore, JsonConversionSettingsStore>();
 
         services.AddSingleton<LegacyJsonImporter>();
         services.AddSingleton<IStorageInitializer, StorageInitializer>();

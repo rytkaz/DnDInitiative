@@ -17,6 +17,7 @@ public sealed class MainViewModel : ObservableObject, IRecipient<StartCombatMess
         StatBlocksViewModel statBlocks,
         EncounterBuilderViewModel encounterBuilder,
         PartySetupViewModel partySetup,
+        ImportViewModel import,
         IMessenger messenger,
         IConfirmationService confirmation)
     {
@@ -24,7 +25,7 @@ public sealed class MainViewModel : ObservableObject, IRecipient<StartCombatMess
 
         _initiativeTracker = initiativeTracker;
         _confirmation = confirmation;
-        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup];
+        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import];
         _currentPage = initiativeTracker;
         messenger.Register<StartCombatMessage>(this);
     }

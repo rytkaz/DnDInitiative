@@ -36,11 +36,19 @@ public class MainViewModelTests
             new FakeClipboard(),
             _confirmation);
         _partySetup = new PartySetupViewModel(parties, _confirmation);
+        var import = new ImportViewModel(
+            new InMemoryConversionSettingsStore(),
+            new FakeStatBlockConverter(),
+            new FakeStatBlockImporter(),
+            new FakeFolderPicker(),
+            new FakeFilePicker(),
+            _messenger);
         _viewModel = new MainViewModel(
             _tracker,
-            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation),
+            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, _messenger),
             _encounterBuilder,
             _partySetup,
+            import,
             _messenger,
             _confirmation);
     }

@@ -4,13 +4,15 @@ using System.IO;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 
+using DnDInitiative.App.Messages;
 using DnDInitiative.App.Services;
 using DnDInitiative.Core.StatBlocks;
 
 namespace DnDInitiative.App.ViewModels;
 
-public sealed partial class StatBlocksViewModel : PageViewModel
+public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<StatBlocksImportedMessage>
 {
     private const int PageSize = 100;
 
@@ -52,12 +54,16 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         IStatBlockRepository repository,
         IStatBlockImporter importer,
         IFolderPicker folderPicker,
-        IConfirmationService confirmation)
+        IConfirmationService confirmation,
+        IMessenger messenger)
     {
+        ArgumentNullException.ThrowIfNull(messenger);
+
         _repository = repository;
         _importer = importer;
         _folderPicker = folderPicker;
         _confirmation = confirmation;
+        messenger.Register(this);
     }
 
     public override string Title => "Stat Blocks";
@@ -309,5 +315,14 @@ public sealed partial class StatBlocksViewModel : PageViewModel
 
         _selectedDetails = statBlock;
         Details = statBlock is null ? null : new StatBlockDetailsViewModel(statBlock);
+    }
+
+    public void Receive(StatBlocksImportedMessage message)
+    {
+        // If the page was never opened there is nothing to refresh: its first load reads everything.
+        if (_isLoaded)
+        {
+            RefreshListAsync(SelectedStatBlock?.Id).Forget();
+        }
     }
 }

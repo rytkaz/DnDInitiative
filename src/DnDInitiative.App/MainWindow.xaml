@@ -39,6 +39,9 @@
                 <DataTemplate DataType="{x:Type viewModels:EncounterBuilderViewModel}">
                     <views:EncounterBuilderView />
                 </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:ImportViewModel}">
+                    <views:ImportView />
+                </DataTemplate>
             </ContentControl.Resources>
         </ContentControl>
     </Grid>

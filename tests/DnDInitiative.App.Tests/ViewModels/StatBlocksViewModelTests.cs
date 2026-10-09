@@ -1,5 +1,8 @@
 ﻿using System.Globalization;
 
+using CommunityToolkit.Mvvm.Messaging;
+
+using DnDInitiative.App.Messages;
 using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.StatBlocks;
@@ -268,6 +271,20 @@ public class StatBlocksViewModelTests
         Assert.Empty(viewModel.UnsavedChanges);
     }
 
+    [Fact]
+    public async Task StatBlocksImportedMessage_RefreshesTheList()
+    {
+        var repository = new InMemoryStatBlockRepository();
+        var messenger = new WeakReferenceMessenger();
+        StatBlocksViewModel viewModel = CreateViewModel(repository, messenger: messenger);
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        await repository.SaveAsync(Create("Goblin"));
+
+        messenger.Send(new StatBlocksImportedMessage(new StatBlockImportResult(Added: 1, Updated: 0, FilesScanned: 1)));
+
+        Assert.Equal("Goblin", Assert.Single(viewModel.FilteredStatBlocks).Name);
+    }
+
     private static StatBlock[] CreateMany(int count)
     {
         return Enumerable.Range(0, count)
@@ -284,12 +301,14 @@ public class StatBlocksViewModelTests
         InMemoryStatBlockRepository repository,
         FakeStatBlockImporter? importer = null,
         FakeFolderPicker? folderPicker = null,
-        FakeConfirmation? confirmation = null)
+        FakeConfirmation? confirmation = null,
+        IMessenger? messenger = null)
     {
         return new StatBlocksViewModel(
             repository,
             importer ?? new FakeStatBlockImporter(),
             folderPicker ?? new FakeFolderPicker(),
-            confirmation ?? new FakeConfirmation());
+            confirmation ?? new FakeConfirmation(),
+            messenger ?? new WeakReferenceMessenger());
     }
 }

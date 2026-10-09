@@ -114,6 +114,7 @@ public partial class App : Application
         // App services
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
         services.AddSingleton<IFolderPicker, FolderPicker>();
+        services.AddSingleton<IFilePicker, FilePicker>();
         services.AddSingleton<IConfirmationService, ConfirmationService>();
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<EncounterLinkHandler>();
@@ -123,6 +124,7 @@ public partial class App : Application
         services.AddSingleton<StatBlocksViewModel>();
         services.AddSingleton<EncounterBuilderViewModel>();
         services.AddSingleton<PartySetupViewModel>();
+        services.AddSingleton<ImportViewModel>();
         services.AddSingleton<MainViewModel>();
 
         // Windows
