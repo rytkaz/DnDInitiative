@@ -53,6 +53,11 @@
                           DisplayMemberPath="Name"
                           ItemsSource="{Binding Parties}"
                           SelectedItem="{Binding SelectedParty}" />
+                <Button Margin="4,0,0,0"
+                        Padding="8,4"
+                        Command="{Binding ClearPartyCommand}"
+                        Content="✕"
+                        ToolTip="No party" />
                 <Button Margin="8,0,0,0"
                         Padding="12,4"
                         Command="{Binding NewCombatCommand}"

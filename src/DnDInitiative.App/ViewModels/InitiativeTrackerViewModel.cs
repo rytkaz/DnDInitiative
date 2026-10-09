@@ -56,6 +56,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private CombatantViewModel? _selectedCombatant;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ClearPartyCommand))]
     private Party? _selectedParty;
 
     [ObservableProperty]
@@ -83,6 +84,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     [ObservableProperty]
     private bool _showStatBlockPanel = true;
+
+    private bool HasSelectedParty => SelectedParty is not null;
 
     public InitiativeTrackerViewModel(
         CombatantFactory combatantFactory,
@@ -413,5 +416,11 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         }
 
         _hasMoreLibraryResults = page.Count == LibraryPageSize;
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedParty))]
+    private void ClearParty()
+    {
+        SelectedParty = null;
     }
 }
