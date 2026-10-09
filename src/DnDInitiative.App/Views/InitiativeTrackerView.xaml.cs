@@ -127,4 +127,13 @@ public partial class InitiativeTrackerView : UserControl
             popup.IsOpen = false;
         }
     }
+
+    // The strip sits on the panel's left edge, so dragging left (a negative change) makes the panel wider.
+    private void OnPanelResizeDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (DataContext is InitiativeTrackerViewModel viewModel)
+        {
+            viewModel.StatBlockPanelWidth -= e.HorizontalChange;
+        }
+    }
 }

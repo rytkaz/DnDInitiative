@@ -17,6 +17,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 {
     private const int MaxQuantity = 50;
     private const int LibraryPageSize = 50;
+    private const double MinPanelWidth = 260;
+    private const double MaxPanelWidth = 800;
 
     private readonly CombatantFactory _combatantFactory;
     private readonly IPartyRepository _partyRepository;
@@ -86,6 +88,15 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private bool _showStatBlockPanel = true;
 
     private bool HasSelectedParty => SelectedParty is not null;
+
+    private double _statBlockPanelWidth = 380;
+
+    /// <summary>Width of the library and stat block panel. Kept within sensible limits.</summary>
+    public double StatBlockPanelWidth
+    {
+        get => _statBlockPanelWidth;
+        set => SetProperty(ref _statBlockPanelWidth, Math.Clamp(value, MinPanelWidth, MaxPanelWidth));
+    }
 
     public InitiativeTrackerViewModel(
         CombatantFactory combatantFactory,

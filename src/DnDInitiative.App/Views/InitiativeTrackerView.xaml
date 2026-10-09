@@ -135,12 +135,11 @@
 
         <!-- Library picker, and the stat block of whatever was clicked last -->
         <Border DockPanel.Dock="Right"
-        Width="380"
-        Margin="12,0,0,0"
-        Padding="12"
-        BorderBrush="LightGray"
-        BorderThickness="1"
-        Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
+                Width="{Binding StatBlockPanelWidth}"
+                Padding="12"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
             <DockPanel>
                 <Expander DockPanel.Dock="Top" IsExpanded="{Binding IsLibraryExpanded}">
                     <Expander.Header>
@@ -188,6 +187,20 @@
                 </ScrollViewer>
             </DockPanel>
         </Border>
+        <!-- Drag strip between the turn order and the panel -->
+        <Thumb DockPanel.Dock="Right"
+               Width="12"
+               Cursor="SizeWE"
+               DragDelta="OnPanelResizeDragDelta"
+               ToolTip="Drag to resize"
+               Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
+            <Thumb.Template>
+                <ControlTemplate>
+                    <!-- Transparent, but still catches the mouse. With no background at all, clicks would pass through. -->
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
         <!-- Turn order -->
         <DataGrid AllowDrop="True"
                   AutoGenerateColumns="False"
