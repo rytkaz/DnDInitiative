@@ -390,3 +390,6 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 
 [tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
+
+[**/Migrations/*.cs]
+generated_code = true
