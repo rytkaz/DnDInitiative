@@ -66,12 +66,12 @@ public sealed partial class StatBlocksViewModel : PageViewModel
 
     partial void OnSearchTextChanged(string value)
     {
-        _ = RefreshListAsync(SelectedStatBlock?.Id, loadUntilFound: false);
+        RefreshListAsync(SelectedStatBlock?.Id, loadUntilFound: false).Forget();
     }
 
     partial void OnSelectedStatBlockChanged(StatBlockSummary? value)
     {
-        _ = LoadDetailsAsync(value);
+        LoadDetailsAsync(value).Forget();
     }
 
     [RelayCommand]

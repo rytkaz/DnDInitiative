@@ -98,7 +98,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     partial void OnStatBlockSearchTextChanged(string value)
     {
-        _ = RefreshStatBlockListAsync();
+        RefreshStatBlockListAsync().Forget();
     }
 
     [RelayCommand]

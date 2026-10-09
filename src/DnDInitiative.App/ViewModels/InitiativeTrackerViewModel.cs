@@ -282,7 +282,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     partial void OnSelectedCombatantChanged(CombatantViewModel? value)
     {
-        _ = ShowStatBlockAsync(value?.Combatant.StatBlockId);
+        ShowStatBlockAsync(value?.Combatant.StatBlockId).Forget();
     }
 
     partial void OnSelectedLibraryStatBlockChanged(StatBlockSummary? value)
@@ -290,7 +290,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         // The list clears its selection whenever it is refilled. That should not blank the panel.
         if (value is not null)
         {
-            _ = ShowStatBlockAsync(value.Id);
+            ShowStatBlockAsync(value.Id).Forget();
         }
     }
 
@@ -317,7 +317,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     partial void OnLibrarySearchTextChanged(string value)
     {
-        _ = RefreshLibraryAsync();
+        RefreshLibraryAsync().Forget();
     }
 
     [RelayCommand]
