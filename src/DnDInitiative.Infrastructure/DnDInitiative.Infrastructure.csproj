@@ -12,7 +12,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DnDInitiative.Infrastructure.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
