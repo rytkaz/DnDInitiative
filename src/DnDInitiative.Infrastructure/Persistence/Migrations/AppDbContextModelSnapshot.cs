@@ -17,6 +17,49 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.EncounterCreatureEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CustomName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EncounterId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("StatBlockId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EncounterId");
+
+                    b.ToTable("EncounterCreatures", (string)null);
+                });
+
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.EncounterEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Encounters", (string)null);
+                });
+
             modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.PartyEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -64,6 +107,140 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                     b.ToTable("PlayerCharacters", (string)null);
                 });
 
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.StatBlockEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Alignment")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ArmorClass")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BonusActionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChallengeRating")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Charisma")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionImmunities")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Constitution")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CreatureType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageImmunities")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageResistances")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageVulnerabilities")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Dexterity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HitDice")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("HitPoints")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("InitiativeModifier")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Intelligence")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Languages")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LegendaryActionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("ReactionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SavingThrows")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Senses")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Size")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Skills")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Speed")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Strength")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("TraitsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Wisdom")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("StatBlocks", (string)null);
+                });
+
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.EncounterCreatureEntity", b =>
+                {
+                    b.HasOne("DnDInitiative.Infrastructure.Persistence.EncounterEntity", null)
+                        .WithMany("Creatures")
+                        .HasForeignKey("EncounterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.PlayerCharacterEntity", b =>
                 {
                     b.HasOne("DnDInitiative.Infrastructure.Persistence.PartyEntity", null)
@@ -71,6 +248,11 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PartyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.EncounterEntity", b =>
+                {
+                    b.Navigation("Creatures");
                 });
 
             modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.PartyEntity", b =>
