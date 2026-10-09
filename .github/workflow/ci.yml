@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# The workflow only reads the repository. Stating that limits what a compromised step could do.
+permissions:
+  contents: read
+
+# A newer push to the same branch makes the older run pointless: cancel it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    # WPF only builds on Windows, and some tests run cmd.exe and ping.exe.
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Install the .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore packages
+        run: dotnet restore DnDInitiative.slnx
+
+      - name: Build
+        run: dotnet build DnDInitiative.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test DnDInitiative.slnx
+          --configuration Release
+          --no-build
+          --logger trx
+          --results-directory TestResults
+          --collect:"XPlat Code Coverage"
+
+      # Runs even when tests failed. That is exactly when you want the results.
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
