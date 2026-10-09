@@ -8,12 +8,8 @@ using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Encounters;
-using DnDInitiative.Core.Parties;
-using DnDInitiative.Core.StatBlocks;
-using DnDInitiative.Infrastructure.Encounters;
-using DnDInitiative.Infrastructure.Import;
-using DnDInitiative.Infrastructure.Parties;
-using DnDInitiative.Infrastructure.StatBlocks;
+using DnDInitiative.Infrastructure;
+using DnDInitiative.Infrastructure.Persistence;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -46,6 +42,9 @@ public partial class App : Application
         IHost host = builder.Build();
         Exit += (_, _) => host.Dispose();
 
+        // The database must be up to date before any screen asks it for data.
+        await host.Services.GetRequiredService<IStorageInitializer>().InitializeAsync();
+
         var window = host.Services.GetRequiredService<MainWindow>();
         window.Show();
 
@@ -66,6 +65,37 @@ public partial class App : Application
         await linkHandler.HandleAsync(link);
     }
 
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        // Domain services
+        services.AddSingleton(Random.Shared);
+        services.AddSingleton<IDiceRoller, RandomDiceRoller>();
+        services.AddSingleton<InitiativeRoller>();
+        services.AddSingleton<CombatantFactory>();
+
+        // Storage and import
+        string dataDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "DnDInitiative");
+        services.AddInfrastructure(dataDirectory);
+
+        // App services
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
+        services.AddSingleton<IFolderPicker, FolderPicker>();
+        services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<EncounterLinkHandler>();
+
+        // View models
+        services.AddSingleton<InitiativeTrackerViewModel>();
+        services.AddSingleton<StatBlocksViewModel>();
+        services.AddSingleton<EncounterBuilderViewModel>();
+        services.AddSingleton<PartySetupViewModel>();
+        services.AddSingleton<MainViewModel>();
+
+        // Windows
+        services.AddSingleton<MainWindow>();
+    }
+
     private static void BringToFront(Window window)
     {
         if (window.WindowState == WindowState.Minimized)
@@ -79,36 +109,5 @@ public partial class App : Application
         // flashes its taskbar button. Toggling Topmost raises the window anyway.
         window.Topmost = true;
         window.Topmost = false;
-    }
-    private static void ConfigureServices(IServiceCollection services)
-    {
-        // Domain services
-        services.AddSingleton(Random.Shared);
-        services.AddSingleton<IDiceRoller, RandomDiceRoller>();
-        services.AddSingleton<InitiativeRoller>();
-        services.AddSingleton<CombatantFactory>();
-        services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
-        services.AddSingleton<IFolderPicker, FolderPicker>();
-        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
-        services.AddSingleton<IClipboardService, ClipboardService>();
-        services.AddSingleton<EncounterLinkHandler>();
-
-        // Storage
-        string dataDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "DnDInitiative");
-
-        services.AddSingleton<IPartyRepository>(_ => new JsonPartyRepository(Path.Combine(dataDirectory, "parties.json")));
-        services.AddSingleton<IStatBlockRepository>(_ => new JsonStatBlockRepository(Path.Combine(dataDirectory, "statblocks.json")));
-        services.AddSingleton<IEncounterRepository>(_ => new JsonEncounterRepository(Path.Combine(dataDirectory, "encounters.json")));
-
-        // View models
-        services.AddSingleton<InitiativeTrackerViewModel>();
-        services.AddSingleton<StatBlocksViewModel>();
-        services.AddSingleton<EncounterBuilderViewModel>();
-        services.AddSingleton<PartySetupViewModel>();
-        services.AddSingleton<MainViewModel>();
-        // Windows
-        services.AddSingleton<MainWindow>();
     }
 }
