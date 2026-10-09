@@ -227,6 +227,47 @@ public class StatBlocksViewModelTests
         Assert.Equal("Goblin", viewModel.SelectedStatBlock?.Name);
     }
 
+    [Fact]
+    public void CancelCommand_UntouchedEditor_ClosesWithoutAsking()
+    {
+        var confirmation = new FakeConfirmation();
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(), confirmation: confirmation);
+        viewModel.NewCommand.Execute(null);
+
+        viewModel.CancelCommand.Execute(null);
+
+        Assert.False(viewModel.IsEditing);
+        Assert.Empty(confirmation.Questions);
+    }
+
+    [Fact]
+    public void CancelCommand_WithChangesAndDeclined_StaysInEditMode()
+    {
+        var confirmation = new FakeConfirmation { Answer = false };
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(), confirmation: confirmation);
+        viewModel.NewCommand.Execute(null);
+        Assert.IsType<StatBlockEditorViewModel>(viewModel.Editor).Name = "Owlbear";
+
+        viewModel.CancelCommand.Execute(null);
+
+        Assert.True(viewModel.IsEditing);
+        Assert.Single(confirmation.Questions);
+        Assert.Equal("Stat block: Owlbear", Assert.Single(viewModel.UnsavedChanges));
+    }
+
+    [Fact]
+    public void CancelCommand_WithChangesAndConfirmed_DiscardsThem()
+    {
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository());
+        viewModel.NewCommand.Execute(null);
+        Assert.IsType<StatBlockEditorViewModel>(viewModel.Editor).Name = "Owlbear";
+
+        viewModel.CancelCommand.Execute(null);
+
+        Assert.False(viewModel.IsEditing);
+        Assert.Empty(viewModel.UnsavedChanges);
+    }
+
     private static StatBlock[] CreateMany(int count)
     {
         return Enumerable.Range(0, count)

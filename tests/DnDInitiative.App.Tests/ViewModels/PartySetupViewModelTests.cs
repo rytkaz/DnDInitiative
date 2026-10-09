@@ -92,6 +92,44 @@ public class PartySetupViewModelTests
         Assert.Single(viewModel.Parties);
     }
 
+    [Fact]
+    public async Task UnsavedChanges_TracksEditsUntilTheyAreSaved()
+    {
+        var stored = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
+        PartySetupViewModel viewModel = CreateViewModel(new InMemoryPartyRepository(stored));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.Empty(viewModel.UnsavedChanges);
+
+        SelectedEditor(viewModel).Members[0].Level = 4;
+        Assert.Equal("Party: Heroes", Assert.Single(viewModel.UnsavedChanges));
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+        Assert.Empty(viewModel.UnsavedChanges);
+    }
+
+    [Fact]
+    public async Task UnsavedChanges_EditThatIsUndone_IsNotAChange()
+    {
+        var stored = new Party(Guid.NewGuid(), "Heroes", []);
+        PartySetupViewModel viewModel = CreateViewModel(new InMemoryPartyRepository(stored));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        SelectedEditor(viewModel).Name = "Villains";
+        SelectedEditor(viewModel).Name = "Heroes";
+
+        Assert.Empty(viewModel.UnsavedChanges);
+    }
+
+    [Fact]
+    public void UnsavedChanges_NewPartyThatWasNeverSaved_IsListed()
+    {
+        PartySetupViewModel viewModel = CreateViewModel(new InMemoryPartyRepository());
+
+        viewModel.NewPartyCommand.Execute(null);
+
+        Assert.Single(viewModel.UnsavedChanges);
+    }
+
     private static PartyEditorViewModel SelectedEditor(PartySetupViewModel viewModel)
     {
         return Assert.IsType<PartyEditorViewModel>(viewModel.SelectedParty);

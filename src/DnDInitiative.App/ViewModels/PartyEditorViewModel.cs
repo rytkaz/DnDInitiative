@@ -11,6 +11,8 @@ namespace DnDInitiative.App.ViewModels;
 
 public sealed partial class PartyEditorViewModel : ObservableValidator
 {
+    private readonly SavedState<Party> _savedState;
+
     [ObservableProperty]
     [NotifyDataErrorInfo]
     [Required(ErrorMessage = "A party needs a name.")]
@@ -20,9 +22,17 @@ public sealed partial class PartyEditorViewModel : ObservableValidator
     [NotifyCanExecuteChangedFor(nameof(RemoveMemberCommand))]
     private PlayerCharacterViewModel? _selectedMember;
 
+    public bool HasUnsavedChanges => _savedState.HasChanges;
+
     public PartyEditorViewModel(Guid id)
     {
         Id = id;
+        _savedState = new SavedState<Party>(ToParty);
+    }
+
+    public void MarkSaved()
+    {
+        _savedState.MarkSaved();
     }
 
     public Guid Id { get; }
@@ -41,6 +51,7 @@ public sealed partial class PartyEditorViewModel : ObservableValidator
             editor.Members.Add(PlayerCharacterViewModel.FromPlayerCharacter(member));
         }
 
+        editor.MarkSaved();
         return editor;
     }
 

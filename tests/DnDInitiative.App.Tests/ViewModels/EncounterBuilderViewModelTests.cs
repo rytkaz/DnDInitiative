@@ -211,6 +211,21 @@ public class EncounterBuilderViewModelTests
         Assert.Equal("Ambush", SelectedEditor(viewModel).Name);
     }
 
+    [Fact]
+    public async Task UnsavedChanges_TracksEditsUntilTheyAreSaved()
+    {
+        var encounters = new InMemoryEncounterRepository(
+            new Encounter(Guid.NewGuid(), "Ambush", [new EncounterCreature(_goblin.Id, 2)]));
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
+        Assert.Empty(viewModel.UnsavedChanges);
+
+        Assert.Single(SelectedEditor(viewModel).Creatures).Quantity = 3;
+        Assert.Equal("Encounter: Ambush", Assert.Single(viewModel.UnsavedChanges));
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+        Assert.Empty(viewModel.UnsavedChanges);
+    }
+
     private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(
         InMemoryEncounterRepository? encounters = null,
         IMessenger? messenger = null,

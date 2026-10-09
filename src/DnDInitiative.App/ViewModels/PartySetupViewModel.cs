@@ -34,6 +34,11 @@ public sealed partial class PartySetupViewModel : PageViewModel
 
     private bool HasSelectedParty => SelectedParty is not null;
 
+    public override IReadOnlyList<string> UnsavedChanges => Parties
+        .Where(party => party.HasUnsavedChanges)
+        .Select(party => $"Party: {party.Name}")
+        .ToList();
+
     [RelayCommand]
     private async Task LoadAsync()
     {
@@ -79,6 +84,7 @@ public sealed partial class PartySetupViewModel : PageViewModel
         }
 
         await _repository.SaveAsync(editor.ToParty());
+        editor.MarkSaved();
         StatusMessage = $"Saved {editor.Name}.";
     }
 

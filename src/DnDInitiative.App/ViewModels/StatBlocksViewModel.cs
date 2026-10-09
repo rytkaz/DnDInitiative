@@ -70,6 +70,10 @@ public sealed partial class StatBlocksViewModel : PageViewModel
 
     private bool HasSelection => SelectedStatBlock is not null;
 
+    public override IReadOnlyList<string> UnsavedChanges => Editor is { HasUnsavedChanges: true } editor
+        ? [$"Stat block: {editor.Name}"]
+        : [];
+
     partial void OnSearchTextChanged(string value)
     {
         RefreshListAsync(SelectedStatBlock?.Id, loadUntilFound: false).Forget();
@@ -165,6 +169,13 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     [RelayCommand]
     private void Cancel()
     {
+        // An untouched editor closes straight away; only real edits are worth a question.
+        if (Editor is { HasUnsavedChanges: true }
+            && !_confirmation.Confirm("Discard changes", "Discard the changes to this stat block?"))
+        {
+            return;
+        }
+
         Editor = null;
         StatusMessage = "";
     }

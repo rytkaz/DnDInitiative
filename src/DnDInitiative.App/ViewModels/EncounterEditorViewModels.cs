@@ -59,14 +59,24 @@ public sealed partial class EncounterCreatureViewModel : ObservableObject
 
 public sealed partial class EncounterEditorViewModel : ObservableValidator
 {
+    private readonly SavedState<Encounter> _savedState;
+
     [ObservableProperty]
     [NotifyDataErrorInfo]
     [Required(ErrorMessage = "An encounter needs a name.")]
     private string _name = "";
 
+    public bool HasUnsavedChanges => _savedState.HasChanges;
+
     public EncounterEditorViewModel(Guid id)
     {
         Id = id;
+        _savedState = new SavedState<Encounter>(ToEncounter);
+    }
+
+    public void MarkSaved()
+    {
+        _savedState.MarkSaved();
     }
 
     public Guid Id { get; }

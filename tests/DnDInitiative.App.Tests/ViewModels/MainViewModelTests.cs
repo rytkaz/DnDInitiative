@@ -10,35 +10,69 @@ namespace DnDInitiative.App.Tests.ViewModels;
 
 public class MainViewModelTests
 {
-    [Fact]
-    public void StartCombatMessage_NavigatesToTheTracker()
+    private readonly WeakReferenceMessenger _messenger = new();
+    private readonly FakeConfirmation _confirmation = new();
+    private readonly InitiativeTrackerViewModel _tracker;
+    private readonly EncounterBuilderViewModel _encounterBuilder;
+    private readonly PartySetupViewModel _partySetup;
+    private readonly MainViewModel _viewModel;
+
+    public MainViewModelTests()
     {
-        var messenger = new WeakReferenceMessenger();
         var parties = new InMemoryPartyRepository();
         var statBlocks = new InMemoryStatBlockRepository();
-        var tracker = new InitiativeTrackerViewModel(
+
+        _tracker = new InitiativeTrackerViewModel(
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
             parties,
             statBlocks,
-            messenger,
-            new FakeConfirmation());
-        var encounterBuilder = new EncounterBuilderViewModel(
+            _messenger,
+            _confirmation);
+        _encounterBuilder = new EncounterBuilderViewModel(
             new InMemoryEncounterRepository(),
-            statBlocks, 
-            parties, 
-            messenger, 
+            statBlocks,
+            parties,
+            _messenger,
             new FakeClipboard(),
-            new FakeConfirmation());
-        var viewModel = new MainViewModel(
-            tracker,
-            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), new FakeConfirmation()),
-            encounterBuilder,
-            new PartySetupViewModel(parties, new FakeConfirmation()),
-            messenger);
-        viewModel.CurrentPage = encounterBuilder;
+            _confirmation);
+        _partySetup = new PartySetupViewModel(parties, _confirmation);
+        _viewModel = new MainViewModel(
+            _tracker,
+            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation),
+            _encounterBuilder,
+            _partySetup,
+            _messenger,
+            _confirmation);
+    }
 
-        messenger.Send(new StartCombatMessage("Ambush", [], Party: null));
+    [Fact]
+    public void StartCombatMessage_NavigatesToTheTracker()
+    {
+        _viewModel.CurrentPage = _encounterBuilder;
 
-        Assert.Same(tracker, viewModel.CurrentPage);
+        _messenger.Send(new StartCombatMessage("Ambush", [], Party: null));
+
+        Assert.Same(_tracker, _viewModel.CurrentPage);
+    }
+
+    [Fact]
+    public void ConfirmClose_NothingUnsaved_ClosesWithoutAsking()
+    {
+        Assert.True(_viewModel.ConfirmClose());
+        Assert.Empty(_confirmation.Questions);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ConfirmClose_UnsavedParty_NamesItAndFollowsTheAnswer(bool answer)
+    {
+        _partySetup.NewPartyCommand.Execute(null);
+        _confirmation.Answer = answer;
+
+        bool canClose = _viewModel.ConfirmClose();
+
+        Assert.Equal(answer, canClose);
+        Assert.Contains("New party", Assert.Single(_confirmation.Questions), StringComparison.Ordinal);
     }
 }

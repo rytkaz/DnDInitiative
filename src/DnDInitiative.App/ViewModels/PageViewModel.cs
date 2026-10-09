@@ -8,4 +8,9 @@ namespace DnDInitiative.App.ViewModels;
 public abstract class PageViewModel : ObservableObject
 {
     public abstract string Title { get; }
+
+    /// <summary>
+    /// A description of each thing on this page that would be lost if the app closed now.
+    /// </summary>
+    public virtual IReadOnlyList<string> UnsavedChanges => [];
 }

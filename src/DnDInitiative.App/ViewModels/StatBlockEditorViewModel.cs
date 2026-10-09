@@ -10,6 +10,7 @@ namespace DnDInitiative.App.ViewModels;
 public sealed partial class StatBlockEditorViewModel : ObservableValidator
 {
     private readonly Guid _id;
+    private readonly SavedState<StatBlock> _savedState;
 
     private readonly TextFieldViewModel _source;
     private readonly TextFieldViewModel _size;
@@ -47,6 +48,8 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
     [NotifyDataErrorInfo]
     [Required(ErrorMessage = "A stat block needs a name.")]
     private string _name = "";
+
+    public bool HasUnsavedChanges => _savedState.HasChanges;
 
     public StatBlockEditorViewModel(StatBlock statBlock)
     {
@@ -101,6 +104,9 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
             _damageImmunities, _conditionImmunities, _senses, _languages, _source,
         ];
         FeatureLists = [_traits, _actions, _bonusActions, _reactions, _legendaryActions];
+
+        _savedState = new SavedState<StatBlock>(ToStatBlock);
+        _savedState.MarkSaved();
     }
 
     public IReadOnlyList<NumberFieldViewModel> NumberFields { get; }

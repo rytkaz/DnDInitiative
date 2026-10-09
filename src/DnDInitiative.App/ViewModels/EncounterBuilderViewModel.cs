@@ -90,6 +90,11 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     private bool CanAddCreature => SelectedEncounter is not null && SelectedStatBlock is not null;
 
+    public override IReadOnlyList<string> UnsavedChanges => Encounters
+        .Where(encounter => encounter.HasUnsavedChanges)
+        .Select(encounter => $"Encounter: {encounter.Name}")
+        .ToList();
+
     partial void OnSelectedEncounterChanged(EncounterEditorViewModel? value)
     {
         Recalculate();
@@ -172,6 +177,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         }
 
         await _encounterRepository.SaveAsync(editor.ToEncounter());
+        editor.MarkSaved();
         StatusMessage = $"Saved {editor.Name}.";
     }
 
@@ -267,7 +273,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         // The link only holds an Id, so the encounter has to be stored for it to work.
         Encounter encounter = editor.ToEncounter();
         await _encounterRepository.SaveAsync(encounter);
-
+        editor.MarkSaved();
         var link = new EncounterLink(encounter.Id, SelectedParty?.Id);
         string markdown = $"[{encounter.Name}]({link})";
 
@@ -283,7 +289,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         {
             editor.Creatures.Add(CreateRow(creature));
         }
-
+        editor.MarkSaved();
         return editor;
     }
 
