@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Windows.Controls.Primitives;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -24,6 +25,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     private readonly IPartyRepository _partyRepository;
     private readonly IMessenger _messenger;
     private readonly IClipboardService _clipboard;
+    private readonly IConfirmationService _confirmation;
 
     // Only the stat blocks that encounters on this page actually use.
     private readonly Dictionary<Guid, StatBlock> _statBlocksById = new();
@@ -65,13 +67,15 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         IStatBlockRepository statBlockRepository,
         IPartyRepository partyRepository,
         IMessenger messenger,
-        IClipboardService clipboard)
+        IClipboardService clipboard,
+        IConfirmationService confirmation)
     {
         _encounterRepository = encounterRepository;
         _statBlockRepository = statBlockRepository;
         _partyRepository = partyRepository;
         _messenger = messenger;
         _clipboard = clipboard;
+        _confirmation = confirmation;
     }
 
     public override string Title => "Encounter Builder";
@@ -175,6 +179,11 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     private async Task DeleteAsync()
     {
         if (SelectedEncounter is not { } editor)
+        {
+            return;
+        }
+
+        if (!_confirmation.Confirm("Delete party", $"Delete {editor.Name}? This cannot be undone."))
         {
             return;
         }

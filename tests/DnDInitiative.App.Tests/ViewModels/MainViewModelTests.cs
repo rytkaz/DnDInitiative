@@ -20,18 +20,20 @@ public class MainViewModelTests
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
             parties,
             statBlocks,
-            messenger);
+            messenger,
+            new FakeConfirmation());
         var encounterBuilder = new EncounterBuilderViewModel(
             new InMemoryEncounterRepository(),
             statBlocks, 
             parties, 
             messenger, 
-            new FakeClipboard());
+            new FakeClipboard(),
+            new FakeConfirmation());
         var viewModel = new MainViewModel(
             tracker,
-            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker()),
+            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), new FakeConfirmation()),
             encounterBuilder,
-            new PartySetupViewModel(parties),
+            new PartySetupViewModel(parties, new FakeConfirmation()),
             messenger);
         viewModel.CurrentPage = encounterBuilder;
 

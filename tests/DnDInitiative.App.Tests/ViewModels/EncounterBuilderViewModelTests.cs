@@ -174,7 +174,8 @@ public class EncounterBuilderViewModelTests
             new InMemoryStatBlockRepository(many),
             new InMemoryPartyRepository(_party),
             new WeakReferenceMessenger(),
-            new FakeClipboard());
+            new FakeClipboard(),
+            new FakeConfirmation());
         await viewModel.LoadCommand.ExecuteAsync(null);
         Assert.Equal(100, viewModel.FilteredStatBlocks.Count);
 
@@ -183,17 +184,46 @@ public class EncounterBuilderViewModelTests
         Assert.Equal(150, viewModel.FilteredStatBlocks.Count);
     }
 
+    [Fact]
+    public async Task DeleteCommand_Confirmed_RemovesTheEncounter()
+    {
+        var encounters = new InMemoryEncounterRepository(new Encounter(Guid.NewGuid(), "Ambush", []));
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
+
+        await viewModel.DeleteCommand.ExecuteAsync(null);
+
+        Assert.Empty(encounters.Encounters);
+        Assert.Empty(viewModel.Encounters);
+        Assert.Null(viewModel.SelectedEncounter);
+    }
+
+    [Fact]
+    public async Task DeleteCommand_Declined_KeepsTheEncounter()
+    {
+        var encounters = new InMemoryEncounterRepository(new Encounter(Guid.NewGuid(), "Ambush", []));
+        var confirmation = new FakeConfirmation { Answer = false };
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters, confirmation: confirmation);
+
+        await viewModel.DeleteCommand.ExecuteAsync(null);
+
+        Assert.Single(confirmation.Questions);
+        Assert.Single(encounters.Encounters);
+        Assert.Equal("Ambush", SelectedEditor(viewModel).Name);
+    }
+
     private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(
         InMemoryEncounterRepository? encounters = null,
         IMessenger? messenger = null,
-        FakeClipboard? clipboard = null)
+        FakeClipboard? clipboard = null,
+        FakeConfirmation? confirmation = null)
     {
         var viewModel = new EncounterBuilderViewModel(
             encounters ?? new InMemoryEncounterRepository(),
             new InMemoryStatBlockRepository(_goblin),
             new InMemoryPartyRepository(_party),
             messenger ?? new WeakReferenceMessenger(),
-            clipboard ?? new FakeClipboard());
+            clipboard ?? new FakeClipboard(),
+            confirmation ?? new FakeConfirmation());
         await viewModel.LoadCommand.ExecuteAsync(null);
         return viewModel;
     }

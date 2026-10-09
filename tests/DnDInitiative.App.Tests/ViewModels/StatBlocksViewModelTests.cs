@@ -198,6 +198,35 @@ public class StatBlocksViewModelTests
         Assert.Equal("Zombie", viewModel.Details?.Name);
     }
 
+    [Fact]
+    public async Task DeleteCommand_Confirmed_RemovesTheStatBlock()
+    {
+        var repository = new InMemoryStatBlockRepository(Create("Goblin"));
+        StatBlocksViewModel viewModel = CreateViewModel(repository);
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        await viewModel.DeleteCommand.ExecuteAsync(null);
+
+        Assert.Empty(repository.StatBlocks);
+        Assert.Empty(viewModel.FilteredStatBlocks);
+        Assert.Null(viewModel.SelectedStatBlock);
+    }
+
+    [Fact]
+    public async Task DeleteCommand_Declined_KeepsTheStatBlock()
+    {
+        var repository = new InMemoryStatBlockRepository(Create("Goblin"));
+        var confirmation = new FakeConfirmation { Answer = false };
+        StatBlocksViewModel viewModel = CreateViewModel(repository, confirmation: confirmation);
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        await viewModel.DeleteCommand.ExecuteAsync(null);
+
+        Assert.Single(confirmation.Questions);
+        Assert.Single(repository.StatBlocks);
+        Assert.Equal("Goblin", viewModel.SelectedStatBlock?.Name);
+    }
+
     private static StatBlock[] CreateMany(int count)
     {
         return Enumerable.Range(0, count)
@@ -211,13 +240,15 @@ public class StatBlocksViewModelTests
     }
 
     private static StatBlocksViewModel CreateViewModel(
-    InMemoryStatBlockRepository repository,
-    FakeStatBlockImporter? importer = null,
-    FakeFolderPicker? folderPicker = null)
+        InMemoryStatBlockRepository repository,
+        FakeStatBlockImporter? importer = null,
+        FakeFolderPicker? folderPicker = null,
+        FakeConfirmation? confirmation = null)
     {
         return new StatBlocksViewModel(
             repository,
             importer ?? new FakeStatBlockImporter(),
-            folderPicker ?? new FakeFolderPicker());
+            folderPicker ?? new FakeFolderPicker(),
+            confirmation ?? new FakeConfirmation());
     }
 }

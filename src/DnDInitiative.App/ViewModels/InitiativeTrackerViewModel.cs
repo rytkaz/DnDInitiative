@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
+using DnDInitiative.App.Services;
 using DnDInitiative.Core.Combat;
 using DnDInitiative.Core.Dice;
 using DnDInitiative.Core.Parties;
@@ -20,6 +21,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private readonly CombatantFactory _combatantFactory;
     private readonly IPartyRepository _partyRepository;
     private readonly IStatBlockRepository _statBlockRepository;
+    private readonly IConfirmationService _confirmation;
     private InitiativeTracker _tracker = new();
     private CombatantNamer _namer = new();
 
@@ -86,13 +88,15 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         CombatantFactory combatantFactory,
         IPartyRepository partyRepository,
         IStatBlockRepository statBlockRepository,
-        IMessenger messenger)
+        IMessenger messenger,
+        IConfirmationService confirmation)
     {
         ArgumentNullException.ThrowIfNull(messenger);
 
         _combatantFactory = combatantFactory;
         _partyRepository = partyRepository;
         _statBlockRepository = statBlockRepository;
+        _confirmation = confirmation;
         messenger.Register<StartCombatMessage>(this);
     }
 
@@ -250,6 +254,12 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     {
         ArgumentNullException.ThrowIfNull(message);
 
+        // Asked before anything changes, so declining leaves the party selection alone too.
+        if (!ConfirmReplacingCombat())
+        {
+            return;
+        }
+
         // No party in the message means "keep whichever party is selected".
         if (message.Party is not null)
         {
@@ -262,7 +272,19 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     [RelayCommand]
     private void NewCombat()
     {
-        StartCombat(name: "", creatures: []);
+        if (ConfirmReplacingCombat())
+        {
+            StartCombat(name: "", creatures: []);
+        }
+    }
+
+    /// <summary>An empty tracker has nothing to lose, so it is replaced without asking.</summary>
+    private bool ConfirmReplacingCombat()
+    {
+        return _tracker.Combatants.Count == 0
+            || _confirmation.Confirm(
+                "Start a new combat",
+                "This ends the combat in progress and clears its combatants. Continue?");
     }
 
     private void StartCombat(string name, IReadOnlyList<CombatantBlueprint> creatures)

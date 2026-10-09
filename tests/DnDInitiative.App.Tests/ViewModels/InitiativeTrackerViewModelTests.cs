@@ -261,13 +261,58 @@ public class InitiativeTrackerViewModelTests
         Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
     }
 
+    [Fact]
+    public void NewCombatCommand_EmptyTracker_DoesNotAsk()
+    {
+        var confirmation = new FakeConfirmation();
+        InitiativeTrackerViewModel viewModel = CreateViewModel(confirmation);
+
+        viewModel.NewCombatCommand.Execute(null);
+
+        Assert.Empty(confirmation.Questions);
+    }
+
+    [Fact]
+    public void NewCombatCommand_Declined_KeepsTheCombatInProgress()
+    {
+        var confirmation = new FakeConfirmation { Answer = false };
+        InitiativeTrackerViewModel viewModel = CreateViewModel(confirmation);
+        viewModel.NewName = "Goblin";
+        viewModel.AddCreatureCommand.Execute(null);
+        viewModel.NextCommand.Execute(null);
+
+        viewModel.NewCombatCommand.Execute(null);
+
+        Assert.Single(confirmation.Questions);
+        Assert.Equal("Goblin", Assert.Single(viewModel.Combatants).Name);
+        Assert.Equal(2, viewModel.Round);
+    }
+
+    [Fact]
+    public void StartCombatMessage_Declined_KeepsTheCombatAndTheSelectedParty()
+    {
+        var messenger = new WeakReferenceMessenger();
+        var confirmation = new FakeConfirmation { Answer = false };
+        InitiativeTrackerViewModel viewModel = CreateViewModel(confirmation, messenger);
+        viewModel.NewName = "Leftover";
+        viewModel.AddCreatureCommand.Execute(null);
+        var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
+
+        messenger.Send(new StartCombatMessage("Ambush", [new CombatantBlueprint("Goblin")], party));
+
+        Assert.Equal("", viewModel.CombatName);
+        Assert.Null(viewModel.SelectedParty);
+        Assert.Equal("Leftover", Assert.Single(viewModel.Combatants).Name);
+    }
+
     private static InitiativeTrackerViewModel CreateViewModelWithLibrary(params StatBlock[] statBlocks)
     {
         return new InitiativeTrackerViewModel(
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(statBlocks),
-            new WeakReferenceMessenger());
+            new WeakReferenceMessenger(),
+            new FakeConfirmation());
     }
 
     private static InitiativeTrackerViewModel CreateViewModelInCombatWithGoblinAndPlayer()
@@ -278,7 +323,8 @@ public class InitiativeTrackerViewModelTests
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(goblin),
-            messenger);
+            messenger,
+            new FakeConfirmation());
 
         messenger.Send(new StartCombatMessage("Ambush", [goblin.ToBlueprint(), new CombatantBlueprint("Aria")], Party: null));
         return viewModel;
@@ -295,7 +341,18 @@ public class InitiativeTrackerViewModelTests
             new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(dieResult))),
             new InMemoryPartyRepository(parties),
             new InMemoryStatBlockRepository(),
-            messenger);
+            messenger,
+            new FakeConfirmation());
+    }
+
+    private static InitiativeTrackerViewModel CreateViewModel(FakeConfirmation confirmation, IMessenger? messenger = null)
+    {
+        return new InitiativeTrackerViewModel(
+            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
+            new InMemoryPartyRepository(),
+            new InMemoryStatBlockRepository(),
+            messenger ?? new WeakReferenceMessenger(),
+            confirmation);
     }
 
     private static InitiativeTrackerViewModel CreateViewModelWithGoblins(int quantity)

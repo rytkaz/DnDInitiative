@@ -22,6 +22,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     private readonly IStatBlockRepository _repository;
     private readonly IStatBlockImporter _importer;
     private readonly IFolderPicker _folderPicker;
+    private readonly IConfirmationService _confirmation;
     private bool _isLoaded;
 
     // The full stat block behind the selected list row, loaded when the selection changes.
@@ -47,11 +48,16 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
-    public StatBlocksViewModel(IStatBlockRepository repository, IStatBlockImporter importer, IFolderPicker folderPicker)
+    public StatBlocksViewModel(
+        IStatBlockRepository repository,
+        IStatBlockImporter importer,
+        IFolderPicker folderPicker,
+        IConfirmationService confirmation)
     {
         _repository = repository;
         _importer = importer;
         _folderPicker = folderPicker;
+        _confirmation = confirmation;
     }
 
     public override string Title => "Stat Blocks";
@@ -121,6 +127,11 @@ public sealed partial class StatBlocksViewModel : PageViewModel
     private async Task DeleteAsync()
     {
         if (SelectedStatBlock is not { } selected)
+        {
+            return;
+        }
+
+        if (!_confirmation.Confirm("Delete stat block", $"Delete {selected.Name}? This cannot be undone."))
         {
             return;
         }

@@ -3,6 +3,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using DnDInitiative.App.Services;
 using DnDInitiative.Core.Parties;
 
 namespace DnDInitiative.App.ViewModels;
@@ -10,6 +11,7 @@ namespace DnDInitiative.App.ViewModels;
 public sealed partial class PartySetupViewModel : PageViewModel
 {
     private readonly IPartyRepository _repository;
+    private readonly IConfirmationService _confirmation;
     private bool _isLoaded;
 
     [ObservableProperty]
@@ -20,9 +22,10 @@ public sealed partial class PartySetupViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
-    public PartySetupViewModel(IPartyRepository repository)
+    public PartySetupViewModel(IPartyRepository repository, IConfirmationService confirmation)
     {
         _repository = repository;
+        _confirmation = confirmation;
     }
 
     public override string Title => "Party Setup";
@@ -83,6 +86,11 @@ public sealed partial class PartySetupViewModel : PageViewModel
     private async Task DeleteAsync()
     {
         if (SelectedParty is not { } editor)
+        {
+            return;
+        }
+
+        if (!_confirmation.Confirm("Delete party", $"Delete {editor.Name}? This cannot be undone."))
         {
             return;
         }
