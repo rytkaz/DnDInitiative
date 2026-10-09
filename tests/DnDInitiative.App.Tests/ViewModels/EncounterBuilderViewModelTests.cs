@@ -163,6 +163,26 @@ public class EncounterBuilderViewModelTests
         Assert.Equal($"[Ambush]({expectedLink})", clipboard.Text);
     }
 
+    [Fact]
+    public async Task LoadMoreStatBlocksCommand_AppendsTheNextPage()
+    {
+        StatBlock[] many = Enumerable.Range(0, 150)
+            .Select(index => new StatBlock { Id = Guid.NewGuid(), Name = $"Creature {index:D3}" })
+            .ToArray();
+        var viewModel = new EncounterBuilderViewModel(
+            new InMemoryEncounterRepository(),
+            new InMemoryStatBlockRepository(many),
+            new InMemoryPartyRepository(_party),
+            new WeakReferenceMessenger(),
+            new FakeClipboard());
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.Equal(100, viewModel.FilteredStatBlocks.Count);
+
+        await viewModel.LoadMoreStatBlocksCommand.ExecuteAsync(null);
+
+        Assert.Equal(150, viewModel.FilteredStatBlocks.Count);
+    }
+
     private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(
         InMemoryEncounterRepository? encounters = null,
         IMessenger? messenger = null,

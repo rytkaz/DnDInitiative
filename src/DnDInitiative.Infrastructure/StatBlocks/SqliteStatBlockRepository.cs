@@ -169,10 +169,12 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository
     public async Task<IReadOnlyList<StatBlockSummary>> SearchAsync(
         string searchText,
         int limit,
+        int skip = 0,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(searchText);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        ArgumentOutOfRangeException.ThrowIfNegative(skip);
 
         await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
 
@@ -187,6 +189,8 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository
 
         return await query
             .OrderBy(statBlock => statBlock.Name)
+            .ThenBy(statBlock => statBlock.Id)
+            .Skip(skip)
             .Take(limit)
             .Select(statBlock => new StatBlockSummary(
                 statBlock.Id,

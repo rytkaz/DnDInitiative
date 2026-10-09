@@ -43,14 +43,17 @@ internal sealed class InMemoryStatBlockRepository : IStatBlockRepository
     }
 
     public Task<IReadOnlyList<StatBlockSummary>> SearchAsync(
-    string searchText,
-    int limit,
-    CancellationToken cancellationToken = default)
+        string searchText,
+        int limit,
+        int skip = 0,
+        CancellationToken cancellationToken = default)
     {
         string trimmed = searchText.Trim();
         List<StatBlockSummary> results = _statBlocks
             .Where(statBlock => trimmed.Length == 0 || statBlock.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
             .OrderBy(statBlock => statBlock.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(statBlock => statBlock.Id)
+            .Skip(skip)
             .Take(limit)
             .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source))
             .ToList();

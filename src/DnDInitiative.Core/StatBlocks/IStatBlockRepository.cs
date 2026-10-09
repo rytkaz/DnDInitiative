@@ -14,9 +14,14 @@ public interface IStatBlockRepository
 
     /// <summary>
     /// Finds stat blocks whose name contains the text, ignoring case, sorted by name.
-    /// An empty text matches everything. At most <paramref name="limit"/> results are returned.
+    /// An empty text matches everything. Skips the first <paramref name="skip"/> matches
+    /// and returns at most <paramref name="limit"/>.
     /// </summary>
-    Task<IReadOnlyList<StatBlockSummary>> SearchAsync(string searchText, int limit, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StatBlockSummary>> SearchAsync(
+        string searchText,
+        int limit,
+        int skip = 0,
+        CancellationToken cancellationToken = default);
 
     Task<StatBlock?> GetAsync(Guid id, CancellationToken cancellationToken = default);
 

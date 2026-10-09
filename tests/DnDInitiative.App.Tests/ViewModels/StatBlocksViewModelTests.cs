@@ -1,4 +1,6 @@
-﻿using DnDInitiative.App.Tests.Fakes;
+﻿using System.Globalization;
+
+using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.StatBlocks;
 
@@ -151,6 +153,56 @@ public class StatBlocksViewModelTests
         await viewModel.SaveCommand.ExecuteAsync(null);
 
         Assert.Contains(new LabeledValue("Armor Class", "18"), viewModel.Details?.CoreStats ?? []);
+    }
+
+    [Fact]
+    public async Task LoadMoreCommand_AppendsTheNextPageUntilTheEnd()
+    {
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(CreateMany(250)));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        Assert.Equal(100, viewModel.FilteredStatBlocks.Count);
+
+        await viewModel.LoadMoreCommand.ExecuteAsync(null);
+        Assert.Equal(200, viewModel.FilteredStatBlocks.Count);
+
+        await viewModel.LoadMoreCommand.ExecuteAsync(null);
+        await viewModel.LoadMoreCommand.ExecuteAsync(null);
+        Assert.Equal(250, viewModel.FilteredStatBlocks.Count);
+        Assert.Equal(250, viewModel.FilteredStatBlocks.Select(summary => summary.Id).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task SearchText_Changed_StartsAgainFromTheFirstPage()
+    {
+        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(CreateMany(250)));
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        await viewModel.LoadMoreCommand.ExecuteAsync(null);
+
+        viewModel.SearchText = "Creature 00";
+
+        Assert.Equal(10, viewModel.FilteredStatBlocks.Count);
+    }
+
+    [Fact]
+    public async Task SaveCommand_StatBlockBeyondTheFirstPage_IsStillSelectedAfterwards()
+    {
+        var repository = new InMemoryStatBlockRepository(CreateMany(250));
+        StatBlocksViewModel viewModel = CreateViewModel(repository);
+        await viewModel.LoadCommand.ExecuteAsync(null);
+        viewModel.NewCommand.Execute(null);
+        Assert.IsType<StatBlockEditorViewModel>(viewModel.Editor).Name = "Zombie";
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal("Zombie", viewModel.SelectedStatBlock?.Name);
+        Assert.Equal("Zombie", viewModel.Details?.Name);
+    }
+
+    private static StatBlock[] CreateMany(int count)
+    {
+        return Enumerable.Range(0, count)
+            .Select(index => Create("Creature " + index.ToString("D3", CultureInfo.InvariantCulture)))
+            .ToArray();
     }
 
     private static StatBlock Create(string name)

@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
              xmlns:formatting="clr-namespace:DnDInitiative.App.Formatting"
+             xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:StatBlocksViewModel}"
              d:DesignWidth="900"
@@ -67,7 +68,8 @@
                        Text="{Binding StatusMessage}"
                        TextWrapping="Wrap" />
 
-            <ListBox DisplayMemberPath="Name"
+            <ListBox behaviors:LoadMoreOnScroll.Command="{Binding LoadMoreCommand}"
+                     DisplayMemberPath="Name"
                      ItemsSource="{Binding FilteredStatBlocks}"
                      SelectedItem="{Binding SelectedStatBlock}" />
         </DockPanel>

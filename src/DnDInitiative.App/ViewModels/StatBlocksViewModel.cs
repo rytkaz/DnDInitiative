@@ -12,7 +12,12 @@ namespace DnDInitiative.App.ViewModels;
 
 public sealed partial class StatBlocksViewModel : PageViewModel
 {
-    private const int SearchLimit = 200;
+    private const int PageSize = 100;
+
+    // Increased whenever the list is rebuilt, so results from an older request can be recognised and dropped.
+    private int _listVersion;
+    private int _activeRefreshes;
+    private bool _hasMore;
 
     private readonly IStatBlockRepository _repository;
     private readonly IStatBlockImporter _importer;
@@ -61,7 +66,7 @@ public sealed partial class StatBlocksViewModel : PageViewModel
 
     partial void OnSearchTextChanged(string value)
     {
-        _ = RefreshListAsync(SelectedStatBlock?.Id);
+        _ = RefreshListAsync(SelectedStatBlock?.Id, loadUntilFound: false);
     }
 
     partial void OnSelectedStatBlockChanged(StatBlockSummary? value)
@@ -181,31 +186,86 @@ public sealed partial class StatBlocksViewModel : PageViewModel
         }
     }
 
-    /// <summary>
-    /// Re-runs the current search and selects the given stat block, or the first result.
-    /// </summary>
-    private async Task RefreshListAsync(Guid? selectId)
+    [RelayCommand]
+    private async Task LoadMoreAsync()
     {
-        string search = SearchText;
-        IReadOnlyList<StatBlockSummary> results = await _repository.SearchAsync(search, SearchLimit);
-
-        // The user typed again while this search was running: a newer one will fill the list.
-        if (search != SearchText)
+        if (_hasMore && _activeRefreshes == 0)
         {
-            return;
+            await LoadNextPageAsync(SearchText, _listVersion);
+        }
+    }
+
+    /// <summary>
+    /// Rebuilds the list from the first page and selects the given stat block, or the first row.
+    /// </summary>
+    /// <param name="selectId">The stat block to select afterwards, if it is in the list.</param>
+    /// <param name="loadUntilFound">
+    /// Whether to keep loading pages until that stat block appears. Used after saving, so the
+    /// saved row stays selected even when it is far down the list.
+    /// </param>
+    private async Task RefreshListAsync(Guid? selectId, bool loadUntilFound = true)
+    {
+        int version = ++_listVersion;
+        _activeRefreshes++;
+        try
+        {
+            string search = SearchText;
+            IReadOnlyList<StatBlockSummary> firstPage = await _repository.SearchAsync(search, PageSize);
+
+            // A newer refresh started while this one was waiting: let it fill the list.
+            if (version != _listVersion)
+            {
+                return;
+            }
+
+            FilteredStatBlocks.Clear();
+            AppendPage(firstPage);
+
+            while (loadUntilFound
+                && selectId is { } id
+                && _hasMore
+                && FilteredStatBlocks.All(summary => summary.Id != id))
+            {
+                if (!await LoadNextPageAsync(search, version))
+                {
+                    return;
+                }
+            }
+
+            SelectedStatBlock = FilteredStatBlocks.FirstOrDefault(summary => summary.Id == selectId)
+                ?? FilteredStatBlocks.FirstOrDefault();
+
+            // Reload even if the same row is selected again: its contents may just have been saved.
+            await LoadDetailsAsync(SelectedStatBlock);
+        }
+        finally
+        {
+            _activeRefreshes--;
+        }
+    }
+
+    /// <summary>Appends the next page. Returns false if the list was rebuilt in the meantime.</summary>
+    private async Task<bool> LoadNextPageAsync(string search, int version)
+    {
+        IReadOnlyList<StatBlockSummary> page = await _repository.SearchAsync(search, PageSize, skip: FilteredStatBlocks.Count);
+        if (version != _listVersion)
+        {
+            return false;
         }
 
-        FilteredStatBlocks.Clear();
-        foreach (StatBlockSummary summary in results)
+        AppendPage(page);
+        return true;
+    }
+
+    private void AppendPage(IReadOnlyList<StatBlockSummary> page)
+    {
+        foreach (StatBlockSummary summary in page)
         {
             FilteredStatBlocks.Add(summary);
         }
 
-        SelectedStatBlock = FilteredStatBlocks.FirstOrDefault(summary => summary.Id == selectId)
-            ?? FilteredStatBlocks.FirstOrDefault();
-
-        // Reload even if the same row is selected again: its contents may just have been saved.
-        await LoadDetailsAsync(SelectedStatBlock);
+        // A full page means there may be more; a short one means that was the end.
+        _hasMore = page.Count == PageSize;
     }
 
     private async Task LoadDetailsAsync(StatBlockSummary? summary)

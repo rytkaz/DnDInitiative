@@ -14,7 +14,10 @@ namespace DnDInitiative.App.ViewModels;
 
 public sealed partial class EncounterBuilderViewModel : PageViewModel
 {
-    private const int SearchLimit = 200;
+    private const int PageSize = 100;
+
+    private int _statBlockListVersion;
+    private bool _hasMoreStatBlocks;
 
     private readonly IEncounterRepository _encounterRepository;
     private readonly IStatBlockRepository _statBlockRepository;
@@ -289,22 +292,49 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         }
     }
 
+    [RelayCommand]
+    private async Task LoadMoreStatBlocksAsync()
+    {
+        if (!_hasMoreStatBlocks)
+        {
+            return;
+        }
+
+        int version = _statBlockListVersion;
+        IReadOnlyList<StatBlockSummary> page = await _statBlockRepository.SearchAsync(
+            StatBlockSearchText,
+            PageSize,
+            skip: FilteredStatBlocks.Count);
+
+        if (version == _statBlockListVersion)
+        {
+            AppendStatBlockPage(page);
+        }
+    }
+
     private async Task RefreshStatBlockListAsync()
     {
-        string search = StatBlockSearchText;
-        IReadOnlyList<StatBlockSummary> results = await _statBlockRepository.SearchAsync(search, SearchLimit);
+        int version = ++_statBlockListVersion;
+        IReadOnlyList<StatBlockSummary> firstPage = await _statBlockRepository.SearchAsync(StatBlockSearchText, PageSize);
 
-        // The user typed again while this search was running: a newer one will fill the list.
-        if (search != StatBlockSearchText)
+        // A newer refresh started while this one was waiting: let it fill the list.
+        if (version != _statBlockListVersion)
         {
             return;
         }
 
         FilteredStatBlocks.Clear();
-        foreach (StatBlockSummary summary in results)
+        AppendStatBlockPage(firstPage);
+    }
+
+    private void AppendStatBlockPage(IReadOnlyList<StatBlockSummary> page)
+    {
+        foreach (StatBlockSummary summary in page)
         {
             FilteredStatBlocks.Add(summary);
         }
+
+        _hasMoreStatBlocks = page.Count == PageSize;
     }
 
     private void Recalculate()

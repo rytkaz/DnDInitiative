@@ -199,6 +199,37 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
         Assert.Empty(await repository.GetManyAsync([]));
     }
 
+    [Fact]
+    public async Task SearchAsync_WithSkip_ReturnsTheFollowingPage()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        await repository.SaveManyAsync([Create("Ape"), Create("Bat"), Create("Cat"), Create("Dog"), Create("Eel")]);
+
+        IReadOnlyList<StatBlockSummary> secondPage = await repository.SearchAsync("", limit: 2, skip: 2);
+        IReadOnlyList<StatBlockSummary> lastPage = await repository.SearchAsync("", limit: 2, skip: 4);
+
+        Assert.Equal(["Cat", "Dog"], secondPage.Select(summary => summary.Name));
+        Assert.Equal(["Eel"], lastPage.Select(summary => summary.Name));
+    }
+
+    [Fact]
+    public async Task SearchAsync_IdenticalNames_AppearExactlyOnceAcrossPages()
+    {
+        var repository = new SqliteStatBlockRepository(_database);
+        StatBlock[] goblins = [Create("Goblin"), Create("Goblin"), Create("Goblin"), Create("Goblin"), Create("Goblin")];
+        await repository.SaveManyAsync(goblins);
+
+        var seen = new List<Guid>();
+        for (int skip = 0; skip < goblins.Length; skip += 2)
+        {
+            IReadOnlyList<StatBlockSummary> page = await repository.SearchAsync("", limit: 2, skip: skip);
+            seen.AddRange(page.Select(summary => summary.Id));
+        }
+
+        Assert.Equal(goblins.Length, seen.Count);
+        Assert.Equal(goblins.Length, seen.Distinct().Count());
+    }
+
     private static StatBlock Create(string name)
     {
         return new StatBlock { Id = Guid.NewGuid(), Name = name };

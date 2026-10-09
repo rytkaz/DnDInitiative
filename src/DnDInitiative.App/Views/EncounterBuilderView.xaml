@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:EncounterBuilderViewModel}"
              d:DesignWidth="1100"
@@ -163,7 +164,9 @@
                     Padding="12,4"
                     Command="{Binding AddCreatureCommand}"
                     Content="Add to encounter" />
-            <ListBox ItemsSource="{Binding FilteredStatBlocks}" SelectedItem="{Binding SelectedStatBlock}">
+            <ListBox behaviors:LoadMoreOnScroll.Command="{Binding LoadMoreStatBlocksCommand}"
+                     ItemsSource="{Binding FilteredStatBlocks}"
+                     SelectedItem="{Binding SelectedStatBlock}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock>
