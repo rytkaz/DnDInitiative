@@ -32,7 +32,16 @@ public sealed class JsonUiStateStoreTests : IDisposable
     [Fact]
     public void Save_PanelSizes_AreReadBackByANewStore()
     {
-        var saved = new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 512.5, SourcesPanelHeight = 300 };
+        var saved = new UiState
+        {
+            IsNavigationCollapsed = true,
+            StatBlockPanelWidth = 512.5,
+            SourcesPanelHeight = 300,
+            ShowStatBlockPanel = false,
+            WindowWidth = 1600,
+            WindowHeight = 900,
+            IsWindowMaximized = true,
+        };
 
         new JsonUiStateStore(FilePath).Save(saved);
 
@@ -50,6 +59,10 @@ public sealed class JsonUiStateStoreTests : IDisposable
         Assert.True(state.IsNavigationCollapsed);
         Assert.Null(state.StatBlockPanelWidth);
         Assert.Null(state.SourcesPanelHeight);
+        Assert.Null(state.ShowStatBlockPanel);
+        Assert.Null(state.WindowWidth);
+        Assert.Null(state.WindowHeight);
+        Assert.False(state.IsWindowMaximized);
     }
 
     [Fact]

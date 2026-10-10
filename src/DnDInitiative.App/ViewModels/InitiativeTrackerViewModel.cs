@@ -128,11 +128,22 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         _uiState = uiState;
         messenger.Register<StartCombatMessage>(this);
 
+        UiState saved = uiState.Load();
+
         // Through the property, not the field, so a size saved by hand in the file is still clamped.
-        if (uiState.Load().StatBlockPanelWidth is { } savedWidth)
+        if (saved.StatBlockPanelWidth is { } savedWidth)
         {
             StatBlockPanelWidth = savedWidth;
         }
+
+        // The opposite here: assigned to the field, so restoring the choice does not save it again.
+        _showStatBlockPanel = saved.ShowStatBlockPanel ?? true;
+    }
+
+    // A tick box changes once per click, so unlike the width this can be saved as it changes.
+    partial void OnShowStatBlockPanelChanged(bool value)
+    {
+        _uiState.Save(_uiState.Load() with { ShowStatBlockPanel = value });
     }
 
     /// <summary>

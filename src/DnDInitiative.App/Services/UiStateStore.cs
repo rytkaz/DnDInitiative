@@ -15,6 +15,16 @@ public sealed record UiState
 
     /// <summary>Height of the book list on the import page.</summary>
     public double? SourcesPanelHeight { get; init; }
+
+    /// <summary>Whether the tracker page shows its stat block panel. Null means never changed: shown.</summary>
+    public bool? ShowStatBlockPanel { get; init; }
+
+    /// <summary>The main window's size when it is not maximized.</summary>
+    public double? WindowWidth { get; init; }
+
+    public double? WindowHeight { get; init; }
+
+    public bool IsWindowMaximized { get; init; }
 }
 
 /// <summary>Remembers the window's arrangement between runs.</summary>

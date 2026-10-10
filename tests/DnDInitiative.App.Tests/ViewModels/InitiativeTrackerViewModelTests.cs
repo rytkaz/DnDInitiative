@@ -392,6 +392,34 @@ public class InitiativeTrackerViewModelTests
     }
 
     [Fact]
+    public void Constructor_NothingSaved_ShowsTheStatBlockPanel()
+    {
+        Assert.True(CreateViewModel(new InMemoryUiStateStore()).ShowStatBlockPanel);
+    }
+
+    [Fact]
+    public void Constructor_PanelWasHidden_KeepsItHiddenWithoutSavingAgain()
+    {
+        var uiState = new InMemoryUiStateStore { State = new UiState { ShowStatBlockPanel = false } };
+
+        InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
+
+        Assert.False(viewModel.ShowStatBlockPanel);
+        Assert.Equal(0, uiState.SaveCount);
+    }
+
+    [Fact]
+    public void ShowStatBlockPanel_Changed_IsSavedAndKeepsTheRestOfTheState()
+    {
+        var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500 } };
+        InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
+
+        viewModel.ShowStatBlockPanel = false;
+
+        Assert.Equal(new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500, ShowStatBlockPanel = false }, uiState.State);
+    }
+
+    [Fact]
     public void SaveLayout_SavesThePanelWidthAndKeepsTheRestOfTheState()
     {
         var uiState = new InMemoryUiStateStore
