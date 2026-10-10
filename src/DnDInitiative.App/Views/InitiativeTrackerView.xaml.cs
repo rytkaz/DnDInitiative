@@ -200,6 +200,15 @@ public partial class InitiativeTrackerView : UserControl
         }
     }
 
+    // Saved once, when the mouse button is released, not for every step of the drag.
+    private void OnPanelResizeDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        if (DataContext is InitiativeTrackerViewModel viewModel)
+        {
+            viewModel.SaveLayout();
+        }
+    }
+
     // Opens the popup whose resource key is in the clicked button's Tag, anchored to that button.
     private void OnOpenPopupClick(object sender, RoutedEventArgs e)
     {

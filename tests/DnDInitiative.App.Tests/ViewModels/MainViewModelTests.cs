@@ -33,7 +33,8 @@ public class MainViewModelTests
             _parties,
             statBlocks,
             _messenger,
-            _confirmation);
+            _confirmation,
+            new InMemoryUiStateStore());
         _encounterBuilder = new EncounterBuilderViewModel(
             new InMemoryEncounterRepository(),
             statBlocks,
@@ -51,7 +52,8 @@ public class MainViewModelTests
             _messenger,
             new FakeConverterInstaller(),
             new FakeSourceDataService(),
-            new FakeConverterConfigWriter());
+            new FakeConverterConfigWriter(),
+            new InMemoryUiStateStore());
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, _messenger),
@@ -259,6 +261,16 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public void ToggleNavigationCommand_KeepsThePanelSizesTheOtherPagesSaved()
+    {
+        _uiState.State = new UiState { StatBlockPanelWidth = 500, SourcesPanelHeight = 300 };
+
+        _viewModel.ToggleNavigationCommand.Execute(null);
+
+        Assert.Equal(new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500, SourcesPanelHeight = 300 }, _uiState.State);
+    }
+
+    [Fact]
     public void Constructor_PanelWasFoldedAwayLastTime_StartsFoldedAwayWithoutSavingAgain()
     {
         var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true } };
@@ -272,7 +284,8 @@ public class MainViewModelTests
                 parties,
                 statBlocks,
                 messenger,
-                _confirmation),
+                _confirmation,
+                new InMemoryUiStateStore()),
             new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, messenger),
             _encounterBuilder,
             _partySetup,

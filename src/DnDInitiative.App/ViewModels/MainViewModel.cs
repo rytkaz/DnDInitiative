@@ -95,7 +95,8 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
 
     partial void OnIsNavigationCollapsedChanged(bool value)
     {
-        _uiState.Save(new UiState { IsNavigationCollapsed = value });
+        // "with" copies the saved state and changes one property, so the pages' panel sizes survive.
+        _uiState.Save(_uiState.Load() with { IsNavigationCollapsed = value });
     }
 
     // The Reload button lives in the panel. If the panel is folded away when files change

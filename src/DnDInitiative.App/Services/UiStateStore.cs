@@ -7,6 +7,14 @@ namespace DnDInitiative.App.Services;
 public sealed record UiState
 {
     public bool IsNavigationCollapsed { get; init; }
+
+    // The sizes are null until the user has dragged something, so each page keeps its own default.
+
+    /// <summary>Width of the stat block panel on the tracker page.</summary>
+    public double? StatBlockPanelWidth { get; init; }
+
+    /// <summary>Height of the book list on the import page.</summary>
+    public double? SourcesPanelHeight { get; init; }
 }
 
 /// <summary>Remembers the window's arrangement between runs.</summary>
@@ -15,12 +23,20 @@ public interface IUiStateStore
     /// <summary>Returns what was saved, or the defaults if nothing usable was.</summary>
     UiState Load();
 
+    /// <summary>
+    /// Replaces everything that was saved. Several pages share this state, so change only
+    /// your own part: <c>Save(Load() with { ... })</c>.
+    /// </summary>
     void Save(UiState state);
 }
 
 public sealed class JsonUiStateStore : IUiStateStore
 {
     private readonly string _filePath;
+
+    // Read from the file once, then kept here. Every page asks for the state when it is
+    // created and again each time it saves, and none of them should cost a file read.
+    private UiState? _state;
 
     public JsonUiStateStore(string filePath)
     {
@@ -30,6 +46,11 @@ public sealed class JsonUiStateStore : IUiStateStore
     // Both methods are synchronous on purpose. The file is a few bytes, and the main view
     // model needs the answer in its constructor, which cannot await anything.
     public UiState Load()
+    {
+        return _state ??= ReadFile();
+    }
+
+    private UiState ReadFile()
     {
         try
         {
@@ -55,6 +76,8 @@ public sealed class JsonUiStateStore : IUiStateStore
     {
         // Losing this only costs the user one click next time, so a failure to write
         // it must never interrupt what they are doing.
+        _state = state;
+
         try
         {
             if (Path.GetDirectoryName(_filePath) is { Length: > 0 } directory)

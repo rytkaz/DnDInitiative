@@ -24,6 +24,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private readonly IPartyRepository _partyRepository;
     private readonly IStatBlockRepository _statBlockRepository;
     private readonly IConfirmationService _confirmation;
+    private readonly IUiStateStore _uiState;
     private InitiativeTracker _tracker = new();
     private CombatantNamer _namer = new();
 
@@ -114,15 +115,33 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         IPartyRepository partyRepository,
         IStatBlockRepository statBlockRepository,
         IMessenger messenger,
-        IConfirmationService confirmation)
+        IConfirmationService confirmation,
+        IUiStateStore uiState)
     {
         ArgumentNullException.ThrowIfNull(messenger);
+        ArgumentNullException.ThrowIfNull(uiState);
 
         _combatantFactory = combatantFactory;
         _partyRepository = partyRepository;
         _statBlockRepository = statBlockRepository;
         _confirmation = confirmation;
+        _uiState = uiState;
         messenger.Register<StartCombatMessage>(this);
+
+        // Through the property, not the field, so a size saved by hand in the file is still clamped.
+        if (uiState.Load().StatBlockPanelWidth is { } savedWidth)
+        {
+            StatBlockPanelWidth = savedWidth;
+        }
+    }
+
+    /// <summary>
+    /// Remembers the panel width for the next run. Called when a drag ends rather than from
+    /// the property setter, which runs for every pixel the mouse moves.
+    /// </summary>
+    public void SaveLayout()
+    {
+        _uiState.Save(_uiState.Load() with { StatBlockPanelWidth = StatBlockPanelWidth });
     }
 
     public override async Task ReloadCampaignDataAsync()

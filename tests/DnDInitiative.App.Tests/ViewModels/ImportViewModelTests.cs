@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
+using DnDInitiative.App.Services;
 using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.StatBlocks;
@@ -19,6 +20,7 @@ public class ImportViewModelTests
     private readonly FakeConverterInstaller _installer = new();
     private readonly FakeSourceDataService _sourceData = new();
     private readonly FakeConverterConfigWriter _configWriter = new();
+    private readonly InMemoryUiStateStore _uiState = new();
     private StatBlocksImportedMessage? _received;
 
     public ImportViewModelTests()
@@ -27,7 +29,7 @@ public class ImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter);
+        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState);
     }
 
     [Fact]
@@ -374,6 +376,29 @@ public class ImportViewModelTests
         _viewModel.SourcesPanelHeight = requested;
 
         Assert.Equal(expected, _viewModel.SourcesPanelHeight);
+    }
+
+    [Fact]
+    public void Constructor_UsesTheSavedSourcesPanelHeight()
+    {
+        _uiState.State = new UiState { SourcesPanelHeight = 420 };
+
+        var viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState);
+
+        Assert.Equal(420, viewModel.SourcesPanelHeight);
+    }
+
+    [Fact]
+    public void SaveLayout_SavesTheSourcesPanelHeightAndKeepsTheRestOfTheState()
+    {
+        _uiState.State = new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500 };
+
+        _viewModel.SourcesPanelHeight = 300;
+        Assert.Equal(0, _uiState.SaveCount);
+
+        _viewModel.SaveLayout();
+
+        Assert.Equal(new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500, SourcesPanelHeight = 300 }, _uiState.State);
     }
 
     [Fact]

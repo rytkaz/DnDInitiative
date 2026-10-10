@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
+using DnDInitiative.App.Services;
 using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Combat;
@@ -371,6 +372,43 @@ public class InitiativeTrackerViewModelTests
     }
 
     [Fact]
+    public void Constructor_UsesTheSavedPanelWidth()
+    {
+        var uiState = new InMemoryUiStateStore { State = new UiState { StatBlockPanelWidth = 640 } };
+
+        InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
+
+        Assert.Equal(640, viewModel.StatBlockPanelWidth);
+    }
+
+    [Fact]
+    public void Constructor_SavedPanelWidthOutsideTheLimits_IsClamped()
+    {
+        var uiState = new InMemoryUiStateStore { State = new UiState { StatBlockPanelWidth = 99999 } };
+
+        InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
+
+        Assert.Equal(1200, viewModel.StatBlockPanelWidth);
+    }
+
+    [Fact]
+    public void SaveLayout_SavesThePanelWidthAndKeepsTheRestOfTheState()
+    {
+        var uiState = new InMemoryUiStateStore
+        {
+            State = new UiState { IsNavigationCollapsed = true, SourcesPanelHeight = 300 },
+        };
+        InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
+
+        viewModel.StatBlockPanelWidth = 500;
+        Assert.Equal(0, uiState.SaveCount);
+
+        viewModel.SaveLayout();
+
+        Assert.Equal(new UiState { IsNavigationCollapsed = true, SourcesPanelHeight = 300, StatBlockPanelWidth = 500 }, uiState.State);
+    }
+
+    [Fact]
     public void RerollInitiativeCommand_RerollsCreaturesButNotPlayers()
     {
         // Rolls in order: Aria 10, Goblin 10 (+2), then the reroll for the goblin: 3 (+2).
@@ -380,7 +418,8 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(),
             messenger,
-            new FakeConfirmation());
+            new FakeConfirmation(),
+            new InMemoryUiStateStore());
         var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
         messenger.Send(new StartCombatMessage("Ambush", [new CombatantBlueprint("Goblin", InitiativeModifier: 2)], party));
         Assert.Equal("Goblin", viewModel.Combatants[0].Name);
@@ -400,7 +439,19 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(statBlocks),
             new WeakReferenceMessenger(),
-            new FakeConfirmation());
+            new FakeConfirmation(),
+            new InMemoryUiStateStore());
+    }
+
+    private static InitiativeTrackerViewModel CreateViewModel(InMemoryUiStateStore uiState)
+    {
+        return new InitiativeTrackerViewModel(
+            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
+            new InMemoryPartyRepository(),
+            new InMemoryStatBlockRepository(),
+            new WeakReferenceMessenger(),
+            new FakeConfirmation(),
+            uiState);
     }
 
     private static InitiativeTrackerViewModel CreateViewModelInCombatWithGoblinAndPlayer()
@@ -412,7 +463,8 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(goblin),
             messenger,
-            new FakeConfirmation());
+            new FakeConfirmation(),
+            new InMemoryUiStateStore());
 
         messenger.Send(new StartCombatMessage("Ambush", [goblin.ToBlueprint(), new CombatantBlueprint("Aria")], Party: null));
         return viewModel;
@@ -430,7 +482,8 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(parties),
             new InMemoryStatBlockRepository(),
             messenger,
-            new FakeConfirmation());
+            new FakeConfirmation(),
+            new InMemoryUiStateStore());
     }
 
     private static InitiativeTrackerViewModel CreateViewModel(FakeConfirmation confirmation, IMessenger? messenger = null)
@@ -440,7 +493,8 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(),
             messenger ?? new WeakReferenceMessenger(),
-            confirmation);
+            confirmation,
+            new InMemoryUiStateStore());
     }
 
     private static InitiativeTrackerViewModel CreateViewModelWithGoblins(int quantity)

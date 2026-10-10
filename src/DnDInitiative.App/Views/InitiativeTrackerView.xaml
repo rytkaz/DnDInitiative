@@ -220,6 +220,7 @@
         <Thumb Width="12"
                Cursor="SizeWE"
                DockPanel.Dock="Right"
+               DragCompleted="OnPanelResizeDragCompleted"
                DragDelta="OnPanelResizeDragDelta"
                ToolTip="Drag to resize"
                Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">

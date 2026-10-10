@@ -123,15 +123,23 @@
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <!--  Flows into as many columns as fit the width.  -->
-                                <WrapPanel ItemWidth="320" />
+                                <WrapPanel />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
+                        <!--
+                            The width and the hiding are set on the item's container, which is what the
+                            WrapPanel lays out. A collapsed container takes no space, so the books that
+                            match the search close up. The book is hidden, not removed: its tick is kept.
+                        -->
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Width" Value="320" />
+                                <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <!--  Collapsed, not removed, while the search hides it: the tick is kept  -->
-                                <CheckBox Content="{Binding Label}"
-                                          IsChecked="{Binding IsSelected}"
-                                          Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
+                                <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -143,6 +151,7 @@
         <Thumb Height="10"
                Cursor="SizeNS"
                DockPanel.Dock="Top"
+               DragCompleted="OnSourcesResizeDragCompleted"
                DragDelta="OnSourcesResizeDragDelta"
                ToolTip="Drag to resize the book list">
             <Thumb.Template>

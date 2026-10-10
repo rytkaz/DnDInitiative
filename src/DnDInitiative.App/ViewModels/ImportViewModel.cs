@@ -33,6 +33,7 @@ public sealed partial class ImportViewModel : PageViewModel
     private readonly IConverterInstaller _installer;
     private readonly ISourceDataService _sourceData;
     private readonly IConverterConfigWriter _configWriter;
+    private readonly IUiStateStore _uiState;
     private bool _isLoaded;
 
     [ObservableProperty]
@@ -84,8 +85,11 @@ public sealed partial class ImportViewModel : PageViewModel
         IMessenger messenger,
         IConverterInstaller installer,
         ISourceDataService sourceData,
-        IConverterConfigWriter configWriter)
+        IConverterConfigWriter configWriter,
+        IUiStateStore uiState)
     {
+        ArgumentNullException.ThrowIfNull(uiState);
+
         _settingsStore = settingsStore;
         _converter = converter;
         _importer = importer;
@@ -95,6 +99,22 @@ public sealed partial class ImportViewModel : PageViewModel
         _installer = installer;
         _sourceData = sourceData;
         _configWriter = configWriter;
+        _uiState = uiState;
+
+        // Through the property, not the field, so a size saved by hand in the file is still clamped.
+        if (uiState.Load().SourcesPanelHeight is { } savedHeight)
+        {
+            SourcesPanelHeight = savedHeight;
+        }
+    }
+
+    /// <summary>
+    /// Remembers the book list's height for the next run. Called when a drag ends rather than
+    /// from the property setter, which runs for every pixel the mouse moves.
+    /// </summary>
+    public void SaveLayout()
+    {
+        _uiState.Save(_uiState.Load() with { SourcesPanelHeight = SourcesPanelHeight });
     }
 
     public override string Title => "5eTools Import";

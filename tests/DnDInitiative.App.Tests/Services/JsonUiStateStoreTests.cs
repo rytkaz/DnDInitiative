@@ -30,6 +30,41 @@ public sealed class JsonUiStateStoreTests : IDisposable
     }
 
     [Fact]
+    public void Save_PanelSizes_AreReadBackByANewStore()
+    {
+        var saved = new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 512.5, SourcesPanelHeight = 300 };
+
+        new JsonUiStateStore(FilePath).Save(saved);
+
+        Assert.Equal(saved, new JsonUiStateStore(FilePath).Load());
+    }
+
+    [Fact]
+    public void Load_FileWrittenBeforePanelSizesExisted_LeavesThemUnset()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+        File.WriteAllText(FilePath, """{"IsNavigationCollapsed":true}""");
+
+        UiState state = new JsonUiStateStore(FilePath).Load();
+
+        Assert.True(state.IsNavigationCollapsed);
+        Assert.Null(state.StatBlockPanelWidth);
+        Assert.Null(state.SourcesPanelHeight);
+    }
+
+    [Fact]
+    public void Load_AfterSave_ReturnsTheSavedStateEvenIfTheFileCouldNotBeWritten()
+    {
+        // A folder where the file should be makes every write fail.
+        Directory.CreateDirectory(FilePath);
+        var store = new JsonUiStateStore(FilePath);
+
+        store.Save(new UiState { SourcesPanelHeight = 300 });
+
+        Assert.Equal(300, store.Load().SourcesPanelHeight);
+    }
+
+    [Fact]
     public void Load_DamagedFile_ReturnsTheDefaults()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);

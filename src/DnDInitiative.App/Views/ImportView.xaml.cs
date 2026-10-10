@@ -35,4 +35,13 @@ public partial class ImportView : UserControl
             viewModel.SourcesPanelHeight += e.VerticalChange;
         }
     }
+
+    // Saved once, when the mouse button is released, not for every step of the drag.
+    private void OnSourcesResizeDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        if (DataContext is ImportViewModel viewModel)
+        {
+            viewModel.SaveLayout();
+        }
+    }
 }
