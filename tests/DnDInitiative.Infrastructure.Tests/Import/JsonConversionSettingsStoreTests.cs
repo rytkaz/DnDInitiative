@@ -33,7 +33,6 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
             ToolPath = @"C:\cli\ttrpg-convert.exe",
             ConfigPath = @"C:\cli\config.json",
             DataDirectory = @"C:\cli\5etools\data",
-            OutputDirectory = @"C:\cli\output",
             Sources = ["MM", "XMM"],
         };
 
@@ -43,7 +42,6 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
         Assert.Equal(settings.ToolPath, loaded.ToolPath);
         Assert.Equal(settings.ConfigPath, loaded.ConfigPath);
         Assert.Equal(settings.DataDirectory, loaded.DataDirectory);
-        Assert.Equal(settings.OutputDirectory, loaded.OutputDirectory);
         Assert.Equal(settings.Sources.ToArray(), loaded.Sources.ToArray());
     }
 
@@ -53,5 +51,16 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
         await File.WriteAllTextAsync(Path.Combine(_directory, "conversion-settings.json"), "{ not json");
 
         Assert.Equal("", (await _store.LoadAsync()).ToolPath);
+    }
+
+    [Fact]
+    public async Task LoadAsync_FileFromAnOlderVersionWithExtraSettings_StillLoads()
+    {
+        // Settings files written before the output folder was removed still contain it.
+        await File.WriteAllTextAsync(
+            Path.Combine(_directory, "conversion-settings.json"),
+            """{ "ToolPath": "tool.exe", "OutputDirectory": "C:\\old\\output" }""");
+
+        Assert.Equal("tool.exe", (await _store.LoadAsync()).ToolPath);
     }
 }

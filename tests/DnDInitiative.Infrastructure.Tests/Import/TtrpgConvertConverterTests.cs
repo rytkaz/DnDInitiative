@@ -2,6 +2,7 @@
 
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Import;
+using DnDInitiative.Infrastructure.Persistence;
 
 namespace DnDInitiative.Infrastructure.Tests.Import;
 
@@ -17,12 +18,13 @@ public sealed class TtrpgConvertConverterTests : IDisposable
     public TtrpgConvertConverterTests()
     {
         _dataDirectory = Directory.CreateDirectory(Path.Combine(_root, "data")).FullName;
-        _outputDirectory = Path.Combine(_root, "output");
+        // Where the converter keeps its notes: a fixed place inside the app's data folder.
+        _outputDirectory = Path.Combine(_root, "appdata", "converter", "output");
         _configPath = Path.Combine(_root, "config", "my-config.json");
         Directory.CreateDirectory(Path.Combine(_root, "config"));
         File.WriteAllText(_configPath, "{}");
 
-        _converter = new TtrpgConvertConverter(_runner);
+        _converter = new TtrpgConvertConverter(_runner, new StorageOptions(Path.Combine(_root, "appdata")));
     }
 
     public void Dispose()
@@ -33,7 +35,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
     [Fact]
     public async Task ConvertAsync_WithConfig_PassesOutputConfigAndDataAndRunsBesideTheConfig()
     {
-        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, _outputDirectory, _configPath));
+        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, _configPath));
 
         string[] expected = ["-o", _outputDirectory, "-c", _configPath, _dataDirectory];
         Assert.Equal("ttrpg-convert", _runner.FileName);
@@ -47,7 +49,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
     [InlineData("  ")]
     public async Task ConvertAsync_WithoutConfig_LeavesTheConfigArgumentOut(string? configPath)
     {
-        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, _outputDirectory, configPath));
+        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, configPath));
 
         string[] expected = ["-o", _outputDirectory, _dataDirectory];
         Assert.Equal(expected, _runner.Arguments.ToArray());
@@ -60,7 +62,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
         _runner.Output = ["\u001b[32mWriting monsters\u001b[0m", "Done"];
         var progress = new RecordingProgress();
 
-        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, _outputDirectory), progress);
+        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory), progress);
 
         string[] expected = ["Writing monsters", "Done"];
         Assert.Equal(expected, progress.Lines.ToArray());
@@ -73,7 +75,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
         _runner.Output = ["Reading data", "Unable to read config"];
 
         ConversionException exception = await Assert.ThrowsAsync<ConversionException>(
-            () => _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, _outputDirectory)));
+            () => _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory)));
 
         Assert.Contains("exit code 1", exception.Message, StringComparison.Ordinal);
         Assert.Contains("Unable to read config", exception.Message, StringComparison.Ordinal);
@@ -82,7 +84,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
     [Fact]
     public async Task ConvertAsync_MissingDataFolder_ThrowsWithoutRunningAnything()
     {
-        var request = new ConversionRequest("ttrpg-convert", Path.Combine(_root, "missing"), _outputDirectory);
+        var request = new ConversionRequest("ttrpg-convert", Path.Combine(_root, "missing"));
 
         await Assert.ThrowsAsync<ConversionException>(() => _converter.ConvertAsync(request));
 
@@ -92,7 +94,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
     [Fact]
     public async Task ConvertAsync_MissingConfigFile_ThrowsWithoutRunningAnything()
     {
-        var request = new ConversionRequest("ttrpg-convert", _dataDirectory, _outputDirectory, Path.Combine(_root, "nope.json"));
+        var request = new ConversionRequest("ttrpg-convert", _dataDirectory, Path.Combine(_root, "nope.json"));
 
         await Assert.ThrowsAsync<ConversionException>(() => _converter.ConvertAsync(request));
 
@@ -105,7 +107,7 @@ public sealed class TtrpgConvertConverterTests : IDisposable
         _runner.StartFailure = new Win32Exception(2);
 
         ConversionException exception = await Assert.ThrowsAsync<ConversionException>(
-            () => _converter.ConvertAsync(new ConversionRequest(@"C:\nowhere\tool.exe", _dataDirectory, _outputDirectory)));
+            () => _converter.ConvertAsync(new ConversionRequest(@"C:\nowhere\tool.exe", _dataDirectory)));
 
         Assert.Contains(@"C:\nowhere\tool.exe", exception.Message, StringComparison.Ordinal);
         Assert.IsType<Win32Exception>(exception.InnerException);
@@ -117,7 +119,47 @@ public sealed class TtrpgConvertConverterTests : IDisposable
         _runner.StartFailure = new OperationCanceledException();
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory, _outputDirectory)));
+            () => _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory)));
+    }
+
+    [Fact]
+    public async Task ConvertAsync_ReturnsTheFolderTheNotesWereWrittenTo()
+    {
+        string notesFolder = await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory));
+
+        Assert.Equal(_outputDirectory, notesFolder);
+    }
+
+    [Fact]
+    public async Task ConvertAsync_NotesLeftByAnEarlierRun_AreRemovedFirst()
+    {
+        Directory.CreateDirectory(_outputDirectory);
+        string staleNote = Path.Combine(_outputDirectory, "goblin.md");
+        await File.WriteAllTextAsync(staleNote, "from a book that is no longer ticked");
+
+        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory));
+
+        Assert.False(File.Exists(staleNote));
+        Assert.True(Directory.Exists(_outputDirectory));
+    }
+
+    [Fact]
+    public async Task DiscardOutput_DeletesTheNotes()
+    {
+        await _converter.ConvertAsync(new ConversionRequest("ttrpg-convert", _dataDirectory));
+        await File.WriteAllTextAsync(Path.Combine(_outputDirectory, "goblin.md"), "a note");
+
+        _converter.DiscardOutput();
+
+        Assert.False(Directory.Exists(_outputDirectory));
+    }
+
+    [Fact]
+    public void DiscardOutput_NothingToDelete_DoesNothing()
+    {
+        _converter.DiscardOutput();
+
+        Assert.False(Directory.Exists(_outputDirectory));
     }
 
     private sealed class FakeProcessRunner : IProcessRunner

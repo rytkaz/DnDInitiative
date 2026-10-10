@@ -42,14 +42,11 @@ public class ImportViewModelTests
     }
 
     [Fact]
-    public void RunCommand_NeedsOnlyTheDataAndOutputFolders()
+    public void RunCommand_NeedsOnlyTheDataFolder()
     {
         Assert.False(_viewModel.RunCommand.CanExecute(null));
 
         _viewModel.DataDirectory = "data";
-        Assert.False(_viewModel.RunCommand.CanExecute(null));
-
-        _viewModel.OutputDirectory = "output";
         Assert.True(_viewModel.RunCommand.CanExecute(null));
     }
 
@@ -105,15 +102,15 @@ public class ImportViewModelTests
     }
 
     [Fact]
-    public async Task RunCommand_SavesThePathsConvertsThenImportsTheOutput()
+    public async Task RunCommand_SavesThePathsConvertsThenImportsWhatTheConverterWrote()
     {
         FillInPaths();
 
         await _viewModel.RunCommand.ExecuteAsync(null);
 
         Assert.Equal("tool.exe", _settingsStore.Settings.ToolPath);
-        Assert.Equal(new ConversionRequest("tool.exe", "data", "output", "config.json"), _converter.Request);
-        Assert.Equal("output", _importer.ImportedFolder);
+        Assert.Equal(new ConversionRequest("tool.exe", "data", "config.json"), _converter.Request);
+        Assert.Equal("converted-notes", _importer.ImportedFolder);
         Assert.Equal(3, _received?.Result.Added);
         Assert.Contains("Imported 3 new", _viewModel.StatusMessage, StringComparison.Ordinal);
         Assert.False(_viewModel.IsRunning);
@@ -276,7 +273,7 @@ public class ImportViewModelTests
     [Fact]
     public async Task RunCommand_NoConfigurationChosen_WritesOneForTheTickedBooksAndRemembersThem()
     {
-        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data", OutputDirectory = "output" };
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data" };
         _sourceData.Sources = [new SourceBook("MM", "Monster Manual"), new SourceBook("XMM", "Monster Manual (2024)")];
         await _viewModel.LoadCommand.ExecuteAsync(null);
         _viewModel.Sources[1].IsSelected = true;
@@ -314,11 +311,43 @@ public class ImportViewModelTests
         Assert.All(_viewModel.Sources, source => Assert.False(source.IsSelected));
     }
 
+    [Fact]
+    public async Task RunCommand_StatBlocksImported_ThrowsTheNotesAway()
+    {
+        FillInPaths();
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, _converter.DiscardCount);
+    }
+
+    [Fact]
+    public async Task RunCommand_NothingImported_KeepsTheNotesAndSaysWhereTheyAre()
+    {
+        FillInPaths();
+        _importer.Result = new StatBlockImportResult(Added: 0, Updated: 0, FilesScanned: 12);
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, _converter.DiscardCount);
+        Assert.Contains("converted-notes", _viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunCommand_ConversionFails_LeavesTheNotesForTheNextRunToClearAway()
+    {
+        FillInPaths();
+        _converter.Failure = new ConversionException("The converter stopped.");
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, _converter.DiscardCount);
+    }
+
     private void FillInPaths()
     {
         _viewModel.ToolPath = "tool.exe";
         _viewModel.ConfigPath = "config.json";
         _viewModel.DataDirectory = "data";
-        _viewModel.OutputDirectory = "output";
     }
 }

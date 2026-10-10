@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 
 using DnDInitiative.Core.StatBlocks;
+using DnDInitiative.Infrastructure.Persistence;
 
 namespace DnDInitiative.Infrastructure.Import;
 
@@ -14,12 +15,17 @@ internal sealed partial class TtrpgConvertConverter : IStatBlockConverter
 
     private readonly IProcessRunner _processRunner;
 
-    public TtrpgConvertConverter(IProcessRunner processRunner)
+    // The notes are only a stepping stone to the database, so they live in this
+    // computer's data folder, out of the user's way.
+    private readonly string _outputDirectory;
+
+    public TtrpgConvertConverter(IProcessRunner processRunner, StorageOptions storage)
     {
         _processRunner = processRunner;
+        _outputDirectory = Path.Combine(storage.DataDirectory, "converter", "output");
     }
 
-    public async Task ConvertAsync(
+    public async Task<string> ConvertAsync(
         ConversionRequest request,
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default)
@@ -44,7 +50,10 @@ internal sealed partial class TtrpgConvertConverter : IStatBlockConverter
             throw new ConversionException($"The configuration file was not found: {configPath}");
         }
 
-        Directory.CreateDirectory(request.OutputDirectory);
+        // Start from nothing. Notes left by an earlier run, for books that are no longer
+        // ticked, would otherwise be imported again along with the new ones.
+        DeleteOutput();
+        Directory.CreateDirectory(_outputDirectory);
 
         // Output lines arrive from two background threads at once, hence the concurrent collection.
         var tail = new ConcurrentQueue<string>();
@@ -86,12 +95,37 @@ internal sealed partial class TtrpgConvertConverter : IStatBlockConverter
                 CultureInfo.InvariantCulture,
                 $"ttrpg-convert failed (exit code {exitCode}).{Environment.NewLine}{string.Join(Environment.NewLine, tail)}"));
         }
+
+        return _outputDirectory;
     }
 
-    private static List<string> BuildArguments(ConversionRequest request, string? configPath)
+    public void DiscardOutput()
+    {
+        try
+        {
+            DeleteOutput();
+        }
+        catch (IOException)
+        {
+            // A file is still open somewhere. The next run starts by deleting the folder again.
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private void DeleteOutput()
+    {
+        if (Directory.Exists(_outputDirectory))
+        {
+            Directory.Delete(_outputDirectory, recursive: true);
+        }
+    }
+
+    private List<string> BuildArguments(ConversionRequest request, string? configPath)
     {
         // Full paths, because the working directory may not be the one they were relative to.
-        List<string> arguments = ["-o", Path.GetFullPath(request.OutputDirectory)];
+        List<string> arguments = ["-o", Path.GetFullPath(_outputDirectory)];
 
         if (configPath is not null)
         {

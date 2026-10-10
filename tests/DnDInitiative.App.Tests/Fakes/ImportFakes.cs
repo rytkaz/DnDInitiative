@@ -17,9 +17,12 @@ internal sealed class FakeStatBlockImporter : IStatBlockImporter
 {
     public string? ImportedFolder { get; private set; }
 
+    /// <summary>What every import reports having done.</summary>
+    public StatBlockImportResult Result { get; set; } = new(Added: 3, Updated: 1, FilesScanned: 10);
+
     public Task<StatBlockImportResult> ImportFolderAsync(string folderPath, CancellationToken cancellationToken = default)
     {
         ImportedFolder = folderPath;
-        return Task.FromResult(new StatBlockImportResult(Added: 3, Updated: 1, FilesScanned: 10));
+        return Task.FromResult(Result);
     }
 }

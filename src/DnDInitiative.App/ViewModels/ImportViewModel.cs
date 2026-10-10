@@ -44,10 +44,6 @@ public sealed partial class ImportViewModel : PageViewModel
     private string _dataDirectory = "";
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
-    private string _outputDirectory = "";
-
-    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsIdle))]
     [NotifyCanExecuteChangedFor(nameof(UpdateConverterCommand))]
     [NotifyCanExecuteChangedFor(nameof(UseDataZipCommand))]
@@ -94,9 +90,9 @@ public sealed partial class ImportViewModel : PageViewModel
     /// <summary>The opposite of <see cref="IsRunning"/>, for disabling the inputs during a run.</summary>
     public bool IsIdle => !IsRunning;
 
-    // The program and the configuration file are optional. Without a program path,
-    // the app uses its own copy of the converter.
-    private bool CanRun => !string.IsNullOrWhiteSpace(DataDirectory) && !string.IsNullOrWhiteSpace(OutputDirectory);
+    // Only the data is required. Without a program path the app uses its own copy of the
+    // converter, and without a configuration file it writes one for the ticked books.
+    private bool CanRun => !string.IsNullOrWhiteSpace(DataDirectory);
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -113,7 +109,6 @@ public sealed partial class ImportViewModel : PageViewModel
         ToolPath = settings.ToolPath;
         ConfigPath = settings.ConfigPath;
         DataDirectory = settings.DataDirectory;
-        OutputDirectory = settings.OutputDirectory;
         _savedSources = settings.Sources;
         await RefreshSourcesAsync();
     }
@@ -151,15 +146,6 @@ public sealed partial class ImportViewModel : PageViewModel
         await RefreshSourcesAsync();
     }
 
-    [RelayCommand]
-    private void BrowseOutput()
-    {
-        if (_folderPicker.PickFolder("Select the folder the notes are written to") is { } path)
-        {
-            OutputDirectory = path;
-        }
-    }
-
     [RelayCommand(CanExecute = nameof(CanRun), IncludeCancelCommand = true)]
     private async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -191,14 +177,25 @@ public sealed partial class ImportViewModel : PageViewModel
                 ? settings.ConfigPath
                 : await _configWriter.WriteAsync(settings.Sources, cancellationToken);
 
-            var request = new ConversionRequest(toolPath, settings.DataDirectory, settings.OutputDirectory, configPath);
-            await _converter.ConvertAsync(request, progress, cancellationToken);
+            var request = new ConversionRequest(toolPath, settings.DataDirectory, configPath);
+            string notesFolder = await _converter.ConvertAsync(request, progress, cancellationToken);
 
             StatusMessage = "Importing the converted notes...";
-            StatBlockImportResult result = await _importer.ImportFolderAsync(settings.OutputDirectory, cancellationToken);
-
+            StatBlockImportResult result = await _importer.ImportFolderAsync(notesFolder, cancellationToken);
             _messenger.Send(new StatBlocksImportedMessage(result));
-            StatusMessage = Describe(result);
+
+            if (result.Added + result.Updated == 0)
+            {
+                // Something is wrong with what the converter wrote. Keep it, so it can be looked at.
+                StatusMessage = "The conversion finished, but its output contains no stat blocks. "
+                    + $"The notes it wrote were kept in {notesFolder} so you can check them.";
+            }
+            else
+            {
+                // The stat blocks are in the library now; the notes have done their job.
+                _converter.DiscardOutput();
+                StatusMessage = Describe(result);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -225,12 +222,6 @@ public sealed partial class ImportViewModel : PageViewModel
 
     private static string Describe(StatBlockImportResult result)
     {
-        if (result.Added + result.Updated == 0)
-        {
-            return "The conversion finished, but its output contains no stat blocks. "
-                + "Check that the configuration's monster template writes a statblock.";
-        }
-
         return string.Create(
             CultureInfo.InvariantCulture,
             $"Done. Imported {result.Added} new and updated {result.Updated}, from {result.FilesScanned} files.");
@@ -317,7 +308,6 @@ public sealed partial class ImportViewModel : PageViewModel
             ToolPath = Clean(ToolPath),
             ConfigPath = Clean(ConfigPath),
             DataDirectory = Clean(DataDirectory),
-            OutputDirectory = Clean(OutputDirectory),
             Sources = SelectedSourceIds(),
         };
     }

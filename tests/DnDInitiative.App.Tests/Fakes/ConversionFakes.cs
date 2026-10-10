@@ -41,7 +41,15 @@ internal sealed class FakeStatBlockConverter : IStatBlockConverter
     /// <summary>Makes the conversion run until it is cancelled.</summary>
     public bool RunsUntilCancelled { get; set; }
 
-    public async Task ConvertAsync(
+    /// <summary>How many times the notes were thrown away.</summary>
+    public int DiscardCount { get; private set; }
+
+    public void DiscardOutput()
+    {
+        DiscardCount++;
+    }
+
+    public async Task<string> ConvertAsync(
         ConversionRequest request,
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default)
@@ -62,6 +70,8 @@ internal sealed class FakeStatBlockConverter : IStatBlockConverter
         {
             throw Failure;
         }
+
+        return "converted-notes";
     }
 }
 

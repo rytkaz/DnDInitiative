@@ -15,10 +15,10 @@
                    Text="{Binding Title}" />
         <TextBlock Margin="0,0,0,12"
                    DockPanel.Dock="Top"
-                   Text="Runs ttrpg-convert on your 5eTools data, then imports every stat block from the notes it writes."
+                   Text="Runs ttrpg-convert on your 5eTools data and adds every stat block it produces to the library."
                    TextWrapping="Wrap" />
 
-        <!--  The four paths. Disabled as a group while a run is in progress.  -->
+        <!--  The three paths. Disabled as a group while a run is in progress.  -->
         <Grid DockPanel.Dock="Top" IsEnabled="{Binding IsIdle}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -26,7 +26,6 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -48,7 +47,7 @@
 
             <TextBlock Grid.Row="1"
                        VerticalAlignment="Center"
-                       Text="Configuration file (advanced)" />
+                       Text="Configuration file (optional)" />
             <TextBox Grid.Row="1"
                      Grid.Column="1"
                      Margin="12,4"
@@ -80,20 +79,6 @@
                         Content="From zip..."
                         ToolTip="Unpack the data from a 5eTools zip file you downloaded" />
             </StackPanel>
-
-            <TextBlock Grid.Row="3"
-                       VerticalAlignment="Center"
-                       Text="Output folder" />
-            <TextBox Grid.Row="3"
-                     Grid.Column="1"
-                     Margin="12,4"
-                     Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Row="3"
-                    Grid.Column="2"
-                    Margin="0,4"
-                    Padding="12,4"
-                    Command="{Binding BrowseOutputCommand}"
-                    Content="Browse..." />
         </Grid>
 
         <TextBlock Margin="0,4,0,0"
