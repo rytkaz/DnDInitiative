@@ -141,12 +141,30 @@
                                                              AcceptsReturn="True"
                                                              Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
                                                              TextWrapping="Wrap" />
-                                                    <Button Grid.Column="4"
-                                                            Padding="8,2"
-                                                            VerticalAlignment="Top"
-                                                            Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                            CommandParameter="{Binding}"
-                                                            Content="Remove" />
+                                                    <!--
+                                                        Inside the row the data context is one feature. The commands belong to
+                                                        the list around it, and each takes this row's feature as its parameter.
+                                                    -->
+                                                    <StackPanel Grid.Column="4"
+                                                                VerticalAlignment="Top"
+                                                                Orientation="Horizontal">
+                                                        <Button Padding="8,2"
+                                                                Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="▲"
+                                                                ToolTip="Move up" />
+                                                        <Button Margin="4,0,0,0"
+                                                                Padding="8,2"
+                                                                Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="▼"
+                                                                ToolTip="Move down" />
+                                                        <Button Margin="8,0,0,0"
+                                                                Padding="8,2"
+                                                                Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                Content="Remove" />
+                                                    </StackPanel>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
