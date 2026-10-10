@@ -360,7 +360,7 @@ public class InitiativeTrackerViewModelTests
     [Theory]
     [InlineData(500, 500)]
     [InlineData(10, 260)]
-    [InlineData(5000, 800)]
+    [InlineData(5000, 1200)]
     public void StatBlockPanelWidth_IsKeptWithinLimits(double requested, double expected)
     {
         InitiativeTrackerViewModel viewModel = CreateViewModel();
