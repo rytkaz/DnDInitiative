@@ -39,6 +39,7 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
             Senses = "darkvision 60 ft.",
             Languages = "Common, Goblin",
             ChallengeRating = "1",
+            Origin = StatBlockOrigin.Imported,
             Traits = [new StatBlockFeature("Nimble Escape", "Disengage or Hide.")],
             Actions = [new StatBlockFeature("Multiattack", "Two attacks."), new StatBlockFeature("Scimitar", "Melee.")],
             BonusActions = [new StatBlockFeature("Dash", "Moves again.")],

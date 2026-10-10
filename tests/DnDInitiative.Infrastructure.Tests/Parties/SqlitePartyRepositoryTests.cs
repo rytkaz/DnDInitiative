@@ -1,7 +1,8 @@
 ﻿using DnDInitiative.Core.Parties;
 using DnDInitiative.Infrastructure.Parties;
+using DnDInitiative.Infrastructure.Tests.Persistence;
 
-namespace DnDInitiative.Infrastructure.Tests.Persistence;
+namespace DnDInitiative.Infrastructure.Tests.Parties;
 
 public sealed class SqlitePartyRepositoryTests : IDisposable
 {

@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DnDInitiative.Infrastructure.StatBlocks;
 
-internal sealed class SqliteStatBlockRepository : IStatBlockRepository
+internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlockLibrary
 {
     private const string LikeEscape = "\\";
 
@@ -112,6 +112,7 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository
             Senses = statBlock.Senses,
             Languages = statBlock.Languages,
             ChallengeRating = statBlock.ChallengeRating,
+            Origin = statBlock.Origin,
             TraitsJson = JsonSerializer.Serialize(statBlock.Traits),
             ActionsJson = JsonSerializer.Serialize(statBlock.Actions),
             BonusActionsJson = JsonSerializer.Serialize(statBlock.BonusActions),
@@ -151,6 +152,7 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository
             Senses = entity.Senses,
             Languages = entity.Languages,
             ChallengeRating = entity.ChallengeRating,
+            Origin = entity.Origin,
             Traits = ToFeatures(entity.TraitsJson),
             Actions = ToFeatures(entity.ActionsJson),
             BonusActions = ToFeatures(entity.BonusActionsJson),
@@ -244,5 +246,35 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository
             .Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("%", "\\%", StringComparison.Ordinal)
             .Replace("_", "\\_", StringComparison.Ordinal);
+    }
+
+    public async Task ChangeIdsAsync(IReadOnlyDictionary<Guid, Guid> changes, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(changes);
+
+        if (changes.Count == 0)
+        {
+            return;
+        }
+
+        AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        await using (db.ConfigureAwait(false))
+        {
+            // All or nothing: a stat block must never end up with its new Id while
+            // an encounter still points at the old one.
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            await using (transaction.ConfigureAwait(false))
+            {
+                foreach ((Guid oldId, Guid newId) in changes)
+                {
+                    await db.StatBlocks
+                        .Where(statBlock => statBlock.Id == oldId)
+                        .ExecuteUpdateAsync(setters => setters.SetProperty(statBlock => statBlock.Id, newId), cancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 }

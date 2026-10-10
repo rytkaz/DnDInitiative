@@ -1,4 +1,6 @@
-﻿namespace DnDInitiative.Infrastructure.Persistence;
+﻿using DnDInitiative.Core.StatBlocks;
+
+namespace DnDInitiative.Infrastructure.Persistence;
 
 internal sealed class StatBlockEntity
 {
@@ -53,6 +55,8 @@ internal sealed class StatBlockEntity
     public string Languages { get; set; } = "";
 
     public string ChallengeRating { get; set; } = "";
+
+    public StatBlockOrigin Origin { get; set; }
 
     // Each of these holds a JSON array of { Name, Description } objects.
     public string TraitsJson { get; set; } = "[]";

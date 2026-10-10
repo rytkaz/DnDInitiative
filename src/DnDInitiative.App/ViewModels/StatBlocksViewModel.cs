@@ -127,7 +127,12 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
             return;
         }
 
-        StatBlock copy = selected with { Id = Guid.NewGuid(), Name = selected.Name + " (Copy)" };
+        StatBlock copy = selected with
+        {
+            Id = Guid.NewGuid(),
+            Name = selected.Name + " (Copy)",
+            Origin = StatBlockOrigin.Custom,
+        };
         await _repository.SaveAsync(copy);
         await RefreshListAsync(copy.Id);
         StatusMessage = $"Copied {selected.Name}.";

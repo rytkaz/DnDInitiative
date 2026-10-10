@@ -1,7 +1,8 @@
 ﻿using DnDInitiative.Core.Encounters;
 using DnDInitiative.Infrastructure.Encounters;
+using DnDInitiative.Infrastructure.Tests.Persistence;
 
-namespace DnDInitiative.Infrastructure.Tests.Persistence;
+namespace DnDInitiative.Infrastructure.Tests.Encounters;
 
 public sealed class SqliteEncounterRepositoryTests : IDisposable
 {

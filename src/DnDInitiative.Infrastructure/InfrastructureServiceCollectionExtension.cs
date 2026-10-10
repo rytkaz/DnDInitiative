@@ -1,6 +1,7 @@
 ﻿using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.StatBlocks;
+using DnDInitiative.Infrastructure.Campaigns;
 using DnDInitiative.Infrastructure.Encounters;
 using DnDInitiative.Infrastructure.Import;
 using DnDInitiative.Infrastructure.Parties;
@@ -32,12 +33,23 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(connectionString));
 
         services.AddSingleton<IPartyRepository, SqlitePartyRepository>();
-        services.AddSingleton<IStatBlockRepository, SqliteStatBlockRepository>();
+        // One object, reachable three ways: as itself (for the campaign repository to wrap),
+        // as the app's stat block store, and as the importer's view of the library.
+        services.AddSingleton<SqliteStatBlockRepository>();
+        services.AddSingleton<IStatBlockRepository>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
+        services.AddSingleton<IStatBlockLibrary>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
+
         services.AddSingleton<IEncounterRepository, SqliteEncounterRepository>();
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
         services.AddSingleton<IStatBlockConverter, TtrpgConvertConverter>();
         services.AddSingleton<IConversionSettingsStore, JsonConversionSettingsStore>();
+
+        // Campaign folder storage
+        services.AddSingleton<CampaignLocation>();
+        services.AddSingleton<JsonPartyRepository>();
+        services.AddSingleton<JsonEncounterRepository>();
+        services.AddSingleton<CampaignStatBlockRepository>();
 
         services.AddSingleton<LegacyJsonImporter>();
         services.AddSingleton<IStorageInitializer, StorageInitializer>();

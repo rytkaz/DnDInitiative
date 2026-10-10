@@ -285,6 +285,20 @@ public class StatBlocksViewModelTests
         Assert.Equal("Goblin", Assert.Single(viewModel.FilteredStatBlocks).Name);
     }
 
+    [Fact]
+    public async Task CopyCommand_CopyOfAnImportedStatBlock_BelongsToTheUser()
+    {
+        var imported = new StatBlock { Id = Guid.NewGuid(), Name = "Goblin", Origin = StatBlockOrigin.Imported };
+        var repository = new InMemoryStatBlockRepository(imported);
+        StatBlocksViewModel viewModel = CreateViewModel(repository);
+        await viewModel.LoadCommand.ExecuteAsync(null);
+
+        await viewModel.CopyCommand.ExecuteAsync(null);
+
+        StatBlock copy = Assert.Single(repository.StatBlocks, statBlock => statBlock.Id != imported.Id);
+        Assert.Equal(StatBlockOrigin.Custom, copy.Origin);
+    }
+
     private static StatBlock[] CreateMany(int count)
     {
         return Enumerable.Range(0, count)

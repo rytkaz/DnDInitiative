@@ -47,6 +47,8 @@ public sealed record StatBlock
     /// <summary>Kept as text because of fractions such as "1/4".</summary>
     public string ChallengeRating { get; init; } = "0";
 
+    public StatBlockOrigin Origin { get; init; } = StatBlockOrigin.Custom;
+
     public IReadOnlyList<StatBlockFeature> Traits { get; init; } = [];
 
     public IReadOnlyList<StatBlockFeature> Actions { get; init; } = [];

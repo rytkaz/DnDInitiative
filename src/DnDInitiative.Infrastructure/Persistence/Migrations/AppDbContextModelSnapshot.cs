@@ -187,6 +187,9 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<int>("Origin")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ReactionsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
