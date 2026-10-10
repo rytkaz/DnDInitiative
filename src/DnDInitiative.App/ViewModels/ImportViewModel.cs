@@ -24,10 +24,10 @@ public sealed partial class ImportViewModel : PageViewModel
     private readonly IFolderPicker _folderPicker;
     private readonly IFilePicker _filePicker;
     private readonly IMessenger _messenger;
+    private readonly IConverterInstaller _installer;
     private bool _isLoaded;
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RunCommand))]
     private string _toolPath = "";
 
     [ObservableProperty]
@@ -43,6 +43,7 @@ public sealed partial class ImportViewModel : PageViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsIdle))]
+    [NotifyCanExecuteChangedFor(nameof(UpdateConverterCommand))]
     private bool _isRunning;
 
     [ObservableProperty]
@@ -57,7 +58,8 @@ public sealed partial class ImportViewModel : PageViewModel
         IStatBlockImporter importer,
         IFolderPicker folderPicker,
         IFilePicker filePicker,
-        IMessenger messenger)
+        IMessenger messenger,
+        IConverterInstaller installer)
     {
         _settingsStore = settingsStore;
         _converter = converter;
@@ -65,6 +67,7 @@ public sealed partial class ImportViewModel : PageViewModel
         _folderPicker = folderPicker;
         _filePicker = filePicker;
         _messenger = messenger;
+        _installer = installer;
     }
 
     public override string Title => "5eTools Import";
@@ -72,10 +75,9 @@ public sealed partial class ImportViewModel : PageViewModel
     /// <summary>The opposite of <see cref="IsRunning"/>, for disabling the inputs during a run.</summary>
     public bool IsIdle => !IsRunning;
 
-    // The configuration file is optional: without one the converter produces the free SRD content.
-    private bool CanRun => !string.IsNullOrWhiteSpace(ToolPath)
-        && !string.IsNullOrWhiteSpace(DataDirectory)
-        && !string.IsNullOrWhiteSpace(OutputDirectory);
+    // The program and the configuration file are optional. Without a program path,
+    // the app uses its own copy of the converter.
+    private bool CanRun => !string.IsNullOrWhiteSpace(DataDirectory) && !string.IsNullOrWhiteSpace(OutputDirectory);
 
     [RelayCommand]
     private async Task LoadAsync()
@@ -151,12 +153,15 @@ public sealed partial class ImportViewModel : PageViewModel
             // Saved first, so the paths are remembered even if the run fails or is cancelled.
             await _settingsStore.SaveAsync(settings, cancellationToken);
 
+            var progress = new UiProgress<string>(AppendToLog);
+            string toolPath = await ResolveToolAsync(settings.ToolPath, progress, cancellationToken);
+
             var request = new ConversionRequest(
-                settings.ToolPath,
+                toolPath,
                 settings.DataDirectory,
                 settings.OutputDirectory,
                 settings.ConfigPath);
-            await _converter.ConvertAsync(request, new UiProgress<string>(AppendToLog), cancellationToken);
+            await _converter.ConvertAsync(request, progress, cancellationToken);
 
             StatusMessage = "Importing the converted notes...";
             StatBlockImportResult result = await _importer.ImportFolderAsync(settings.OutputDirectory, cancellationToken);
@@ -209,5 +214,38 @@ public sealed partial class ImportViewModel : PageViewModel
     private void AppendToLog(string line)
     {
         Log += line + Environment.NewLine;
+    }
+
+    // A path the user typed wins. Otherwise the app's own copy, downloaded if this is the first time.
+    private async Task<string> ResolveToolAsync(string chosenPath, IProgress<string> progress, CancellationToken cancellationToken)
+    {
+        if (chosenPath.Length > 0)
+        {
+            return chosenPath;
+        }
+
+        return _installer.FindInstalled() ?? await _installer.InstallLatestAsync(progress, cancellationToken);
+    }
+
+    [RelayCommand(CanExecute = nameof(IsIdle))]
+    private async Task UpdateConverterAsync()
+    {
+        IsRunning = true;
+        Log = "";
+        StatusMessage = "Downloading the latest converter...";
+
+        try
+        {
+            await _installer.InstallLatestAsync(new UiProgress<string>(AppendToLog));
+            StatusMessage = "The converter is up to date.";
+        }
+        catch (ConversionException exception)
+        {
+            StatusMessage = exception.Message;
+        }
+        finally
+        {
+            IsRunning = false;
+        }
     }
 }

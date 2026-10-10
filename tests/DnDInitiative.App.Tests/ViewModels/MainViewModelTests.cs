@@ -46,7 +46,8 @@ public class MainViewModelTests
             new FakeStatBlockImporter(),
             new FakeFolderPicker(),
             new FakeFilePicker(),
-            _messenger);
+            _messenger,
+            new FakeConverterInstaller());
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, _messenger),

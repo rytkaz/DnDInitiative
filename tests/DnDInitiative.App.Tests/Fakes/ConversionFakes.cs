@@ -64,3 +64,31 @@ internal sealed class FakeStatBlockConverter : IStatBlockConverter
         }
     }
 }
+
+internal sealed class FakeConverterInstaller : IConverterInstaller
+{
+    /// <summary>The app's own copy, if it "has been downloaded".</summary>
+    public string? Installed { get; set; }
+
+    public int InstallCount { get; private set; }
+
+    public string? FailureMessage { get; set; }
+
+    public string? FindInstalled()
+    {
+        return Installed;
+    }
+
+    public Task<string> InstallLatestAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    {
+        if (FailureMessage is not null)
+        {
+            throw new ConversionException(FailureMessage);
+        }
+
+        InstallCount++;
+        progress?.Report("Downloading converter");
+        Installed = "downloaded.exe";
+        return Task.FromResult(Installed);
+    }
+}

@@ -4,21 +4,21 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
-             mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=viewModels:ImportViewModel}"
-             d:DesignWidth="900"
              d:DesignHeight="600"
-             Loaded="OnLoaded">
+             d:DesignWidth="900"
+             Loaded="OnLoaded"
+             mc:Ignorable="d">
     <DockPanel>
         <TextBlock DockPanel.Dock="Top"
                    Style="{StaticResource PageTitle}"
                    Text="{Binding Title}" />
-        <TextBlock DockPanel.Dock="Top"
-                   Margin="0,0,0,12"
+        <TextBlock Margin="0,0,0,12"
+                   DockPanel.Dock="Top"
                    Text="Runs ttrpg-convert on your 5eTools data, then imports every stat block from the notes it writes."
                    TextWrapping="Wrap" />
 
-        <!-- The four paths. Disabled as a group while a run is in progress. -->
+        <!--  The four paths. Disabled as a group while a run is in progress.  -->
         <Grid DockPanel.Dock="Top" IsEnabled="{Binding IsIdle}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -32,42 +32,86 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" VerticalAlignment="Center" Text="ttrpg-convert program" />
-            <TextBox Grid.Row="0" Grid.Column="1" Margin="12,4"
+            <TextBlock Grid.Row="0"
+                       VerticalAlignment="Center"
+                       Text="ttrpg-convert program (optional)" />
+            <TextBox Grid.Row="0"
+                     Grid.Column="1"
+                     Margin="12,4"
                      Text="{Binding ToolPath, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Row="0" Grid.Column="2" Margin="0,4" Padding="12,4"
-                    Command="{Binding BrowseToolCommand}" Content="Browse..." />
+            <Button Grid.Row="0"
+                    Grid.Column="2"
+                    Margin="0,4"
+                    Padding="12,4"
+                    Command="{Binding BrowseToolCommand}"
+                    Content="Browse..." />
 
-            <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="Configuration file (optional)" />
-            <TextBox Grid.Row="1" Grid.Column="1" Margin="12,4"
+            <TextBlock Grid.Row="1"
+                       VerticalAlignment="Center"
+                       Text="Configuration file (optional)" />
+            <TextBox Grid.Row="1"
+                     Grid.Column="1"
+                     Margin="12,4"
                      Text="{Binding ConfigPath, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Row="1" Grid.Column="2" Margin="0,4" Padding="12,4"
-                    Command="{Binding BrowseConfigCommand}" Content="Browse..." />
+            <Button Grid.Row="1"
+                    Grid.Column="2"
+                    Margin="0,4"
+                    Padding="12,4"
+                    Command="{Binding BrowseConfigCommand}"
+                    Content="Browse..." />
 
-            <TextBlock Grid.Row="2" VerticalAlignment="Center" Text="5eTools data folder" />
-            <TextBox Grid.Row="2" Grid.Column="1" Margin="12,4"
+            <TextBlock Grid.Row="2"
+                       VerticalAlignment="Center"
+                       Text="5eTools data folder" />
+            <TextBox Grid.Row="2"
+                     Grid.Column="1"
+                     Margin="12,4"
                      Text="{Binding DataDirectory, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Row="2" Grid.Column="2" Margin="0,4" Padding="12,4"
-                    Command="{Binding BrowseDataCommand}" Content="Browse..." />
+            <Button Grid.Row="2"
+                    Grid.Column="2"
+                    Margin="0,4"
+                    Padding="12,4"
+                    Command="{Binding BrowseDataCommand}"
+                    Content="Browse..." />
 
-            <TextBlock Grid.Row="3" VerticalAlignment="Center" Text="Output folder" />
-            <TextBox Grid.Row="3" Grid.Column="1" Margin="12,4"
+            <TextBlock Grid.Row="3"
+                       VerticalAlignment="Center"
+                       Text="Output folder" />
+            <TextBox Grid.Row="3"
+                     Grid.Column="1"
+                     Margin="12,4"
                      Text="{Binding OutputDirectory, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Row="3" Grid.Column="2" Margin="0,4" Padding="12,4"
-                    Command="{Binding BrowseOutputCommand}" Content="Browse..." />
+            <Button Grid.Row="3"
+                    Grid.Column="2"
+                    Margin="0,4"
+                    Padding="12,4"
+                    Command="{Binding BrowseOutputCommand}"
+                    Content="Browse..." />
         </Grid>
 
-        <StackPanel DockPanel.Dock="Top" Margin="0,12,0,0" Orientation="Horizontal">
-            <Button Padding="12,4" Command="{Binding RunCommand}" Content="Convert and import" />
-            <Button Margin="8,0,0,0" Padding="12,4" Command="{Binding RunCancelCommand}" Content="Cancel" />
+        <StackPanel Margin="0,12,0,0"
+                    DockPanel.Dock="Top"
+                    Orientation="Horizontal">
+            <Button Padding="12,4"
+                    Command="{Binding RunCommand}"
+                    Content="Convert and import" />
+            <Button Margin="8,0,0,0"
+                    Padding="12,4"
+                    Command="{Binding RunCancelCommand}"
+                    Content="Cancel" />
+            <Button Margin="24,0,0,0"
+                    Padding="12,4"
+                    Command="{Binding UpdateConverterCommand}"
+                    Content="Download latest converter"
+                    ToolTip="Replace the app's copy of the converter with the newest release" />
         </StackPanel>
 
-        <TextBlock DockPanel.Dock="Top"
-                   Margin="0,12,0,8"
+        <TextBlock Margin="0,12,0,8"
+                   DockPanel.Dock="Top"
                    Text="{Binding StatusMessage}"
                    TextWrapping="Wrap" />
 
-        <!-- The converter's own output. Fills whatever space is left. -->
+        <!--  The converter's own output. Fills whatever space is left.  -->
         <TextBox FontFamily="Consolas"
                  HorizontalScrollBarVisibility="Auto"
                  IsReadOnly="True"

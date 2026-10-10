@@ -16,6 +16,7 @@ public class ImportViewModelTests
     private readonly FakeFilePicker _filePicker = new();
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly ImportViewModel _viewModel;
+    private readonly FakeConverterInstaller _installer = new();
     private StatBlocksImportedMessage? _received;
 
     public ImportViewModelTests()
@@ -24,7 +25,7 @@ public class ImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger);
+        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer);
     }
 
     [Fact]
@@ -39,16 +40,66 @@ public class ImportViewModelTests
     }
 
     [Fact]
-    public void RunCommand_NeedsProgramDataAndOutputButNotAConfig()
+    public void RunCommand_NeedsOnlyTheDataAndOutputFolders()
     {
         Assert.False(_viewModel.RunCommand.CanExecute(null));
 
-        _viewModel.ToolPath = "tool.exe";
         _viewModel.DataDirectory = "data";
         Assert.False(_viewModel.RunCommand.CanExecute(null));
 
         _viewModel.OutputDirectory = "output";
         Assert.True(_viewModel.RunCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task RunCommand_NoProgramChosenAndNoneInstalled_DownloadsItFirst()
+    {
+        FillInPaths();
+        _viewModel.ToolPath = "";
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, _installer.InstallCount);
+        Assert.Equal("downloaded.exe", _converter.Request?.ToolPath);
+        Assert.StartsWith("Downloading converter", _viewModel.Log, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunCommand_NoProgramChosenButOneInstalled_UsesItWithoutDownloading()
+    {
+        FillInPaths();
+        _viewModel.ToolPath = "";
+        _installer.Installed = "installed.exe";
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, _installer.InstallCount);
+        Assert.Equal("installed.exe", _converter.Request?.ToolPath);
+    }
+
+    [Fact]
+    public async Task RunCommand_DownloadFails_ShowsTheReasonAndDoesNotConvert()
+    {
+        FillInPaths();
+        _viewModel.ToolPath = "";
+        _installer.FailureMessage = "Check your internet connection.";
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal("Check your internet connection.", _viewModel.StatusMessage);
+        Assert.Null(_converter.Request);
+        Assert.False(_viewModel.IsRunning);
+    }
+
+    [Fact]
+    public async Task UpdateConverterCommand_DownloadsEvenWhenOneIsInstalled()
+    {
+        _installer.Installed = "installed.exe";
+
+        await _viewModel.UpdateConverterCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, _installer.InstallCount);
+        Assert.False(_viewModel.IsRunning);
     }
 
     [Fact]
