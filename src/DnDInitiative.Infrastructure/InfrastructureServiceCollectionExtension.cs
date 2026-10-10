@@ -63,6 +63,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         // Importing
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
+        services.AddSingleton<ISpellImporter, MarkdownSpellImporter>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
         services.AddSingleton<IStatBlockConverter, TtrpgConvertConverter>();
         services.AddSingleton<IConversionSettingsStore, JsonConversionSettingsStore>();

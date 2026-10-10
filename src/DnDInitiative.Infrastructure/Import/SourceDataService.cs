@@ -176,6 +176,23 @@ internal sealed class SourceDataService : ISourceDataService
         }
     }
 
+    public async Task<IReadOnlyList<string>> GetSpellSourcesAsync(string dataFolder, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dataFolder);
+
+        try
+        {
+            // spells/index.json has the same shape as the bestiary's: { "XPHB": "spells-xphb.json", ... }
+            return await ReadPropertyNamesAsync(Path.Combine(dataFolder, "spells", "index.json"), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (JsonException)
+        {
+            // Without the list the import still works; it just brings in no spells.
+            return [];
+        }
+    }
+
     public async Task<HomebrewFile> ReadHomebrewFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);

@@ -101,10 +101,6 @@ public static partial class FantasyStatblockParser
     [GeneratedRegex(@"```statblock[^\n]*\r?\n(?<yaml>.*?)\r?\n```", RegexOptions.Singleline)]
     private static partial Regex StatblockFence();
 
-    // [text](target) -> text
-    [GeneratedRegex(@"\[([^\]]+)\]\([^)]*\)")]
-    private static partial Regex MarkdownLink();
-
     private static string Text(Dictionary<string, object?> map, string key)
     {
         return map.TryGetValue(key, out object? value) ? Flatten(value) : "";
@@ -116,7 +112,8 @@ public static partial class FantasyStatblockParser
         return value switch
         {
             null => "",
-            string text => MarkdownLink().Replace(text, "$1").Trim(),
+            // Links to spells are kept, in a form the app can follow. Other links become plain text.
+            string text => ConverterLinks.Simplify(text).Trim(),
             IDictionary<object, object> entries => string.Join(
                 ", ",
                 entries.Select(entry => (Flatten(entry.Key) + " " + Flatten(entry.Value)).Trim())),

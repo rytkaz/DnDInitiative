@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
 using DnDInitiative.App.Services;
+using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 
 using Serilog;
@@ -35,6 +36,7 @@ public sealed partial class ImportViewModel : PageViewModel
     private readonly ISourceDataService _sourceData;
     private readonly IConverterConfigWriter _configWriter;
     private readonly IUiStateStore _uiState;
+    private readonly ISpellImporter _spellImporter;
     private bool _isLoaded;
 
     [ObservableProperty]
@@ -90,7 +92,8 @@ public sealed partial class ImportViewModel : PageViewModel
         IConverterInstaller installer,
         ISourceDataService sourceData,
         IConverterConfigWriter configWriter,
-        IUiStateStore uiState)
+        IUiStateStore uiState,
+        ISpellImporter spellImporter)
     {
         ArgumentNullException.ThrowIfNull(uiState);
 
@@ -104,6 +107,7 @@ public sealed partial class ImportViewModel : PageViewModel
         _sourceData = sourceData;
         _configWriter = configWriter;
         _uiState = uiState;
+        _spellImporter = spellImporter;
 
         // Through the property, not the field, so a size saved by hand in the file is still clamped.
         if (uiState.Load().SourcesPanelHeight is { } savedHeight)
@@ -284,7 +288,7 @@ public sealed partial class ImportViewModel : PageViewModel
             // The user's own configuration wins. Otherwise write one for the ticked books and the homebrew.
             string configPath = settings.ConfigPath.Length > 0
                 ? settings.ConfigPath
-                : await _configWriter.WriteAsync(settings.Sources, settings.HomebrewFiles, cancellationToken);
+                : await WriteConfigAsync(settings, cancellationToken);
 
             var request = new ConversionRequest(toolPath, settings.DataDirectory, configPath);
             string notesFolder = await _converter.ConvertAsync(request, progress, cancellationToken);
@@ -293,17 +297,20 @@ public sealed partial class ImportViewModel : PageViewModel
             StatBlockImportResult result = await _importer.ImportFolderAsync(notesFolder, cancellationToken);
             _messenger.Send(new StatBlocksImportedMessage(result));
 
-            if (result.Added + result.Updated == 0)
+            // The same notes, read a second time for the spells the stat blocks link to.
+            SpellSaveResult spells = await _spellImporter.ImportFolderAsync(notesFolder, cancellationToken);
+
+            if (result.Added + result.Updated + spells.Added + spells.Updated == 0)
             {
                 // Something is wrong with what the converter wrote. Keep it, so it can be looked at.
-                StatusMessage = "The conversion finished, but its output contains no stat blocks. "
+                StatusMessage = "The conversion finished, but its output contains no stat blocks or spells. "
                     + $"The notes it wrote were kept in {notesFolder} so you can check them.";
             }
             else
             {
                 // The stat blocks are in the library now; the notes have done their job.
                 _converter.DiscardOutput();
-                StatusMessage = Describe(result);
+                StatusMessage = Describe(result, spells);
             }
         }
         catch (OperationCanceledException)
@@ -329,11 +336,26 @@ public sealed partial class ImportViewModel : PageViewModel
         }
     }
 
-    private static string Describe(StatBlockImportResult result)
+    private async Task<string> WriteConfigAsync(ConversionSettings settings, CancellationToken cancellationToken)
+    {
+        var options = new ConverterConfigOptions
+        {
+            Sources = settings.Sources,
+            HomebrewFiles = settings.HomebrewFiles,
+
+            // Not a choice the user makes: creatures cast spells from books other than their own,
+            // so the spells of every book are brought in whatever is ticked.
+            SpellSources = await _sourceData.GetSpellSourcesAsync(settings.DataDirectory, cancellationToken),
+        };
+
+        return await _configWriter.WriteAsync(options, cancellationToken);
+    }
+
+    private static string Describe(StatBlockImportResult result, SpellSaveResult spells)
     {
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"Done. Imported {result.Added} new and updated {result.Updated}, from {result.FilesScanned} files.");
+            $"Done. Imported {result.Added} new and updated {result.Updated} stat blocks, and {spells.Added + spells.Updated} spells, from {result.FilesScanned} files.");
     }
 
     // Explorer's "Copy as path" wraps the path in quotes; accept that when it is pasted in.

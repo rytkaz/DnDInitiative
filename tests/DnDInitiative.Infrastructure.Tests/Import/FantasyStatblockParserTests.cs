@@ -93,6 +93,22 @@ public class FantasyStatblockParserTests
     }
 
     [Fact]
+    public void ParseYaml_SpellLinksInADescription_AreKeptAsSpellLinksAndOtherLinksBecomeText()
+    {
+        // What the converter writes for a caster: the spell list arrives inside a trait.
+        StatBlock? statBlock = FantasyStatblockParser.ParseYaml("""
+            name: Mage
+            traits:
+              - name: Spellcasting
+                desc: "The mage casts spells using [Intelligence](rules/abilities.md#Intelligence).\n\n**At will:** [detect magic](compendium/spells/detect-magic.md), [Fireball](compendium/spells/fireball-xphb.md)"
+            """);
+
+        Assert.Equal(
+            "The mage casts spells using Intelligence.\n\n**At will:** [detect magic](spell:detect-magic), [Fireball](spell:fireball-xphb)",
+            Assert.Single(statBlock!.Traits).Description);
+    }
+
+    [Fact]
     public void ParseMarkdown_NoteWithoutStatblock_ReturnsNothing()
     {
         Assert.Empty(FantasyStatblockParser.ParseMarkdown("# Fireball\n\nA bright streak flashes..."));

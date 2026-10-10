@@ -33,6 +33,9 @@ public interface ISourceDataService
     /// <summary>Lists the books and adventures in a data folder that contain monsters, by name.</summary>
     Task<IReadOnlyList<SourceBook>> GetMonsterSourcesAsync(string dataFolder, CancellationToken cancellationToken = default);
 
+    /// <summary>Lists the ids of the books and adventures in a data folder that contain spells.</summary>
+    Task<IReadOnlyList<string>> GetSpellSourcesAsync(string dataFolder, CancellationToken cancellationToken = default);
+
     /// <summary>Reads what a homebrew file contains, without importing anything.</summary>
     /// <exception cref="ConversionException">
     /// The file cannot be read, is not a 5eTools homebrew file, or holds no monsters.

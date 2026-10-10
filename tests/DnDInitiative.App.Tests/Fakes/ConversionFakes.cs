@@ -142,6 +142,14 @@ internal sealed class FakeSourceDataService : ISourceDataService
         return Task.FromResult(Sources);
     }
 
+    /// <summary>The books that "contain spells".</summary>
+    public IReadOnlyList<string> SpellSources { get; set; } = [];
+
+    public Task<IReadOnlyList<string>> GetSpellSourcesAsync(string dataFolder, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(SpellSources);
+    }
+
     /// <summary>Paths that are refused, as if they were missing or not homebrew.</summary>
     public HashSet<string> UnreadableHomebrewFiles { get; } = [];
 
@@ -158,19 +166,16 @@ internal sealed class FakeSourceDataService : ISourceDataService
 
 internal sealed class FakeConverterConfigWriter : IConverterConfigWriter
 {
-    /// <summary>The books the last generated configuration was written for, or null if none was.</summary>
-    public IReadOnlyCollection<string>? WrittenFor { get; private set; }
+    /// <summary>What the last generated configuration was written for, or null if none was.</summary>
+    public ConverterConfigOptions? Options { get; private set; }
 
-    /// <summary>The homebrew files the last generated configuration was written for.</summary>
-    public IReadOnlyCollection<string>? WrittenHomebrew { get; private set; }
+    public IReadOnlyCollection<string>? WrittenFor => Options?.Sources;
 
-    public Task<string> WriteAsync(
-        IReadOnlyCollection<string> sourceIds,
-        IReadOnlyCollection<string> homebrewFiles,
-        CancellationToken cancellationToken = default)
+    public IReadOnlyCollection<string>? WrittenHomebrew => Options?.HomebrewFiles;
+
+    public Task<string> WriteAsync(ConverterConfigOptions options, CancellationToken cancellationToken = default)
     {
-        WrittenFor = sourceIds;
-        WrittenHomebrew = homebrewFiles;
+        Options = options;
         return Task.FromResult("generated-config.json");
     }
 }

@@ -145,6 +145,30 @@ public sealed class SourceDataServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSpellSourcesAsync_ReturnsTheBooksInTheSpellIndex()
+    {
+        string data = Path.Combine(_root, "data");
+        Directory.CreateDirectory(Path.Combine(data, "spells"));
+        await File.WriteAllTextAsync(
+            Path.Combine(data, "spells", "index.json"),
+            """{ "PHB": "spells-phb.json", "XPHB": "spells-xphb.json" }""");
+
+        string[] expected = ["PHB", "XPHB"];
+        Assert.Equal(expected, (await _service.GetSpellSourcesAsync(data)).ToArray());
+    }
+
+    [Fact]
+    public async Task GetSpellSourcesAsync_IndexMissingOrUnreadable_ReturnsAnEmptyList()
+    {
+        string data = Path.Combine(_root, "data");
+        Directory.CreateDirectory(Path.Combine(data, "spells"));
+        Assert.Empty(await _service.GetSpellSourcesAsync(data));
+
+        await File.WriteAllTextAsync(Path.Combine(data, "spells", "index.json"), "not json");
+        Assert.Empty(await _service.GetSpellSourcesAsync(data));
+    }
+
+    [Fact]
     public async Task ReadHomebrewFileAsync_HomebrewFile_ReturnsItsBooksAndMonsterCount()
     {
         string file = await WriteFileAsync(

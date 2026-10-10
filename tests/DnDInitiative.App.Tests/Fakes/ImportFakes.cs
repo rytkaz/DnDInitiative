@@ -1,4 +1,5 @@
 ﻿using DnDInitiative.App.Services;
+using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 
 namespace DnDInitiative.App.Tests.Fakes;
@@ -21,6 +22,20 @@ internal sealed class FakeStatBlockImporter : IStatBlockImporter
     public StatBlockImportResult Result { get; set; } = new(Added: 3, Updated: 1, FilesScanned: 10);
 
     public Task<StatBlockImportResult> ImportFolderAsync(string folderPath, CancellationToken cancellationToken = default)
+    {
+        ImportedFolder = folderPath;
+        return Task.FromResult(Result);
+    }
+}
+
+internal sealed class FakeSpellImporter : ISpellImporter
+{
+    public string? ImportedFolder { get; private set; }
+
+    /// <summary>What every import reports having done.</summary>
+    public SpellSaveResult Result { get; set; } = new(Added: 0, Updated: 0);
+
+    public Task<SpellSaveResult> ImportFolderAsync(string folderPath, CancellationToken cancellationToken = default)
     {
         ImportedFolder = folderPath;
         return Task.FromResult(Result);

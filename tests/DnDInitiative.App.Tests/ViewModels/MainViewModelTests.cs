@@ -53,7 +53,8 @@ public class MainViewModelTests
             new FakeConverterInstaller(),
             new FakeSourceDataService(),
             new FakeConverterConfigWriter(),
-            new InMemoryUiStateStore());
+            new InMemoryUiStateStore(),
+            new FakeSpellImporter());
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, _messenger),

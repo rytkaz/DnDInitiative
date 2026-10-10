@@ -4,6 +4,7 @@ using DnDInitiative.App.Messages;
 using DnDInitiative.App.Services;
 using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
+using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 
 namespace DnDInitiative.App.Tests.ViewModels;
@@ -21,6 +22,7 @@ public class ImportViewModelTests
     private readonly FakeSourceDataService _sourceData = new();
     private readonly FakeConverterConfigWriter _configWriter = new();
     private readonly InMemoryUiStateStore _uiState = new();
+    private readonly FakeSpellImporter _spellImporter = new();
     private StatBlocksImportedMessage? _received;
 
     public ImportViewModelTests()
@@ -29,7 +31,7 @@ public class ImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState);
+        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState, _spellImporter);
     }
 
     [Fact]
@@ -383,7 +385,7 @@ public class ImportViewModelTests
     {
         _uiState.State = new UiState { SourcesPanelHeight = 420 };
 
-        var viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState);
+        var viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState, _spellImporter);
 
         Assert.Equal(420, viewModel.SourcesPanelHeight);
     }
@@ -409,6 +411,44 @@ public class ImportViewModelTests
         await _viewModel.RunCommand.ExecuteAsync(null);
 
         Assert.Equal(1, _converter.DiscardCount);
+    }
+
+    [Fact]
+    public async Task RunCommand_ImportsTheSpellsFromTheSameNotesAndReportsThem()
+    {
+        FillInPaths();
+        _spellImporter.Result = new SpellSaveResult(Added: 300, Updated: 20);
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal("converted-notes", _spellImporter.ImportedFolder);
+        Assert.Contains("320 spells", _viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunCommand_OnlySpellsImported_StillCountsAsASuccessfulRun()
+    {
+        FillInPaths();
+        _importer.Result = new StatBlockImportResult(Added: 0, Updated: 0, FilesScanned: 12);
+        _spellImporter.Result = new SpellSaveResult(Added: 5, Updated: 0);
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, _converter.DiscardCount);
+        Assert.Contains("5 spells", _viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunCommand_NoConfigurationChosen_AsksForTheSpellsOfEveryBookThatHasThem()
+    {
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data" };
+        _sourceData.SpellSources = ["PHB", "XPHB"];
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        string[] expected = ["PHB", "XPHB"];
+        Assert.Equal(expected, _configWriter.Options?.SpellSources.ToArray());
     }
 
     [Fact]
