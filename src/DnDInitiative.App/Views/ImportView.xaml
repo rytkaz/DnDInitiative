@@ -67,12 +67,19 @@
                      Grid.Column="1"
                      Margin="12,4"
                      Text="{Binding DataDirectory, UpdateSourceTrigger=PropertyChanged}" />
-            <Button Grid.Row="2"
-                    Grid.Column="2"
-                    Margin="0,4"
-                    Padding="12,4"
-                    Command="{Binding BrowseDataCommand}"
-                    Content="Browse..." />
+            <StackPanel Grid.Row="2"
+                        Grid.Column="2"
+                        Orientation="Horizontal">
+                <Button Margin="0,4"
+                        Padding="12,4"
+                        Command="{Binding BrowseDataCommand}"
+                        Content="Browse..." />
+                <Button Margin="8,4,0,4"
+                        Padding="12,4"
+                        Command="{Binding UseDataZipCommand}"
+                        Content="From zip..."
+                        ToolTip="Unpack the data from a 5eTools zip file you downloaded" />
+            </StackPanel>
 
             <TextBlock Grid.Row="3"
                        VerticalAlignment="Center"

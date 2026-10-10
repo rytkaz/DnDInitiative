@@ -17,6 +17,9 @@ public sealed partial class ImportViewModel : PageViewModel
 {
     private const string ToolFilter = "ttrpg-convert (*.exe)|*.exe|All files (*.*)|*.*";
     private const string ConfigFilter = "Configuration (*.json)|*.json|All files (*.*)|*.*";
+    private const string ZipFilter = "Zip files (*.zip)|*.zip|All files (*.*)|*.*";
+    private const string NotDataFolderMessage =
+        "That folder does not look like 5eTools data. Pick the 'data' folder, the one that contains 'bestiary'.";
 
     private readonly IConversionSettingsStore _settingsStore;
     private readonly IStatBlockConverter _converter;
@@ -25,6 +28,7 @@ public sealed partial class ImportViewModel : PageViewModel
     private readonly IFilePicker _filePicker;
     private readonly IMessenger _messenger;
     private readonly IConverterInstaller _installer;
+    private readonly ISourceDataService _sourceData;
     private bool _isLoaded;
 
     [ObservableProperty]
@@ -44,6 +48,7 @@ public sealed partial class ImportViewModel : PageViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsIdle))]
     [NotifyCanExecuteChangedFor(nameof(UpdateConverterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(UseDataZipCommand))]
     private bool _isRunning;
 
     [ObservableProperty]
@@ -59,7 +64,8 @@ public sealed partial class ImportViewModel : PageViewModel
         IFolderPicker folderPicker,
         IFilePicker filePicker,
         IMessenger messenger,
-        IConverterInstaller installer)
+        IConverterInstaller installer,
+        ISourceDataService sourceData)
     {
         _settingsStore = settingsStore;
         _converter = converter;
@@ -68,6 +74,7 @@ public sealed partial class ImportViewModel : PageViewModel
         _filePicker = filePicker;
         _messenger = messenger;
         _installer = installer;
+        _sourceData = sourceData;
     }
 
     public override string Title => "5eTools Import";
@@ -118,10 +125,15 @@ public sealed partial class ImportViewModel : PageViewModel
     [RelayCommand]
     private void BrowseData()
     {
-        if (_folderPicker.PickFolder("Select the 5eTools data folder") is { } path)
+        if (_folderPicker.PickFolder("Select the 5eTools data folder") is not { } picked)
         {
-            DataDirectory = path;
+            return;
         }
+
+        // Picking the folder above "data" is an easy mistake; quietly use the right one.
+        string? dataFolder = _sourceData.FindDataFolder(picked);
+        DataDirectory = dataFolder ?? picked;
+        StatusMessage = dataFolder is null ? NotDataFolderMessage : "";
     }
 
     [RelayCommand]
@@ -136,13 +148,16 @@ public sealed partial class ImportViewModel : PageViewModel
     [RelayCommand(CanExecute = nameof(CanRun), IncludeCancelCommand = true)]
     private async Task RunAsync(CancellationToken cancellationToken)
     {
-        var settings = new ConversionSettings
+        // Check before starting, so a wrong folder gets a plain sentence instead of the converter's error output.
+        string? dataFolder = _sourceData.FindDataFolder(Clean(DataDirectory));
+        if (dataFolder is null)
         {
-            ToolPath = Clean(ToolPath),
-            ConfigPath = Clean(ConfigPath),
-            DataDirectory = Clean(DataDirectory),
-            OutputDirectory = Clean(OutputDirectory),
-        };
+            StatusMessage = NotDataFolderMessage;
+            return;
+        }
+
+        DataDirectory = dataFolder;
+        ConversionSettings settings = CurrentSettings();
 
         IsRunning = true;
         Log = "";
@@ -247,5 +262,46 @@ public sealed partial class ImportViewModel : PageViewModel
         {
             IsRunning = false;
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(IsIdle))]
+    private async Task UseDataZipAsync()
+    {
+        if (_filePicker.PickFile("Select the 5eTools zip file you downloaded", ZipFilter) is not { } zipPath)
+        {
+            return;
+        }
+
+        IsRunning = true;
+        Log = "";
+        StatusMessage = "Unpacking the data...";
+
+        try
+        {
+            DataDirectory = await _sourceData.ImportZipAsync(zipPath, new UiProgress<string>(AppendToLog));
+
+            // Saved straight away: the unpacked data stays on disk, so the path should survive too.
+            await _settingsStore.SaveAsync(CurrentSettings());
+            StatusMessage = "The data is unpacked and ready. You can delete the zip file.";
+        }
+        catch (ConversionException exception)
+        {
+            StatusMessage = exception.Message;
+        }
+        finally
+        {
+            IsRunning = false;
+        }
+    }
+
+    private ConversionSettings CurrentSettings()
+    {
+        return new ConversionSettings
+        {
+            ToolPath = Clean(ToolPath),
+            ConfigPath = Clean(ConfigPath),
+            DataDirectory = Clean(DataDirectory),
+            OutputDirectory = Clean(OutputDirectory),
+        };
     }
 }

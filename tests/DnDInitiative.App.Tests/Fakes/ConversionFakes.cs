@@ -92,3 +92,36 @@ internal sealed class FakeConverterInstaller : IConverterInstaller
         return Task.FromResult(Installed);
     }
 }
+
+internal sealed class FakeSourceDataService : ISourceDataService
+{
+    /// <summary>When false, no folder is recognised as 5eTools data.</summary>
+    public bool RecognisesFolders { get; set; } = true;
+
+    /// <summary>Returned instead of the picked folder, as if the data were one level down.</summary>
+    public string? CorrectedFolder { get; set; }
+
+    public string? ImportedZip { get; private set; }
+
+    public string? FailureMessage { get; set; }
+
+    public string? FindDataFolder(string folder)
+    {
+        return RecognisesFolders ? CorrectedFolder ?? folder : null;
+    }
+
+    public Task<string> ImportZipAsync(
+        string zipPath,
+        IProgress<string>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (FailureMessage is not null)
+        {
+            throw new ConversionException(FailureMessage);
+        }
+
+        ImportedZip = zipPath;
+        progress?.Report("Unpacked 3 files.");
+        return Task.FromResult("unpacked-data");
+    }
+}

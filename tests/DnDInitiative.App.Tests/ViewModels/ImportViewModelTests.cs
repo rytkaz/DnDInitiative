@@ -17,6 +17,7 @@ public class ImportViewModelTests
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly ImportViewModel _viewModel;
     private readonly FakeConverterInstaller _installer = new();
+    private readonly FakeSourceDataService _sourceData = new();
     private StatBlocksImportedMessage? _received;
 
     public ImportViewModelTests()
@@ -25,7 +26,7 @@ public class ImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer);
+        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData);
     }
 
     [Fact]
@@ -194,6 +195,67 @@ public class ImportViewModelTests
         _viewModel.BrowseToolCommand.Execute(null);
 
         Assert.Equal("tool.exe", _viewModel.ToolPath);
+    }
+
+    [Fact]
+    public async Task RunCommand_FolderIsNotFiveToolsData_ExplainsAndDoesNotStart()
+    {
+        FillInPaths();
+        _sourceData.RecognisesFolders = false;
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Contains("bestiary", _viewModel.StatusMessage, StringComparison.Ordinal);
+        Assert.Null(_converter.Request);
+        Assert.False(_viewModel.IsRunning);
+    }
+
+    [Fact]
+    public async Task RunCommand_FolderAboveTheDataWasChosen_UsesTheRealDataFolder()
+    {
+        FillInPaths();
+        _sourceData.CorrectedFolder = @"picked\data";
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"picked\data", _converter.Request?.DataDirectory);
+        Assert.Equal(@"picked\data", _viewModel.DataDirectory);
+    }
+
+    [Fact]
+    public async Task UseDataZipCommand_ZipChosen_UnpacksItAndRemembersTheFolder()
+    {
+        _filePicker.FileToReturn = @"C:\Downloads\5etools.zip";
+
+        await _viewModel.UseDataZipCommand.ExecuteAsync(null);
+
+        Assert.Equal(@"C:\Downloads\5etools.zip", _sourceData.ImportedZip);
+        Assert.Equal("unpacked-data", _viewModel.DataDirectory);
+        Assert.Equal("unpacked-data", _settingsStore.Settings.DataDirectory);
+        Assert.False(_viewModel.IsRunning);
+    }
+
+    [Fact]
+    public async Task UseDataZipCommand_WrongZip_ShowsWhyAndKeepsTheCurrentFolder()
+    {
+        _viewModel.DataDirectory = "data";
+        _filePicker.FileToReturn = @"C:\Downloads\holiday.zip";
+        _sourceData.FailureMessage = "That zip does not contain 5eTools data.";
+
+        await _viewModel.UseDataZipCommand.ExecuteAsync(null);
+
+        Assert.Equal("That zip does not contain 5eTools data.", _viewModel.StatusMessage);
+        Assert.Equal("data", _viewModel.DataDirectory);
+    }
+
+    [Fact]
+    public async Task UseDataZipCommand_DialogCancelled_DoesNothing()
+    {
+        _filePicker.FileToReturn = null;
+
+        await _viewModel.UseDataZipCommand.ExecuteAsync(null);
+
+        Assert.Null(_sourceData.ImportedZip);
     }
 
     private void FillInPaths()
