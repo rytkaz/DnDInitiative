@@ -1,16 +1,30 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
 using DnDInitiative.App.Services;
+using DnDInitiative.Core.Campaigns;
 
 namespace DnDInitiative.App.ViewModels;
 
-public sealed class MainViewModel : ObservableObject, IRecipient<StartCombatMessage>
+public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCombatMessage>
 {
+    private const string AppTitle = "DnD Initiative";
+
     private readonly InitiativeTrackerViewModel _initiativeTracker;
     private readonly IConfirmationService _confirmation;
+    private readonly ICampaignService _campaigns;
+    private readonly IFolderPicker _folderPicker;
     private PageViewModel _currentPage;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WindowTitle))]
+    private string _campaignName;
+
+    /// <summary>Why the last attempt to open a campaign failed, or empty.</summary>
+    [ObservableProperty]
+    private string _campaignMessage = "";
 
     public MainViewModel(
         InitiativeTrackerViewModel initiativeTracker,
@@ -19,15 +33,38 @@ public sealed class MainViewModel : ObservableObject, IRecipient<StartCombatMess
         PartySetupViewModel partySetup,
         ImportViewModel import,
         IMessenger messenger,
-        IConfirmationService confirmation)
+        IConfirmationService confirmation,
+        ICampaignService campaigns,
+        IFolderPicker folderPicker)
     {
         ArgumentNullException.ThrowIfNull(messenger);
+        ArgumentNullException.ThrowIfNull(campaigns);
 
         _initiativeTracker = initiativeTracker;
         _confirmation = confirmation;
+        _campaigns = campaigns;
+        _folderPicker = folderPicker;
         Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import];
         _currentPage = initiativeTracker;
+
+        // Storage opens a campaign during start-up, before any window exists.
+        _campaignName = campaigns.Current?.Name ?? "";
         messenger.Register<StartCombatMessage>(this);
+    }
+
+    public IReadOnlyList<PageViewModel> Pages { get; }
+
+    public PageViewModel CurrentPage
+    {
+        get => _currentPage;
+        set => SetProperty(ref _currentPage, value);
+    }
+
+    public string WindowTitle => CampaignName.Length == 0 ? AppTitle : $"{CampaignName} - {AppTitle}";
+
+    public void Receive(StartCombatMessage message)
+    {
+        CurrentPage = _initiativeTracker;
     }
 
     /// <summary>Returns false if the user chose to stay because of unsaved changes.</summary>
@@ -39,26 +76,69 @@ public sealed class MainViewModel : ObservableObject, IRecipient<StartCombatMess
             return true;
         }
 
+        return _confirmation.Confirm("Unsaved changes", DescribeLoss(unsaved, "Close anyway?"));
+    }
+
+    [RelayCommand]
+    private async Task OpenCampaignAsync()
+    {
+        string? folder = _folderPicker.PickFolder("Open a campaign folder, or pick an empty folder to start a new campaign");
+        if (folder is null)
+        {
+            return;
+        }
+
+        if (_campaigns.Inspect(folder) == CampaignFolderState.HasOtherFiles
+            && !_confirmation.Confirm(
+                "Not a campaign folder",
+                $"'{folder}' already contains other files. Campaign files will be added next to them. Use this folder anyway?"))
+        {
+            return;
+        }
+
+        if (!ConfirmLeavingCampaign())
+        {
+            return;
+        }
+
+        try
+        {
+            Campaign campaign = await _campaigns.OpenAsync(folder);
+            CampaignName = campaign.Name;
+            CampaignMessage = "";
+        }
+        catch (CampaignException exception)
+        {
+            // The previous campaign is still open; say why the new one is not.
+            CampaignMessage = exception.Message;
+            return;
+        }
+
+        foreach (PageViewModel page in Pages)
+        {
+            await page.ReloadCampaignDataAsync();
+        }
+    }
+
+    private bool ConfirmLeavingCampaign()
+    {
+        List<string> losses = Pages.SelectMany(page => page.UnsavedChanges).ToList();
+        if (_initiativeTracker.Combatants.Count > 0)
+        {
+            losses.Add("The combat in the initiative tracker");
+        }
+
+        return losses.Count == 0
+            || _confirmation.Confirm("Open another campaign", DescribeLoss(losses, "Open the campaign anyway?"));
+    }
+
+    private static string DescribeLoss(List<string> items, string question)
+    {
         string blankLine = Environment.NewLine + Environment.NewLine;
-        string message = "These have unsaved changes that will be lost:"
+        return "These will be lost:"
             + blankLine
-            + string.Join(Environment.NewLine, unsaved)
+            + string.Join(Environment.NewLine, items)
             + blankLine
-            + "Close anyway?";
-
-        return _confirmation.Confirm("Unsaved changes", message);
-    }
-
-    public IReadOnlyList<PageViewModel> Pages { get; }
-
-    public PageViewModel CurrentPage
-    {
-        get => _currentPage;
-        set => SetProperty(ref _currentPage, value);
-    }
-
-    public void Receive(StartCombatMessage message)
-    {
-        CurrentPage = _initiativeTracker;
+            + question;
     }
 }

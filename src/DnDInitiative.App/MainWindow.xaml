@@ -5,23 +5,42 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
         xmlns:views="clr-namespace:DnDInitiative.App.Views"
-        mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
-        Title="DnD Initiative"
+        Title="{Binding WindowTitle}"
         Width="1400"
         Height="920"
         MinWidth="800"
-        MinHeight="480">
+        MinHeight="480"
+        d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
+        mc:Ignorable="d">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <ListBox Grid.Column="0"
-                 ItemsSource="{Binding Pages}"
-                 SelectedItem="{Binding CurrentPage}"
-                 DisplayMemberPath="Title" />
+        <DockPanel Grid.Column="0">
+            <!--  The open campaign, below the page list  -->
+            <StackPanel Margin="12" DockPanel.Dock="Bottom">
+                <TextBlock Style="{StaticResource SecondaryText}" Text="Campaign" />
+                <TextBlock FontWeight="SemiBold"
+                           Text="{Binding CampaignName}"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding CampaignName}" />
+                <TextBlock Margin="0,4,0,0"
+                           Text="{Binding CampaignMessage}"
+                           TextWrapping="Wrap" />
+                <Button Margin="0,8,0,0"
+                        Padding="12,4"
+                        HorizontalAlignment="Stretch"
+                        Command="{Binding OpenCampaignCommand}"
+                        Content="Open campaign..."
+                        ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
+            </StackPanel>
+
+            <ListBox DisplayMemberPath="Title"
+                     ItemsSource="{Binding Pages}"
+                     SelectedItem="{Binding CurrentPage}" />
+        </DockPanel>
 
         <ContentControl Grid.Column="1"
                         Margin="24"

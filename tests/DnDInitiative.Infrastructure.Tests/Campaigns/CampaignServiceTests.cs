@@ -103,6 +103,27 @@ public sealed class CampaignServiceTests : IDisposable
         Assert.Equal(DefaultFolder, campaign.Folder);
     }
 
+    [Fact]
+    public async Task Inspect_TellsCampaignsEmptyFoldersAndOtherFoldersApart()
+    {
+        CampaignService service = CreateService();
+
+        string campaign = Path.Combine(_root, "campaign");
+        await service.OpenAsync(campaign);
+
+        string newRepository = Path.Combine(_root, "new-repository");
+        Directory.CreateDirectory(Path.Combine(newRepository, ".git"));
+
+        string documents = Path.Combine(_root, "documents");
+        Directory.CreateDirectory(documents);
+        await File.WriteAllTextAsync(Path.Combine(documents, "letter.txt"), "Dear diary");
+
+        Assert.Equal(CampaignFolderState.Campaign, service.Inspect(campaign));
+        Assert.Equal(CampaignFolderState.Empty, service.Inspect(newRepository));
+        Assert.Equal(CampaignFolderState.Empty, service.Inspect(Path.Combine(_root, "does-not-exist")));
+        Assert.Equal(CampaignFolderState.HasOtherFiles, service.Inspect(documents));
+    }
+
     private CampaignService CreateService()
     {
         return new CampaignService(

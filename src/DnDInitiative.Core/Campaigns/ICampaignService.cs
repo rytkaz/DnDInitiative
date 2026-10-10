@@ -8,6 +8,9 @@ public interface ICampaignService
     /// <summary>The open campaign, or null before one has been opened.</summary>
     Campaign? Current { get; }
 
+    /// <summary>Looks at a folder without changing it.</summary>
+    CampaignFolderState Inspect(string folder);
+
     /// <summary>
     /// Opens the campaign in a folder, creating the folder and an empty campaign if needed,
     /// and remembers it for the next start.
@@ -17,4 +20,17 @@ public interface ICampaignService
 
     /// <summary>Opens the campaign used last time, or the default one if that is not possible.</summary>
     Task<Campaign> OpenLastOrDefaultAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>What a folder contains, from the point of view of opening it as a campaign.</summary>
+public enum CampaignFolderState
+{
+    /// <summary>Nothing in it, or it does not exist yet. Opening it starts a new campaign.</summary>
+    Empty,
+
+    /// <summary>Already a campaign.</summary>
+    Campaign,
+
+    /// <summary>Holds other files and no campaign. Probably not what the user meant to pick.</summary>
+    HasOtherFiles,
 }

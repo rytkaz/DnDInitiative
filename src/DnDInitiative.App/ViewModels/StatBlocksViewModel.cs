@@ -50,6 +50,21 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
     [ObservableProperty]
     private string _statusMessage = "";
 
+    public override string Title => "Stat Blocks";
+
+    public ObservableCollection<StatBlockSummary> FilteredStatBlocks { get; } = [];
+
+    public bool IsEditing => Editor is not null;
+
+    public bool IsBrowsing => Editor is null;
+
+    private bool HasSelection => SelectedStatBlock is not null;
+
+    public override IReadOnlyList<string> UnsavedChanges => Editor is { HasUnsavedChanges: true } editor
+        ? [$"Stat block: {editor.Name}"]
+        : [];
+
+
     public StatBlocksViewModel(
         IStatBlockRepository repository,
         IStatBlockImporter importer,
@@ -66,19 +81,17 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
         messenger.Register(this);
     }
 
-    public override string Title => "Stat Blocks";
+    public override async Task ReloadCampaignDataAsync()
+    {
+        Editor = null;
+        StatusMessage = "";
 
-    public ObservableCollection<StatBlockSummary> FilteredStatBlocks { get; } = [];
-
-    public bool IsEditing => Editor is not null;
-
-    public bool IsBrowsing => Editor is null;
-
-    private bool HasSelection => SelectedStatBlock is not null;
-
-    public override IReadOnlyList<string> UnsavedChanges => Editor is { HasUnsavedChanges: true } editor
-        ? [$"Stat block: {editor.Name}"]
-        : [];
+        // If the page was never opened, its first load will read the new campaign anyway.
+        if (_isLoaded)
+        {
+            await RefreshListAsync(selectId: null);
+        }
+    }
 
     partial void OnSearchTextChanged(string value)
     {
@@ -152,8 +165,13 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
         }
 
         await _repository.DeleteAsync(selected.Id);
-        await RefreshListAsync(selectId: null);
-        StatusMessage = $"Deleted {selected.Name}.";
+
+        // Deleting the user's version of an imported creature uncovers the original.
+        bool reverted = await _repository.GetAsync(selected.Id) is not null;
+        await RefreshListAsync(selectId: reverted ? selected.Id : null);
+        StatusMessage = reverted
+            ? $"Removed your changes to {selected.Name}. The imported version is back."
+            : $"Deleted {selected.Name}.";
     }
 
     [RelayCommand]

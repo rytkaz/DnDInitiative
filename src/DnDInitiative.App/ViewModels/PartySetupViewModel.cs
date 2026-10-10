@@ -22,12 +22,6 @@ public sealed partial class PartySetupViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
-    public PartySetupViewModel(IPartyRepository repository, IConfirmationService confirmation)
-    {
-        _repository = repository;
-        _confirmation = confirmation;
-    }
-
     public override string Title => "Party Setup";
 
     public ObservableCollection<PartyEditorViewModel> Parties { get; } = [];
@@ -38,6 +32,23 @@ public sealed partial class PartySetupViewModel : PageViewModel
         .Where(party => party.HasUnsavedChanges)
         .Select(party => $"Party: {party.Name}")
         .ToList();
+
+    public PartySetupViewModel(IPartyRepository repository, IConfirmationService confirmation)
+    {
+        _repository = repository;
+        _confirmation = confirmation;
+    }
+
+    public override async Task ReloadCampaignDataAsync()
+    {
+        Parties.Clear();
+        SelectedParty = null;
+        StatusMessage = "";
+
+        // Makes the next load read from storage again instead of returning early.
+        _isLoaded = false;
+        await LoadAsync();
+    }
 
     [RelayCommand]
     private async Task LoadAsync()

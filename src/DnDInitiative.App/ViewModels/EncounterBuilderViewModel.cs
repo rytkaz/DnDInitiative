@@ -62,21 +62,6 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
-    public EncounterBuilderViewModel(
-        IEncounterRepository encounterRepository,
-        IStatBlockRepository statBlockRepository,
-        IPartyRepository partyRepository,
-        IMessenger messenger,
-        IClipboardService clipboard,
-        IConfirmationService confirmation)
-    {
-        _encounterRepository = encounterRepository;
-        _statBlockRepository = statBlockRepository;
-        _partyRepository = partyRepository;
-        _messenger = messenger;
-        _clipboard = clipboard;
-        _confirmation = confirmation;
-    }
 
     public override string Title => "Encounter Builder";
 
@@ -94,6 +79,34 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         .Where(encounter => encounter.HasUnsavedChanges)
         .Select(encounter => $"Encounter: {encounter.Name}")
         .ToList();
+
+    public EncounterBuilderViewModel(
+        IEncounterRepository encounterRepository,
+        IStatBlockRepository statBlockRepository,
+        IPartyRepository partyRepository,
+        IMessenger messenger,
+        IClipboardService clipboard,
+        IConfirmationService confirmation)
+    {
+        _encounterRepository = encounterRepository;
+        _statBlockRepository = statBlockRepository;
+        _partyRepository = partyRepository;
+        _messenger = messenger;
+        _clipboard = clipboard;
+        _confirmation = confirmation;
+    }
+
+    public override async Task ReloadCampaignDataAsync()
+    {
+        Encounters.Clear();
+        SelectedEncounter = null;
+        StatusMessage = "";
+
+        // Stat blocks cached for the old campaign's encounters may not exist in the new one.
+        _statBlocksById.Clear();
+        _encountersLoaded = false;
+        await LoadAsync();
+    }
 
     partial void OnSelectedEncounterChanged(EncounterEditorViewModel? value)
     {

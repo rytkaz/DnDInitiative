@@ -34,6 +34,29 @@ internal sealed class CampaignService : ICampaignService
 
     public Campaign? Current { get; private set; }
 
+    public CampaignFolderState Inspect(string folder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folder);
+
+        if (!Directory.Exists(folder))
+        {
+            return CampaignFolderState.Empty;
+        }
+
+        if (File.Exists(Path.Combine(folder, ManifestFileName)))
+        {
+            return CampaignFolderState.Campaign;
+        }
+
+        // Names starting with a dot (.git, .gitignore) do not count: a new, empty
+        // git repository is a perfectly good place to start a campaign.
+        bool hasOtherFiles = Directory
+            .EnumerateFileSystemEntries(folder)
+            .Any(entry => !Path.GetFileName(entry).StartsWith('.'));
+
+        return hasOtherFiles ? CampaignFolderState.HasOtherFiles : CampaignFolderState.Empty;
+    }
+
     public async Task<Campaign> OpenAsync(string folder, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(folder);

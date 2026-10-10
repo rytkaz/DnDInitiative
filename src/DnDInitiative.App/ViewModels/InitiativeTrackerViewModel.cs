@@ -97,6 +97,16 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     private RollMode CreatureRollMode => RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal;
 
+    public override string Title => "Initiative Tracker";
+
+    public ObservableCollection<CombatantViewModel> Combatants { get; } = [];
+
+    public ObservableCollection<Party> Parties { get; } = [];
+
+    private bool HasSelectedCombatant => SelectedCombatant is not null;
+
+    private bool CanAddCreature => !string.IsNullOrWhiteSpace(NewName) && NewMaxHp is null or >= 0;
+
     public InitiativeTrackerViewModel(
         CombatantFactory combatantFactory,
         IPartyRepository partyRepository,
@@ -113,15 +123,16 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         messenger.Register<StartCombatMessage>(this);
     }
 
-    public override string Title => "Initiative Tracker";
+    public override async Task ReloadCampaignDataAsync()
+    {
+        // A combat is made of the old campaign's party and creatures. It cannot carry over.
+        SelectedCombatant = null;
+        SelectedParty = null;
+        StartCombat(name: "", creatures: []);
 
-    public ObservableCollection<CombatantViewModel> Combatants { get; } = [];
-
-    public ObservableCollection<Party> Parties { get; } = [];
-
-    private bool HasSelectedCombatant => SelectedCombatant is not null;
-
-    private bool CanAddCreature => !string.IsNullOrWhiteSpace(NewName) && NewMaxHp is null or >= 0;
+        await LoadPartiesAsync();
+        await RefreshLibraryAsync();
+    }
 
     [RelayCommand]
     private async Task LoadPartiesAsync()

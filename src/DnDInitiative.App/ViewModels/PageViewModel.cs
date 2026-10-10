@@ -13,4 +13,13 @@ public abstract class PageViewModel : ObservableObject
     /// A description of each thing on this page that would be lost if the app closed now.
     /// </summary>
     public virtual IReadOnlyList<string> UnsavedChanges => [];
+
+    /// <summary>
+    /// Called after a different campaign was opened. Drop everything that belonged to the old
+    /// campaign, unsaved edits included, and load from the new one.
+    /// </summary>
+    public virtual Task ReloadCampaignDataAsync()
+    {
+        return Task.CompletedTask;
+    }
 }
