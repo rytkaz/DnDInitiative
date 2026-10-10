@@ -14,6 +14,8 @@ internal sealed class FakeCampaignService : ICampaignService
     /// <summary>Makes the next open fail with this message.</summary>
     public string? FailureMessage { get; set; }
 
+    public event EventHandler? FilesChangedExternally;
+
     public CampaignFolderState Inspect(string folder)
     {
         return FolderState;
@@ -34,5 +36,11 @@ internal sealed class FakeCampaignService : ICampaignService
     public Task<Campaign> OpenLastOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Current ?? new Campaign("C:\\campaigns\\default", "Default"));
+    }
+
+    /// <summary>Stands in for the file watcher noticing a change.</summary>
+    public void RaiseFilesChanged()
+    {
+        FilesChangedExternally?.Invoke(this, EventArgs.Empty);
     }
 }

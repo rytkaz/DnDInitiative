@@ -126,7 +126,7 @@ internal sealed class CampaignStatBlockRepository : IStatBlockRepository
         string trimmed = searchText.Trim();
         IEnumerable<StatBlockSummary> ownMatches = own
             .Where(statBlock => trimmed.Length == 0 || statBlock.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
-            .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source));
+            .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source, StatBlockOrigin.Custom));
 
         // The page asked for is rows [skip, skip + limit) of the two lists merged. Those rows can
         // only come from the first (skip + limit) rows of the database, plus one extra for every

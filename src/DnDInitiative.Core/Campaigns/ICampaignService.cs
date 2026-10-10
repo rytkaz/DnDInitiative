@@ -5,6 +5,12 @@ public sealed record Campaign(string Folder, string Name);
 
 public interface ICampaignService
 {
+    /// <summary>
+    /// Raised when campaign files were changed by something other than this app, for example
+    /// a "git pull". May be raised on a background thread.
+    /// </summary>
+    event EventHandler? FilesChangedExternally;
+
     /// <summary>The open campaign, or null before one has been opened.</summary>
     Campaign? Current { get; }
 

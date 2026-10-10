@@ -55,7 +55,7 @@ internal sealed class InMemoryStatBlockRepository : IStatBlockRepository
             .ThenBy(statBlock => statBlock.Id)
             .Skip(skip)
             .Take(limit)
-            .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source))
+            .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source, statBlock.Origin))
             .ToList();
 
         return Task.FromResult<IReadOnlyList<StatBlockSummary>>(results);

@@ -118,17 +118,10 @@
                     </StackPanel>
 
                     <ListBox behaviors:LoadMoreOnScroll.Command="{Binding LoadMoreLibraryResultsCommand}"
+                             ItemTemplate="{StaticResource StatBlockSummaryTemplate}"
                              ItemsSource="{Binding LibraryResults}"
-                             SelectedItem="{Binding SelectedLibraryStatBlock}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock>
-                                    <Run Text="{Binding Name, Mode=OneWay}" />
-                                    <Run Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding ChallengeRating, Mode=OneWay, StringFormat='CR {0}'}" />
-                                </TextBlock>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                             SelectedItem="{Binding SelectedLibraryStatBlock}"
+                             TextSearch.TextPath="Name" />
                 </DockPanel>
             </Border>
         </Popup>

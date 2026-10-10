@@ -12,6 +12,9 @@
         MinHeight="480"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
         mc:Ignorable="d">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220" />
@@ -29,6 +32,13 @@
                 <TextBlock Margin="0,4,0,0"
                            Text="{Binding CampaignMessage}"
                            TextWrapping="Wrap" />
+                <Button Margin="0,8,0,0"
+                        Padding="12,4"
+                        HorizontalAlignment="Stretch"
+                        Command="{Binding ReloadCampaignCommand}"
+                        Content="Reload"
+                        ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
+                        Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
                 <Button Margin="0,8,0,0"
                         Padding="12,4"
                         HorizontalAlignment="Stretch"

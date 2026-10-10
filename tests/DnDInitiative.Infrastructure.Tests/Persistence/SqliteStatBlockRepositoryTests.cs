@@ -148,7 +148,7 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
     public async Task SearchAsync_ReturnsTheSummaryFields()
     {
         var repository = new SqliteStatBlockRepository(_database);
-        StatBlock goblin = Create("Goblin") with { ChallengeRating = "1/4", Source = "MM" };
+        StatBlock goblin = Create("Goblin") with { ChallengeRating = "1/4", Source = "MM", Origin = StatBlockOrigin.Imported };
         await repository.SaveAsync(goblin);
 
         StatBlockSummary summary = Assert.Single(await repository.SearchAsync("goblin", limit: 10));

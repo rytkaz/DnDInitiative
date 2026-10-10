@@ -17,6 +17,12 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     private readonly ICampaignService _campaigns;
     private readonly IFolderPicker _folderPicker;
     private PageViewModel _currentPage;
+    // Brings change notifications from the watcher's background thread to the UI thread.
+    private readonly UiProgress<bool> _externalChange;
+
+    /// <summary>Files changed on disk, but reloading now would discard something.</summary>
+    [ObservableProperty]
+    private bool _hasPendingExternalChanges;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(WindowTitle))]
@@ -50,6 +56,9 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         // Storage opens a campaign during start-up, before any window exists.
         _campaignName = campaigns.Current?.Name ?? "";
         messenger.Register<StartCombatMessage>(this);
+
+        _externalChange = new UiProgress<bool>(_ => HandleExternalChangeAsync().Forget());
+        campaigns.FilesChangedExternally += (_, _) => _externalChange.Report(true);
     }
 
     public IReadOnlyList<PageViewModel> Pages { get; }
@@ -106,6 +115,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             Campaign campaign = await _campaigns.OpenAsync(folder);
             CampaignName = campaign.Name;
             CampaignMessage = "";
+            HasPendingExternalChanges = false;
         }
         catch (CampaignException exception)
         {
@@ -114,10 +124,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             return;
         }
 
-        foreach (PageViewModel page in Pages)
-        {
-            await page.ReloadCampaignDataAsync();
-        }
+        await ReloadPagesAsync();
     }
 
     private bool ConfirmLeavingCampaign()
@@ -140,5 +147,45 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             + string.Join(Environment.NewLine, items)
             + blankLine
             + question;
+    }
+
+    [RelayCommand]
+    private async Task ReloadCampaignAsync()
+    {
+        if (!ConfirmLeavingCampaign())
+        {
+            return;
+        }
+
+        await ReloadPagesAsync();
+        HasPendingExternalChanges = false;
+        CampaignMessage = "";
+    }
+
+    private async Task HandleExternalChangeAsync()
+    {
+        // Never reload over the user's work without asking.
+        if (HasSomethingToLose())
+        {
+            HasPendingExternalChanges = true;
+            CampaignMessage = "Campaign files changed on disk.";
+            return;
+        }
+
+        await ReloadPagesAsync();
+        CampaignMessage = "Loaded changes from disk.";
+    }
+
+    private async Task ReloadPagesAsync()
+    {
+        foreach (PageViewModel page in Pages)
+        {
+            await page.ReloadCampaignDataAsync();
+        }
+    }
+
+    private bool HasSomethingToLose()
+    {
+        return _initiativeTracker.Combatants.Count > 0 || Pages.Any(page => page.UnsavedChanges.Count > 0);
     }
 }

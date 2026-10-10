@@ -75,6 +75,8 @@ internal sealed class JsonFolderStore<T>
         string path = Path.Combine(FolderPath, FileNames.UniqueFileName(FileNames.Slug(_getName(item)), taken));
         string json = JsonSerializer.Serialize(item, CampaignJson.Options) + "\n";
 
+        _location.NoteOwnWrite(path);
+
         // Written under a temporary name and then renamed, so a crash halfway through
         // never leaves a half-written file where a good one used to be.
         string temporaryPath = path + ".tmp";
@@ -86,6 +88,7 @@ internal sealed class JsonFolderStore<T>
         {
             if (!string.Equals(oldPath, path, StringComparison.OrdinalIgnoreCase))
             {
+                _location.NoteOwnWrite(oldPath);
                 File.Delete(oldPath);
             }
         }
@@ -96,6 +99,7 @@ internal sealed class JsonFolderStore<T>
         List<StoredFile> files = await ReadFilesAsync(cancellationToken).ConfigureAwait(false);
         foreach (StoredFile file in files.Where(file => _getId(file.Item) == id))
         {
+            _location.NoteOwnWrite(file.Path);
             File.Delete(file.Path);
         }
     }

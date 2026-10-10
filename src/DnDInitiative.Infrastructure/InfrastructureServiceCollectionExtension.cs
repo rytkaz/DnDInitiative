@@ -49,6 +49,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         // The campaign folder. This is what the rest of the app reads and writes.
         services.AddSingleton<CampaignLocation>();
+        services.AddSingleton<CampaignFileWatcher>();
         services.AddSingleton<ICampaignService, CampaignService>();
         services.AddSingleton<JsonPartyRepository>();
         services.AddSingleton<JsonEncounterRepository>();

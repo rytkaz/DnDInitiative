@@ -174,4 +174,46 @@ public class MainViewModelTests
         Assert.Equal("First", _viewModel.CampaignName);
         Assert.Equal("Saved by a newer version.", _viewModel.CampaignMessage);
     }
+
+    [Fact]
+    public async Task FilesChangedExternally_NothingToLose_ReloadsStraightAway()
+    {
+        await _partySetup.LoadCommand.ExecuteAsync(null);
+        await _parties.SaveAsync(new Party(Guid.NewGuid(), "Pulled from git", []));
+
+        _campaigns.RaiseFilesChanged();
+
+        Assert.Equal("Pulled from git", Assert.Single(_partySetup.Parties).Name);
+        Assert.False(_viewModel.HasPendingExternalChanges);
+        Assert.Empty(_confirmation.Questions);
+    }
+
+    [Fact]
+    public async Task FilesChangedExternally_UnsavedEdits_KeepsThemAndOffersAReload()
+    {
+        await _partySetup.LoadCommand.ExecuteAsync(null);
+        _partySetup.NewPartyCommand.Execute(null);
+        await _parties.SaveAsync(new Party(Guid.NewGuid(), "Pulled from git", []));
+
+        _campaigns.RaiseFilesChanged();
+
+        Assert.Equal("New party", Assert.Single(_partySetup.Parties).Name);
+        Assert.True(_viewModel.HasPendingExternalChanges);
+        Assert.Empty(_confirmation.Questions);
+    }
+
+    [Fact]
+    public async Task ReloadCampaignCommand_Confirmed_DiscardsEditsAndLoadsTheChanges()
+    {
+        await _partySetup.LoadCommand.ExecuteAsync(null);
+        _partySetup.NewPartyCommand.Execute(null);
+        await _parties.SaveAsync(new Party(Guid.NewGuid(), "Pulled from git", []));
+        _campaigns.RaiseFilesChanged();
+
+        await _viewModel.ReloadCampaignCommand.ExecuteAsync(null);
+
+        Assert.Equal("Pulled from git", Assert.Single(_partySetup.Parties).Name);
+        Assert.False(_viewModel.HasPendingExternalChanges);
+        Assert.Single(_confirmation.Questions);
+    }
 }

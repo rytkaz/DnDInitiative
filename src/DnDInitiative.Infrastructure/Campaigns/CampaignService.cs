@@ -12,6 +12,8 @@ internal sealed class CampaignService : ICampaignService
     /// <summary>Raised whenever the layout of a campaign folder changes in a way older versions cannot read.</summary>
     public const int CurrentFormatVersion = 1;
 
+    public event EventHandler? FilesChangedExternally;
+
     private const string ManifestFileName = "campaign.json";
     private const string StateFileName = "app-state.json";
 
@@ -19,17 +21,22 @@ internal sealed class CampaignService : ICampaignService
     private readonly CampaignOptions _options;
     private readonly string _stateFilePath;
     private readonly ILogger<CampaignService> _logger;
+    private readonly CampaignFileWatcher _watcher;
 
     public CampaignService(
         CampaignLocation location,
         CampaignOptions options,
         StorageOptions storage,
+        CampaignFileWatcher watcher,
         ILogger<CampaignService> logger)
     {
         _location = location;
         _options = options;
         _stateFilePath = Path.Combine(storage.DataDirectory, StateFileName);
+        _watcher = watcher;
         _logger = logger;
+
+        _watcher.Changed += (_, _) => FilesChangedExternally?.Invoke(this, EventArgs.Empty);
     }
 
     public Campaign? Current { get; private set; }
@@ -69,6 +76,7 @@ internal sealed class CampaignService : ICampaignService
         CampaignManifest manifest = await ReadOrCreateManifestAsync(fullPath, cancellationToken).ConfigureAwait(false);
 
         _location.Folder = fullPath;
+        _watcher.Watch(fullPath);
         Current = new Campaign(fullPath, manifest.Name);
         await RememberAsync(fullPath, cancellationToken).ConfigureAwait(false);
 

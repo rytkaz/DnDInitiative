@@ -138,6 +138,18 @@ public sealed class CampaignStatBlockRepositoryTests : IDisposable
         Assert.Equal(["Goblin", "Goblin King"], names);
     }
 
+    [Fact]
+    public async Task SearchAsync_SaysWhichStatBlocksAreTheUsersOwn()
+    {
+        await _repository.SaveAsync(Imported("Goblin"));
+        await _repository.SaveAsync(Own("Owlbear King"));
+
+        IReadOnlyList<StatBlockSummary> results = await _repository.SearchAsync("", limit: 10);
+
+        Assert.False(results.Single(summary => summary.Name == "Goblin").IsOwn);
+        Assert.True(results.Single(summary => summary.Name == "Owlbear King").IsOwn);
+    }
+
     private static StatBlock Own(string name)
     {
         return new StatBlock { Id = Guid.NewGuid(), Name = name, Origin = StatBlockOrigin.Custom };

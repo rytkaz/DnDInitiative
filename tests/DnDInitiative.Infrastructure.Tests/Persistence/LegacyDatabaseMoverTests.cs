@@ -23,16 +23,19 @@ public sealed class LegacyDatabaseMoverTests : IDisposable
     private readonly JsonEncounterRepository _encounters;
     private readonly CampaignStatBlockRepository _statBlocks;
     private readonly LegacyDatabaseMover _mover;
+    private readonly CampaignFileWatcher _watcher;
 
     public LegacyDatabaseMoverTests()
     {
         var location = new CampaignLocation();
         var storage = new StorageOptions(Path.Combine(_root, "appdata"));
         Directory.CreateDirectory(storage.DataDirectory);
+        _watcher = new CampaignFileWatcher(location);
         var campaigns = new CampaignService(
             location,
             new CampaignOptions(CampaignFolder),
             storage,
+            _watcher,
             NullLogger<CampaignService>.Instance);
         campaigns.OpenAsync(CampaignFolder).GetAwaiter().GetResult();
 
@@ -62,6 +65,7 @@ public sealed class LegacyDatabaseMoverTests : IDisposable
 
     public void Dispose()
     {
+        _watcher.Dispose();
         _database.Dispose();
         Directory.Delete(_root, recursive: true);
     }

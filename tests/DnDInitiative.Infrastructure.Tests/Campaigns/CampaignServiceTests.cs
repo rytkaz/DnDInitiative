@@ -10,13 +10,20 @@ public sealed class CampaignServiceTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("dndinitiative-tests-").FullName;
     private readonly CampaignLocation _location = new();
+    private readonly CampaignFileWatcher _watcher;
 
     private string DataFolder => Path.Combine(_root, "appdata");
 
     private string DefaultFolder => Path.Combine(_root, "documents", "My Campaign");
 
+    public CampaignServiceTests()
+    {
+        _watcher = new CampaignFileWatcher(_location);
+    }
+
     public void Dispose()
     {
+        _watcher.Dispose();
         Directory.Delete(_root, recursive: true);
     }
 
@@ -130,6 +137,7 @@ public sealed class CampaignServiceTests : IDisposable
             _location,
             new CampaignOptions(DefaultFolder),
             new StorageOptions(DataFolder),
+            _watcher,
             NullLogger<CampaignService>.Instance);
     }
 }

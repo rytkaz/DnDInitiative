@@ -198,7 +198,8 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlo
                 statBlock.Id,
                 statBlock.Name,
                 statBlock.ChallengeRating,
-                statBlock.Source))
+                statBlock.Source,
+                statBlock.Origin))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
