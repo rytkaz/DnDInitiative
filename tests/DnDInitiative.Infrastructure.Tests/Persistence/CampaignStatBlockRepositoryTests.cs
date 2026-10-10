@@ -138,6 +138,55 @@ public sealed class CampaignStatBlockRepositoryTests : IDisposable
         Assert.Equal(["Goblin", "Goblin King"], names);
     }
 
+    [Theory]
+    [InlineData("custom")]
+    [InlineData("Custom")]
+    [InlineData("  CUSTOM ")]
+    public async Task SearchAsync_TheWordCustom_FindsEveryOwnStatBlockWhateverItsName(string searchText)
+    {
+        await _repository.SaveAsync(Imported("Goblin"));
+        await _repository.SaveAsync(Own("Owlbear"));
+        await _repository.SaveAsync(Own("Bandit Captain"));
+
+        string[] names = Names(await _repository.SearchAsync(searchText, limit: 10));
+
+        Assert.Equal(["Bandit Captain", "Owlbear"], names);
+    }
+
+    [Fact]
+    public async Task SearchAsync_TheWordCustom_StillFindsImportedStatBlocksWithItInTheirName()
+    {
+        await _repository.SaveAsync(Imported("Customs Officer"));
+        await _repository.SaveAsync(Imported("Goblin"));
+        await _repository.SaveAsync(Own("Owlbear"));
+
+        string[] names = Names(await _repository.SearchAsync("custom", limit: 10));
+
+        Assert.Equal(["Customs Officer", "Owlbear"], names);
+    }
+
+    [Fact]
+    public async Task SearchAsync_PartOfTheWordCustom_IsAnOrdinaryNameSearch()
+    {
+        await _repository.SaveAsync(Own("Owlbear"));
+        await _repository.SaveAsync(Own("Cultist Leader"));
+
+        string[] names = Names(await _repository.SearchAsync("cu", limit: 10));
+
+        Assert.Equal(["Cultist Leader"], names);
+    }
+
+    [Fact]
+    public async Task SearchAsync_TheWordCustom_PagesLikeAnyOtherSearch()
+    {
+        await _repository.SaveAsync(Own("Ape"));
+        await _repository.SaveAsync(Own("Bear"));
+        await _repository.SaveAsync(Own("Cat"));
+
+        Assert.Equal(["Ape", "Bear"], Names(await _repository.SearchAsync("custom", limit: 2)));
+        Assert.Equal(["Cat"], Names(await _repository.SearchAsync("custom", limit: 2, skip: 2)));
+    }
+
     [Fact]
     public async Task SearchAsync_SaysWhichStatBlocksAreTheUsersOwn()
     {

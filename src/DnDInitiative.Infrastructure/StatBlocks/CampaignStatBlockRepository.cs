@@ -11,6 +11,9 @@ namespace DnDInitiative.Infrastructure.StatBlocks;
 /// </summary>
 internal sealed class CampaignStatBlockRepository : IStatBlockRepository
 {
+    /// <summary>Typed into a search box, this word finds every stat block the user made. It is the tag shown beside them.</summary>
+    private const string OwnKeyword = "custom";
+
     private readonly JsonFolderStore<StatBlock> _ownStore;
     private readonly SqliteStatBlockRepository _library;
 
@@ -124,8 +127,16 @@ internal sealed class CampaignStatBlockRepository : IStatBlockRepository
         HashSet<Guid> ownIds = own.Select(statBlock => statBlock.Id).ToHashSet();
 
         string trimmed = searchText.Trim();
+
+        // Only the whole word counts, so typing "cu" on the way to "Cultist" does not flash up
+        // every custom stat block. Imported creatures with "custom" in their name are still
+        // found the usual way, by the database search below.
+        bool wantsAllOwn = trimmed.Equals(OwnKeyword, StringComparison.OrdinalIgnoreCase);
+
         IEnumerable<StatBlockSummary> ownMatches = own
-            .Where(statBlock => trimmed.Length == 0 || statBlock.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+            .Where(statBlock => wantsAllOwn
+                || trimmed.Length == 0
+                || statBlock.Name.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
             .Select(statBlock => new StatBlockSummary(statBlock.Id, statBlock.Name, statBlock.ChallengeRating, statBlock.Source, StatBlockOrigin.Custom));
 
         // The page asked for is rows [skip, skip + limit) of the two lists merged. Those rows can

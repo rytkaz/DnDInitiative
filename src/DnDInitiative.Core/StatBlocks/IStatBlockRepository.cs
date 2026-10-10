@@ -14,7 +14,8 @@ public interface IStatBlockRepository
 
     /// <summary>
     /// Finds stat blocks whose name contains the text, ignoring case, sorted by name.
-    /// An empty text matches everything. Skips the first <paramref name="skip"/> matches
+    /// An empty text matches everything, and the word "custom" also matches every stat block
+    /// the user made, whatever its name. Skips the first <paramref name="skip"/> matches
     /// and returns at most <paramref name="limit"/>.
     /// </summary>
     Task<IReadOnlyList<StatBlockSummary>> SearchAsync(
