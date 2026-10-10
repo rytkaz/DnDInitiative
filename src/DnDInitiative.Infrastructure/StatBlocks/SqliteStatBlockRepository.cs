@@ -277,4 +277,26 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlo
             }
         }
     }
+
+    public async Task<bool> AnyWithOriginAsync(StatBlockOrigin origin, CancellationToken cancellationToken = default)
+    {
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        return await db.StatBlocks
+            .AnyAsync(statBlock => statBlock.Origin == origin, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<StatBlock>> GetByOriginAsync(StatBlockOrigin origin, CancellationToken cancellationToken = default)
+    {
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        List<StatBlockEntity> entities = await db.StatBlocks
+            .AsNoTracking()
+            .Where(statBlock => statBlock.Origin == origin)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return entities.Select(ToDomain).ToList();
+    }
 }

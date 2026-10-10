@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DnDInitiative.Core.Campaigns;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace DnDInitiative.Infrastructure.Persistence;
 
@@ -16,16 +18,19 @@ internal sealed class StorageInitializer : IStorageInitializer
 {
     private readonly StorageOptions _options;
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
-    private readonly LegacyJsonImporter _legacyImporter;
+    private readonly ICampaignService _campaigns;
+    private readonly LegacyDatabaseMover _legacyMover;
 
     public StorageInitializer(
         StorageOptions options,
         IDbContextFactory<AppDbContext> contextFactory,
-        LegacyJsonImporter legacyImporter)
+        ICampaignService campaigns,
+        LegacyDatabaseMover legacyMover)
     {
         _options = options;
         _contextFactory = contextFactory;
-        _legacyImporter = legacyImporter;
+        _campaigns = campaigns;
+        _legacyMover = legacyMover;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -39,6 +44,8 @@ internal sealed class StorageInitializer : IStorageInitializer
             await db.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        await _legacyImporter.ImportAsync(cancellationToken).ConfigureAwait(false);
+        // A campaign must be open before anything asks for parties, encounters or stat blocks.
+        await _campaigns.OpenLastOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+        await _legacyMover.MoveAsync(cancellationToken).ConfigureAwait(false);
     }
 }

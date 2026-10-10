@@ -1,4 +1,5 @@
-﻿using DnDInitiative.Core.Encounters;
+﻿using DnDInitiative.Core.Campaigns;
+using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Campaigns;
@@ -17,12 +18,18 @@ namespace DnDInitiative.Infrastructure;
 public static class InfrastructureServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers storage and import services, keeping their data under the given folder.
+    /// Registers storage and import services.
     /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string dataDirectory)
+    /// <param name="dataDirectory">Where this computer's own data lives: the database and settings.</param>
+    /// <param name="defaultCampaignDirectory">The campaign folder to create when none has been chosen yet.</param>
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        string dataDirectory,
+        string defaultCampaignDirectory)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(defaultCampaignDirectory);
 
         string connectionString = new SqliteConnectionStringBuilder
         {
@@ -30,28 +37,34 @@ public static class InfrastructureServiceCollectionExtensions
         }.ToString();
 
         services.AddSingleton(new StorageOptions(dataDirectory));
+        services.AddSingleton(new CampaignOptions(defaultCampaignDirectory));
         services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(connectionString));
 
-        services.AddSingleton<IPartyRepository, SqlitePartyRepository>();
-        // One object, reachable three ways: as itself (for the campaign repository to wrap),
-        // as the app's stat block store, and as the importer's view of the library.
+        // The database. It holds the imported stat block library, and whatever is still
+        // waiting to be moved into a campaign folder.
+        services.AddSingleton<SqlitePartyRepository>();
+        services.AddSingleton<SqliteEncounterRepository>();
         services.AddSingleton<SqliteStatBlockRepository>();
-        services.AddSingleton<IStatBlockRepository>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
         services.AddSingleton<IStatBlockLibrary>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
 
-        services.AddSingleton<IEncounterRepository, SqliteEncounterRepository>();
+        // The campaign folder. This is what the rest of the app reads and writes.
+        services.AddSingleton<CampaignLocation>();
+        services.AddSingleton<ICampaignService, CampaignService>();
+        services.AddSingleton<JsonPartyRepository>();
+        services.AddSingleton<JsonEncounterRepository>();
+        services.AddSingleton<CampaignStatBlockRepository>();
+        services.AddSingleton<IPartyRepository>(provider => provider.GetRequiredService<JsonPartyRepository>());
+        services.AddSingleton<IEncounterRepository>(provider => provider.GetRequiredService<JsonEncounterRepository>());
+        services.AddSingleton<IStatBlockRepository>(provider => provider.GetRequiredService<CampaignStatBlockRepository>());
+
+        // Importing
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
         services.AddSingleton<IStatBlockConverter, TtrpgConvertConverter>();
         services.AddSingleton<IConversionSettingsStore, JsonConversionSettingsStore>();
 
-        // Campaign folder storage
-        services.AddSingleton<CampaignLocation>();
-        services.AddSingleton<JsonPartyRepository>();
-        services.AddSingleton<JsonEncounterRepository>();
-        services.AddSingleton<CampaignStatBlockRepository>();
-
-        services.AddSingleton<LegacyJsonImporter>();
+        // Start-up
+        services.AddSingleton<LegacyDatabaseMover>();
         services.AddSingleton<IStorageInitializer, StorageInitializer>();
 
         return services;

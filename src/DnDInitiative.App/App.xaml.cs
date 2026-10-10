@@ -108,8 +108,12 @@ public partial class App : Application
         services.AddSingleton<InitiativeRoller>();
         services.AddSingleton<CombatantFactory>();
 
-        // Storage and import
-        services.AddInfrastructure(dataDirectory);
+        // Storage and import. Campaigns live in Documents, where the user can find them and put them in git.
+        string defaultCampaignDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "DnD Initiative",
+            "My Campaign");
+        services.AddInfrastructure(dataDirectory, defaultCampaignDirectory);
 
         // App services
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
