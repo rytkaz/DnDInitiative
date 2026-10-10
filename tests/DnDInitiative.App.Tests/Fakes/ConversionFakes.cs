@@ -141,6 +141,19 @@ internal sealed class FakeSourceDataService : ISourceDataService
     {
         return Task.FromResult(Sources);
     }
+
+    /// <summary>Paths that are refused, as if they were missing or not homebrew.</summary>
+    public HashSet<string> UnreadableHomebrewFiles { get; } = [];
+
+    public Task<HomebrewFile> ReadHomebrewFileAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        if (UnreadableHomebrewFiles.Contains(filePath))
+        {
+            throw new ConversionException($"'{filePath}' is not a 5eTools homebrew file.");
+        }
+
+        return Task.FromResult(new HomebrewFile(filePath, [new SourceBook("Brew", "Brew Book")], MonsterCount: 12));
+    }
 }
 
 internal sealed class FakeConverterConfigWriter : IConverterConfigWriter
@@ -148,9 +161,16 @@ internal sealed class FakeConverterConfigWriter : IConverterConfigWriter
     /// <summary>The books the last generated configuration was written for, or null if none was.</summary>
     public IReadOnlyCollection<string>? WrittenFor { get; private set; }
 
-    public Task<string> WriteAsync(IReadOnlyCollection<string> sourceIds, CancellationToken cancellationToken = default)
+    /// <summary>The homebrew files the last generated configuration was written for.</summary>
+    public IReadOnlyCollection<string>? WrittenHomebrew { get; private set; }
+
+    public Task<string> WriteAsync(
+        IReadOnlyCollection<string> sourceIds,
+        IReadOnlyCollection<string> homebrewFiles,
+        CancellationToken cancellationToken = default)
     {
         WrittenFor = sourceIds;
+        WrittenHomebrew = homebrewFiles;
         return Task.FromResult("generated-config.json");
     }
 }

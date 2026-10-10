@@ -87,7 +87,7 @@
         <TextBlock Margin="0,4,0,0"
                    DockPanel.Dock="Top"
                    Style="{StaticResource SecondaryText}"
-                   Text="Leave the program empty to use the app's own copy of the converter. Leave the configuration empty to import the books ticked below; a configuration file of your own replaces that list."
+                   Text="Leave the program empty to use the app's own copy of the converter. Leave the configuration empty to import the books ticked below and the homebrew files listed under them; a configuration file of your own replaces both."
                    TextWrapping="Wrap" />
 
         <!--  Which books to import. Filled from the chosen data folder.  -->
@@ -161,6 +161,50 @@
                 </ControlTemplate>
             </Thumb.Template>
         </Thumb>
+
+        <!--  Homebrew books: one JSON file each, converted along with the ticked books  -->
+        <DockPanel Margin="0,4,0,0"
+                   DockPanel.Dock="Top"
+                   IsEnabled="{Binding IsIdle}">
+            <DockPanel Margin="0,0,0,4" DockPanel.Dock="Top">
+                <Button Padding="8,2"
+                        Command="{Binding AddHomebrewCommand}"
+                        Content="Add file..."
+                        DockPanel.Dock="Right" />
+                <TextBlock VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           FontWeight="SemiBold"
+                           Text="Homebrew files" />
+                <TextBlock Margin="24,0,12,0"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource SecondaryText}"
+                           Text="Books in 5eTools homebrew format (.json). Every monster in a listed file is imported."
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+            <ItemsControl x:Name="HomebrewList" ItemsSource="{Binding HomebrewFiles}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel Margin="0,2">
+                            <!--
+                                Inside the template the data context is one file, but the command lives
+                                on the page's view model. The binding reaches it through the list,
+                                and hands over this row's file as the parameter.
+                            -->
+                            <Button Padding="8,2"
+                                    Command="{Binding DataContext.RemoveHomebrewCommand, ElementName=HomebrewList}"
+                                    CommandParameter="{Binding}"
+                                    Content="Remove"
+                                    DockPanel.Dock="Right" />
+                            <TextBlock Margin="0,0,12,0"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding Label}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Path}" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </DockPanel>
 
         <StackPanel Margin="0,12,0,0"
                     DockPanel.Dock="Top"

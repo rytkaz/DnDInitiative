@@ -10,6 +10,9 @@ public sealed record ConversionSettings
     public string DataDirectory { get; init; } = "";
 
     public IReadOnlyList<string> Sources { get; init; } = [];
+
+    /// <summary>Full paths of the homebrew files to convert along with the books.</summary>
+    public IReadOnlyList<string> HomebrewFiles { get; init; } = [];
 }
 
 public interface IConversionSettingsStore

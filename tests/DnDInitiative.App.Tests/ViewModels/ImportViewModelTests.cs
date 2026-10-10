@@ -434,6 +434,95 @@ public class ImportViewModelTests
         Assert.Equal(0, _converter.DiscardCount);
     }
 
+    [Fact]
+    public async Task AddHomebrewCommand_FilePicked_ListsItAndSavesItStraightAway()
+    {
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+        _filePicker.FileToReturn = "brew.json";
+
+        await _viewModel.AddHomebrewCommand.ExecuteAsync(null);
+
+        HomebrewFileViewModel file = Assert.Single(_viewModel.HomebrewFiles);
+        Assert.Equal("brew.json", file.Path);
+        Assert.Equal("Brew Book (Brew) - 12 monsters", file.Label);
+        string[] expected = ["brew.json"];
+        Assert.Equal(expected, _settingsStore.Settings.HomebrewFiles.ToArray());
+    }
+
+    [Fact]
+    public async Task AddHomebrewCommand_PickerCancelled_ChangesNothing()
+    {
+        _filePicker.FileToReturn = null;
+
+        await _viewModel.AddHomebrewCommand.ExecuteAsync(null);
+
+        Assert.Empty(_viewModel.HomebrewFiles);
+    }
+
+    [Fact]
+    public async Task AddHomebrewCommand_SameFileTwice_KeepsOneAndSaysSo()
+    {
+        _filePicker.FileToReturn = "brew.json";
+        await _viewModel.AddHomebrewCommand.ExecuteAsync(null);
+        _filePicker.FileToReturn = "BREW.json";
+
+        await _viewModel.AddHomebrewCommand.ExecuteAsync(null);
+
+        Assert.Single(_viewModel.HomebrewFiles);
+        Assert.Contains("already", _viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AddHomebrewCommand_NotAHomebrewFile_ShowsWhyAndAddsNothing()
+    {
+        _sourceData.UnreadableHomebrewFiles.Add("notes.json");
+        _filePicker.FileToReturn = "notes.json";
+
+        await _viewModel.AddHomebrewCommand.ExecuteAsync(null);
+
+        Assert.Empty(_viewModel.HomebrewFiles);
+        Assert.Contains("notes.json", _viewModel.StatusMessage, StringComparison.Ordinal);
+        Assert.Empty(_settingsStore.Settings.HomebrewFiles);
+    }
+
+    [Fact]
+    public async Task RemoveHomebrewCommand_RemovesTheFileAndSaves()
+    {
+        _settingsStore.Settings = new ConversionSettings { HomebrewFiles = ["one.json", "two.json"] };
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+
+        await _viewModel.RemoveHomebrewCommand.ExecuteAsync(_viewModel.HomebrewFiles[0]);
+
+        string[] expected = ["two.json"];
+        Assert.Equal(expected, _viewModel.HomebrewFiles.Select(file => file.Path).ToArray());
+        Assert.Equal(expected, _settingsStore.Settings.HomebrewFiles.ToArray());
+    }
+
+    [Fact]
+    public async Task LoadCommand_SavedHomebrewFileIsGone_LeavesItOutAndSaysSo()
+    {
+        _settingsStore.Settings = new ConversionSettings { HomebrewFiles = ["kept.json", "gone.json"] };
+        _sourceData.UnreadableHomebrewFiles.Add("gone.json");
+
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal("kept.json", Assert.Single(_viewModel.HomebrewFiles).Path);
+        Assert.Contains("gone.json", _viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunCommand_NoConfigurationChosen_WritesOneThatIncludesTheHomebrewFiles()
+    {
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data", HomebrewFiles = ["brew.json"] };
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        string[] expected = ["brew.json"];
+        Assert.Equal(expected, _configWriter.WrittenHomebrew?.ToArray());
+        Assert.Equal(expected, _settingsStore.Settings.HomebrewFiles.ToArray());
+    }
+
     private async Task LoadThreeBooksAsync()
     {
         _settingsStore.Settings = new ConversionSettings { DataDirectory = "data" };

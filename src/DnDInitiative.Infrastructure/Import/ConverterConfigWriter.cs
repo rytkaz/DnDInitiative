@@ -26,9 +26,13 @@ internal sealed class ConverterConfigWriter : IConverterConfigWriter
         _folder = Path.Combine(storage.DataDirectory, "converter");
     }
 
-    public async Task<string> WriteAsync(IReadOnlyCollection<string> sourceIds, CancellationToken cancellationToken = default)
+    public async Task<string> WriteAsync(
+        IReadOnlyCollection<string> sourceIds,
+        IReadOnlyCollection<string> homebrewFiles,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(sourceIds);
+        ArgumentNullException.ThrowIfNull(homebrewFiles);
         Directory.CreateDirectory(_folder);
 
         // The converter's own monster template writes a decorative callout. The importer needs
@@ -43,13 +47,25 @@ internal sealed class ConverterConfigWriter : IConverterConfigWriter
             "");
         await File.WriteAllTextAsync(Path.Combine(_folder, TemplateFileName), template, cancellationToken).ConfigureAwait(false);
 
+        // "reference" brings in a book's game data without converting its chapters of text.
+        var sources = new Dictionary<string, object>
+        {
+            ["reference"] = sourceIds.Order(StringComparer.OrdinalIgnoreCase).ToList(),
+        };
+
+        if (homebrewFiles.Count > 0)
+        {
+            // A homebrew file is named by its path, and brings its own books with it; they are
+            // not repeated under "reference". Full paths, because the converter resolves a
+            // relative one against the folder it runs in. Forward slashes, as its documentation asks.
+            sources["homebrew"] = homebrewFiles
+                .Select(file => Path.GetFullPath(file).Replace('\\', '/'))
+                .ToList();
+        }
+
         var config = new Dictionary<string, object>
         {
-            // "reference" brings in a book's game data without converting its chapters of text.
-            ["sources"] = new Dictionary<string, object>
-            {
-                ["reference"] = sourceIds.Order(StringComparer.OrdinalIgnoreCase).ToList(),
-            },
+            ["sources"] = sources,
 
             // Relative on purpose: the converter runs in this folder, next to both files.
             ["template"] = new Dictionary<string, string> { ["monster"] = TemplateFileName },

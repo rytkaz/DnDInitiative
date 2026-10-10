@@ -176,6 +176,81 @@ internal sealed class SourceDataService : ISourceDataService
         }
     }
 
+    public async Task<HomebrewFile> ReadHomebrewFileAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        string fileName = Path.GetFileName(filePath);
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false));
+
+            List<SourceBook> sources = ReadHomebrewSources(document.RootElement);
+            if (sources.Count == 0)
+            {
+                throw new ConversionException(
+                    $"'{fileName}' is not a 5eTools homebrew file: it does not say which books it contains.");
+            }
+
+            int monsterCount = document.RootElement.TryGetProperty("monster", out JsonElement monsters)
+                && monsters.ValueKind == JsonValueKind.Array
+                    ? monsters.GetArrayLength()
+                    : 0;
+            if (monsterCount == 0)
+            {
+                throw new ConversionException($"'{fileName}' contains no monsters, so there is nothing to import from it.");
+            }
+
+            return new HomebrewFile(Path.GetFullPath(filePath), sources, monsterCount);
+        }
+        catch (JsonException exception)
+        {
+            throw new ConversionException($"'{fileName}' is not a JSON file, or it is damaged.", exception);
+        }
+        catch (IOException exception)
+        {
+            // Includes a file that has been moved or deleted since it was added.
+            throw new ConversionException($"'{fileName}' could not be read: {exception.Message}", exception);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            throw new ConversionException($"'{fileName}' could not be read: {exception.Message}", exception);
+        }
+    }
+
+    // A homebrew file starts with { "_meta": { "sources": [ { "json": "FleeMortals", "full": "Flee, Mortals!", ... } ] }, ... }
+    // "json" is the id the monsters refer to; "full" is the book's title.
+    private static List<SourceBook> ReadHomebrewSources(JsonElement root)
+    {
+        var sources = new List<SourceBook>();
+
+        if (root.ValueKind != JsonValueKind.Object
+            || !root.TryGetProperty("_meta", out JsonElement meta)
+            || meta.ValueKind != JsonValueKind.Object
+            || !meta.TryGetProperty("sources", out JsonElement list)
+            || list.ValueKind != JsonValueKind.Array)
+        {
+            return sources;
+        }
+
+        foreach (JsonElement entry in list.EnumerateArray())
+        {
+            if (entry.ValueKind == JsonValueKind.Object
+                && entry.TryGetProperty("json", out JsonElement json)
+                && json.ValueKind == JsonValueKind.String
+                && json.GetString() is { Length: > 0 } id)
+            {
+                string name = entry.TryGetProperty("full", out JsonElement full) && full.ValueKind == JsonValueKind.String
+                    ? full.GetString() ?? id
+                    : id;
+                sources.Add(new SourceBook(id, name));
+            }
+        }
+
+        return sources;
+    }
+
     private static async Task<List<string>> ReadPropertyNamesAsync(string path, CancellationToken cancellationToken)
     {
         if (!File.Exists(path))

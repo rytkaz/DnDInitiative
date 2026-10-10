@@ -34,6 +34,7 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
             ConfigPath = @"C:\cli\config.json",
             DataDirectory = @"C:\cli\5etools\data",
             Sources = ["MM", "XMM"],
+            HomebrewFiles = [@"C:\brew\Flee, Mortals!.json"],
         };
 
         await _store.SaveAsync(settings);
@@ -43,6 +44,7 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
         Assert.Equal(settings.ConfigPath, loaded.ConfigPath);
         Assert.Equal(settings.DataDirectory, loaded.DataDirectory);
         Assert.Equal(settings.Sources.ToArray(), loaded.Sources.ToArray());
+        Assert.Equal(settings.HomebrewFiles.ToArray(), loaded.HomebrewFiles.ToArray());
     }
 
     [Fact]

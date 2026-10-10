@@ -19,7 +19,7 @@ public sealed class ConverterConfigWriterTests : IDisposable
     {
         var writer = new ConverterConfigWriter(new StorageOptions(_dataFolder));
 
-        string configPath = await writer.WriteAsync(["XMM", "MM"]);
+        string configPath = await writer.WriteAsync(["XMM", "MM"], homebrewFiles: []);
 
         using JsonDocument config = JsonDocument.Parse(await File.ReadAllTextAsync(configPath));
         JsonElement root = config.RootElement;
@@ -44,10 +44,31 @@ public sealed class ConverterConfigWriterTests : IDisposable
     {
         var writer = new ConverterConfigWriter(new StorageOptions(_dataFolder));
 
-        string configPath = await writer.WriteAsync([]);
+        string configPath = await writer.WriteAsync([], homebrewFiles: []);
 
         using JsonDocument config = JsonDocument.Parse(await File.ReadAllTextAsync(configPath));
         Assert.Equal(0, config.RootElement.GetProperty("sources").GetProperty("reference").GetArrayLength());
         Assert.True(config.RootElement.TryGetProperty("template", out _));
+
+        // No empty "homebrew" list either: the key is only written when there is something in it.
+        Assert.False(config.RootElement.GetProperty("sources").TryGetProperty("homebrew", out _));
+    }
+
+    [Fact]
+    public async Task WriteAsync_HomebrewFiles_AreListedByFullPathWithForwardSlashes()
+    {
+        var writer = new ConverterConfigWriter(new StorageOptions(_dataFolder));
+        string file = Path.Combine(_dataFolder, "brew", "Flee, Mortals!.json");
+
+        string configPath = await writer.WriteAsync(["MM"], [file]);
+
+        using JsonDocument config = JsonDocument.Parse(await File.ReadAllTextAsync(configPath));
+        JsonElement sources = config.RootElement.GetProperty("sources");
+
+        string? written = Assert.Single(sources.GetProperty("homebrew").EnumerateArray()).GetString();
+        Assert.Equal(file.Replace('\\', '/'), written);
+
+        // The books are still there; homebrew is added to them, not instead of them.
+        Assert.Equal("MM", Assert.Single(sources.GetProperty("reference").EnumerateArray()).GetString());
     }
 }

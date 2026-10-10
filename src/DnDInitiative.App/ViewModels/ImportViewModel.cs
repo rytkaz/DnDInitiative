@@ -19,6 +19,7 @@ public sealed partial class ImportViewModel : PageViewModel
     private const string ToolFilter = "ttrpg-convert (*.exe)|*.exe|All files (*.*)|*.*";
     private const string ConfigFilter = "Configuration (*.json)|*.json|All files (*.*)|*.*";
     private const string ZipFilter = "Zip files (*.zip)|*.zip|All files (*.*)|*.*";
+    private const string HomebrewFilter = "5eTools homebrew (*.json)|*.json|All files (*.*)|*.*";
     private const string NotDataFolderMessage =
         "That folder does not look like 5eTools data. Pick the 'data' folder, the one that contains 'bestiary'.";
     private const double MinSourcesPanelHeight = 100;
@@ -68,6 +69,9 @@ public sealed partial class ImportViewModel : PageViewModel
 
     /// <summary>The books in the chosen data folder that contain monsters.</summary>
     public ObservableCollection<SourceOptionViewModel> Sources { get; } = [];
+
+    /// <summary>Homebrew files converted along with the ticked books. Every monster in them is imported.</summary>
+    public ObservableCollection<HomebrewFileViewModel> HomebrewFiles { get; } = [];
 
     /// <summary>Height of the book list, changed by dragging its lower edge. Kept within sensible limits.</summary>
     public double SourcesPanelHeight
@@ -125,7 +129,8 @@ public sealed partial class ImportViewModel : PageViewModel
     public bool IsIdle => !IsRunning;
 
     // Only the data is required. Without a program path the app uses its own copy of the
-    // converter, and without a configuration file it writes one for the ticked books.
+    // converter, and without a configuration file it writes one for the ticked books. Homebrew
+    // needs the data too: its creatures refer to spells, items and other creatures in the books.
     private bool CanRun => !string.IsNullOrWhiteSpace(DataDirectory);
 
     [RelayCommand]
@@ -145,6 +150,76 @@ public sealed partial class ImportViewModel : PageViewModel
         DataDirectory = settings.DataDirectory;
         _savedSources = settings.Sources;
         await RefreshSourcesAsync();
+        await LoadHomebrewFilesAsync(settings.HomebrewFiles);
+    }
+
+    // Each saved file is read again, which both fills in its label and checks it is still there.
+    private async Task LoadHomebrewFilesAsync(IReadOnlyList<string> paths)
+    {
+        var unreadable = new List<string>();
+
+        foreach (string path in paths)
+        {
+            try
+            {
+                HomebrewFiles.Add(new HomebrewFileViewModel(await _sourceData.ReadHomebrewFileAsync(path)));
+            }
+            catch (ConversionException)
+            {
+                unreadable.Add(Path.GetFileName(path));
+            }
+        }
+
+        if (unreadable.Count > 0)
+        {
+            // Left out rather than shown as broken: the converter stops at a file it cannot open.
+            StatusMessage = "These homebrew files can no longer be read and were left out of the list: "
+                + string.Join(", ", unreadable) + ".";
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddHomebrewAsync()
+    {
+        if (_filePicker.PickFile("Select a 5eTools homebrew file", HomebrewFilter) is not { } path)
+        {
+            return;
+        }
+
+        try
+        {
+            HomebrewFile file = await _sourceData.ReadHomebrewFileAsync(path);
+
+            // Compared after reading, because the service returns the full path whatever was picked.
+            if (HomebrewFiles.Any(existing => string.Equals(existing.Path, file.Path, StringComparison.OrdinalIgnoreCase)))
+            {
+                StatusMessage = "That homebrew file is already in the list.";
+                return;
+            }
+
+            HomebrewFiles.Add(new HomebrewFileViewModel(file));
+            StatusMessage = "";
+
+            // Saved straight away, like the unpacked data: the list should not depend on a run to be kept.
+            await _settingsStore.SaveAsync(CurrentSettings());
+        }
+        catch (ConversionException exception)
+        {
+            // Not a homebrew file, or not readable. The service's message says which.
+            StatusMessage = exception.Message;
+        }
+    }
+
+    // The file to remove arrives as the command's parameter: each row's button passes its own item.
+    [RelayCommand]
+    private async Task RemoveHomebrewAsync(HomebrewFileViewModel? file)
+    {
+        if (file is null || !HomebrewFiles.Remove(file))
+        {
+            return;
+        }
+
+        await _settingsStore.SaveAsync(CurrentSettings());
     }
 
     [RelayCommand]
@@ -206,10 +281,10 @@ public sealed partial class ImportViewModel : PageViewModel
             var progress = new UiProgress<string>(AppendToLog);
             string toolPath = await ResolveToolAsync(settings.ToolPath, progress, cancellationToken);
 
-            // The user's own configuration wins. Otherwise write one for the ticked books.
+            // The user's own configuration wins. Otherwise write one for the ticked books and the homebrew.
             string configPath = settings.ConfigPath.Length > 0
                 ? settings.ConfigPath
-                : await _configWriter.WriteAsync(settings.Sources, cancellationToken);
+                : await _configWriter.WriteAsync(settings.Sources, settings.HomebrewFiles, cancellationToken);
 
             var request = new ConversionRequest(toolPath, settings.DataDirectory, configPath);
             string notesFolder = await _converter.ConvertAsync(request, progress, cancellationToken);
@@ -343,6 +418,7 @@ public sealed partial class ImportViewModel : PageViewModel
             ConfigPath = Clean(ConfigPath),
             DataDirectory = Clean(DataDirectory),
             Sources = SelectedSourceIds(),
+            HomebrewFiles = HomebrewFiles.Select(file => file.Path).ToList(),
         };
     }
 

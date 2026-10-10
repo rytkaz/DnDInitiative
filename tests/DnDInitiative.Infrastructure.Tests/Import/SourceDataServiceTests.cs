@@ -144,6 +144,58 @@ public sealed class SourceDataServiceTests : IDisposable
         Assert.Empty(await _service.GetMonsterSourcesAsync(data));
     }
 
+    [Fact]
+    public async Task ReadHomebrewFileAsync_HomebrewFile_ReturnsItsBooksAndMonsterCount()
+    {
+        string file = await WriteFileAsync(
+            "brew.json",
+            """
+            {
+              "_meta": { "sources": [ { "json": "FleeMortals", "abbreviation": "FM!", "full": "Flee, Mortals!" }, { "json": "NoTitle" } ] },
+              "monster": [ { "name": "Goblin Assassin", "source": "FleeMortals" }, { "name": "Goblin Spinecleaver", "source": "FleeMortals" } ],
+              "item": [ { "name": "Not counted" } ]
+            }
+            """);
+
+        HomebrewFile homebrew = await _service.ReadHomebrewFileAsync(file);
+
+        Assert.Equal(file, homebrew.Path);
+        Assert.Equal(2, homebrew.MonsterCount);
+        SourceBook[] expected = [new("FleeMortals", "Flee, Mortals!"), new("NoTitle", "NoTitle")];
+        Assert.Equal(expected, homebrew.Sources.ToArray());
+    }
+
+    [Theory]
+    [InlineData("not json at all")]
+    [InlineData("""{ "monster": [ { "name": "Goblin" } ] }""")]
+    [InlineData("""{ "_meta": { "sources": [ { "json": "Brew" } ] }, "spell": [ { "name": "Zap" } ] }""")]
+    [InlineData("[1, 2, 3]")]
+    public async Task ReadHomebrewFileAsync_NotAHomebrewFileWithMonsters_ExplainsNamingTheFile(string content)
+    {
+        string file = await WriteFileAsync("wrong.json", content);
+
+        ConversionException exception = await Assert.ThrowsAsync<ConversionException>(() => _service.ReadHomebrewFileAsync(file));
+
+        Assert.Contains("wrong.json", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReadHomebrewFileAsync_FileIsGone_ExplainsNamingTheFile()
+    {
+        string file = Path.Combine(_root, "moved-away.json");
+
+        ConversionException exception = await Assert.ThrowsAsync<ConversionException>(() => _service.ReadHomebrewFileAsync(file));
+
+        Assert.Contains("moved-away.json", exception.Message, StringComparison.Ordinal);
+    }
+
+    private async Task<string> WriteFileAsync(string name, string content)
+    {
+        string path = Path.Combine(_root, name);
+        await File.WriteAllTextAsync(path, content);
+        return path;
+    }
+
     private string CreateZip(params string[] entryNames)
     {
         string path = Path.Combine(_root, Path.GetRandomFileName() + ".zip");
