@@ -57,7 +57,7 @@ public class MainViewModelTests
             new FakeSpellImporter());
         _viewModel = new MainViewModel(
             _tracker,
-            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, _messenger),
+            new StatBlocksViewModel(statBlocks, _confirmation, _messenger),
             _encounterBuilder,
             _partySetup,
             import,
@@ -287,7 +287,7 @@ public class MainViewModelTests
                 messenger,
                 _confirmation,
                 new InMemoryUiStateStore()),
-            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, messenger),
+            new StatBlocksViewModel(statBlocks, _confirmation, messenger),
             _encounterBuilder,
             _partySetup,
             (ImportViewModel)_viewModel.Pages[4],

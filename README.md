@@ -108,8 +108,6 @@ If you would rather use a copy you downloaded yourself, set its path under **ttr
 
 By default the app writes the converter's configuration for you. To take control, set **Configuration file** to a configuration of your own; it then replaces the book list, the homebrew list and the spell handling. Its monster template must write a [Fantasy Statblocks](https://github.com/javalent/fantasy-statblocks) code block, which is what the importer reads.
 
-If you already have converted notes, **Import...** on the Stat Blocks page reads a folder of them directly.
-
 ## Where your data lives
 
 Your campaigns are wherever you put them. Everything else is under `%AppData%\DnDInitiative` and belongs to one computer:

@@ -1,6 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using System.Globalization;
-using System.IO;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -22,8 +20,6 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
     private bool _hasMore;
 
     private readonly IStatBlockRepository _repository;
-    private readonly IStatBlockImporter _importer;
-    private readonly IFolderPicker _folderPicker;
     private readonly IConfirmationService _confirmation;
     private bool _isLoaded;
 
@@ -69,16 +65,12 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
 
     public StatBlocksViewModel(
         IStatBlockRepository repository,
-        IStatBlockImporter importer,
-        IFolderPicker folderPicker,
         IConfirmationService confirmation,
         IMessenger messenger)
     {
         ArgumentNullException.ThrowIfNull(messenger);
 
         _repository = repository;
-        _importer = importer;
-        _folderPicker = folderPicker;
         _confirmation = confirmation;
         messenger.Register(this);
     }
@@ -209,34 +201,6 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
 
         Editor = null;
         StatusMessage = "";
-    }
-
-    [RelayCommand]
-    private async Task ImportAsync()
-    {
-        string? folder = _folderPicker.PickFolder("Select the folder containing the generated notes");
-        if (folder is null)
-        {
-            return;
-        }
-
-        StatusMessage = "Importing...";
-        try
-        {
-            StatBlockImportResult result = await _importer.ImportFolderAsync(folder);
-            await RefreshListAsync(SelectedStatBlock?.Id);
-            StatusMessage = string.Create(
-                CultureInfo.InvariantCulture,
-                $"Imported {result.Added} new and updated {result.Updated}, from {result.FilesScanned} files.");
-        }
-        catch (IOException exception)
-        {
-            StatusMessage = "Import failed: " + exception.Message;
-        }
-        catch (UnauthorizedAccessException exception)
-        {
-            StatusMessage = "Import failed: " + exception.Message;
-        }
     }
 
     [RelayCommand]

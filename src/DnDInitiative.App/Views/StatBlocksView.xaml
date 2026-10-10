@@ -49,10 +49,6 @@
                 <Button Padding="12,4"
                         Command="{Binding DeleteCommand}"
                         Content="Delete" />
-                <Button Margin="8,0,0,0"
-                        Padding="12,4"
-                        Command="{Binding ImportCommand}"
-                        Content="Import..." />
             </WrapPanel>
             <TextBlock Margin="0,8,0,0"
                        DockPanel.Dock="Bottom"

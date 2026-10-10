@@ -119,31 +119,6 @@ public class StatBlocksViewModelTests
     }
 
     [Fact]
-    public async Task ImportCommand_FolderChosen_ImportsItAndReportsTheResult()
-    {
-        var importer = new FakeStatBlockImporter();
-        var folderPicker = new FakeFolderPicker { FolderToReturn = @"C:\notes" };
-        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(), importer, folderPicker);
-
-        await viewModel.ImportCommand.ExecuteAsync(null);
-
-        Assert.Equal(@"C:\notes", importer.ImportedFolder);
-        Assert.Contains("3 new", viewModel.StatusMessage, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task ImportCommand_DialogCancelled_DoesNothing()
-    {
-        var importer = new FakeStatBlockImporter();
-        StatBlocksViewModel viewModel = CreateViewModel(new InMemoryStatBlockRepository(), importer);
-
-        await viewModel.ImportCommand.ExecuteAsync(null);
-
-        Assert.Null(importer.ImportedFolder);
-        Assert.Equal("", viewModel.StatusMessage);
-    }
-
-    [Fact]
     public async Task SaveCommand_EditThatLeavesTheListRowUnchanged_StillRefreshesTheDetails()
     {
         StatBlock goblin = Create("Goblin") with { ArmorClass = 15 };
@@ -313,15 +288,11 @@ public class StatBlocksViewModelTests
 
     private static StatBlocksViewModel CreateViewModel(
         InMemoryStatBlockRepository repository,
-        FakeStatBlockImporter? importer = null,
-        FakeFolderPicker? folderPicker = null,
         FakeConfirmation? confirmation = null,
         IMessenger? messenger = null)
     {
         return new StatBlocksViewModel(
             repository,
-            importer ?? new FakeStatBlockImporter(),
-            folderPicker ?? new FakeFolderPicker(),
             confirmation ?? new FakeConfirmation(),
             messenger ?? new WeakReferenceMessenger());
     }
