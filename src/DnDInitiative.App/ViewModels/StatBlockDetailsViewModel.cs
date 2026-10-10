@@ -102,7 +102,23 @@ public sealed class StatBlockDetailsViewModel
         {
             target.Add(new FeatureSection(
                 title,
-                features.Select(feature => new LabeledValue(feature.Name + ".", feature.Description)).ToList()));
+                features.Select(feature => new LabeledValue(feature.Name + ".", WithoutBlankLines(feature.Description))).ToList()));
         }
+    }
+
+    /// <summary>
+    /// A feature with several paragraphs is stored with an empty line between them, which is
+    /// how Markdown separates paragraphs. On the card that empty line reads as a gap between
+    /// two features, so each paragraph simply starts on a new line, as in the printed books.
+    /// Only the display changes; the stored text and the editor keep the empty lines.
+    /// </summary>
+    private static string WithoutBlankLines(string text)
+    {
+        IEnumerable<string> lines = text
+            .Split('\n')
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0);
+
+        return string.Join('\n', lines);
     }
 }
