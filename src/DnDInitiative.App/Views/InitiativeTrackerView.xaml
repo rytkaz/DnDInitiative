@@ -305,9 +305,6 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Width="*"
-                                    Binding="{Binding Name, Mode=OneWay}"
-                                    Header="Name" />
 
                 <DataGridTemplateColumn Width="90" Header="Initiative">
                     <DataGridTemplateColumn.CellTemplate>
@@ -316,6 +313,10 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+
+                <DataGridTextColumn Width="*"
+                                    Binding="{Binding Name, Mode=OneWay}"
+                                    Header="Name" />
 
                 <DataGridTemplateColumn Width="110" Header="HP">
                     <DataGridTemplateColumn.CellTemplate>
