@@ -16,6 +16,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     private readonly IConfirmationService _confirmation;
     private readonly ICampaignService _campaigns;
     private readonly IFolderPicker _folderPicker;
+    private readonly IUiStateStore _uiState;
     private PageViewModel _currentPage;
     // Brings change notifications from the watcher's background thread to the UI thread.
     private readonly UiProgress<bool> _externalChange;
@@ -32,6 +33,10 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     [ObservableProperty]
     private string _campaignMessage = "";
 
+    /// <summary>Whether the page list and campaign panel are folded away to give the page more room.</summary>
+    [ObservableProperty]
+    private bool _isNavigationCollapsed;
+
     public MainViewModel(
         InitiativeTrackerViewModel initiativeTracker,
         StatBlocksViewModel statBlocks,
@@ -41,15 +46,21 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         IMessenger messenger,
         IConfirmationService confirmation,
         ICampaignService campaigns,
-        IFolderPicker folderPicker)
+        IFolderPicker folderPicker,
+        IUiStateStore uiState)
     {
         ArgumentNullException.ThrowIfNull(messenger);
         ArgumentNullException.ThrowIfNull(campaigns);
+        ArgumentNullException.ThrowIfNull(uiState);
 
         _initiativeTracker = initiativeTracker;
         _confirmation = confirmation;
         _campaigns = campaigns;
         _folderPicker = folderPicker;
+        _uiState = uiState;
+
+        // Assigned to the field, not the property, so restoring the state does not save it again.
+        _isNavigationCollapsed = uiState.Load().IsNavigationCollapsed;
         Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import];
         _currentPage = initiativeTracker;
 
@@ -74,6 +85,27 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     public void Receive(StartCombatMessage message)
     {
         CurrentPage = _initiativeTracker;
+    }
+
+    [RelayCommand]
+    private void ToggleNavigation()
+    {
+        IsNavigationCollapsed = !IsNavigationCollapsed;
+    }
+
+    partial void OnIsNavigationCollapsedChanged(bool value)
+    {
+        _uiState.Save(new UiState { IsNavigationCollapsed = value });
+    }
+
+    // The Reload button lives in the panel. If the panel is folded away when files change
+    // on disk, bring it back so the offer to reload is not missed.
+    partial void OnHasPendingExternalChangesChanged(bool value)
+    {
+        if (value)
+        {
+            IsNavigationCollapsed = false;
+        }
     }
 
     /// <summary>Returns false if the user chose to stay because of unsaved changes.</summary>

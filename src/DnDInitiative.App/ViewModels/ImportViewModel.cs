@@ -89,6 +89,8 @@ public sealed partial class ImportViewModel : PageViewModel
 
     public override string Title => "5eTools Import";
 
+    public override string ShortTitle => "Import";
+
     /// <summary>The opposite of <see cref="IsRunning"/>, for disabling the inputs during a run.</summary>
     public bool IsIdle => !IsRunning;
 

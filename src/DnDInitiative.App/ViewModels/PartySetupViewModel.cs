@@ -24,6 +24,8 @@ public sealed partial class PartySetupViewModel : PageViewModel
 
     public override string Title => "Party Setup";
 
+    public override string ShortTitle => "Party";
+
     public ObservableCollection<PartyEditorViewModel> Parties { get; } = [];
 
     private bool HasSelectedParty => SelectedParty is not null;

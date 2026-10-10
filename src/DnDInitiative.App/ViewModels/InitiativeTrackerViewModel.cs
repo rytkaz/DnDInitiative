@@ -99,6 +99,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     public override string Title => "Initiative Tracker";
 
+    public override string ShortTitle => "Initiative";
+
     public ObservableCollection<CombatantViewModel> Combatants { get; } = [];
 
     public ObservableCollection<Party> Parties { get; } = [];

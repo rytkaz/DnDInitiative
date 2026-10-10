@@ -17,39 +17,93 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220" />
+            <!--  As wide as the panel in it, which has two widths: open and folded away  -->
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <DockPanel Grid.Column="0">
-            <!--  The open campaign, below the page list  -->
-            <StackPanel Margin="12" DockPanel.Dock="Bottom">
-                <TextBlock Style="{StaticResource SecondaryText}" Text="Campaign" />
-                <TextBlock FontWeight="SemiBold"
-                           Text="{Binding CampaignName}"
-                           TextTrimming="CharacterEllipsis"
-                           ToolTip="{Binding CampaignName}" />
-                <TextBlock Margin="0,4,0,0"
-                           Text="{Binding CampaignMessage}"
-                           TextWrapping="Wrap" />
-                <Button Margin="0,8,0,0"
-                        Padding="12,4"
-                        HorizontalAlignment="Stretch"
-                        Command="{Binding ReloadCampaignCommand}"
-                        Content="Reload"
-                        ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
-                        Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
-                <Button Margin="0,8,0,0"
-                        Padding="12,4"
-                        HorizontalAlignment="Stretch"
-                        Command="{Binding OpenCampaignCommand}"
-                        Content="Open campaign..."
-                        ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
-            </StackPanel>
+            <DockPanel.Style>
+                <Style TargetType="DockPanel">
+                    <Style.Triggers>
+                        <!--  Open: a fixed width. Folded away: no width set, so as narrow as the vertical tabs.  -->
+                        <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="False">
+                            <Setter Property="Width" Value="220" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DockPanel.Style>
 
-            <ListBox DisplayMemberPath="Title"
-                     ItemsSource="{Binding Pages}"
-                     SelectedItem="{Binding CurrentPage}" />
+            <!--  Folds the panel away, or brings it back  -->
+            <Button Width="36"
+                    Margin="8"
+                    Padding="0,4"
+                    HorizontalAlignment="Left"
+                    Command="{Binding ToggleNavigationCommand}"
+                    Content="☰"
+                    DockPanel.Dock="Top"
+                    ToolTip="Show or hide the page list" />
+
+            <!--  Folded away: one vertical tab per page, like the tool window tabs at the edge of Visual Studio  -->
+            <ListBox ItemsSource="{Binding Pages}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     SelectedItem="{Binding CurrentPage}"
+                     Visibility="{Binding IsNavigationCollapsed, Converter={StaticResource BoolToVisibility}}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Margin="0,6"
+                                   Text="{Binding ShortTitle}"
+                                   ToolTip="{Binding Title}">
+                            <!--  Turned a quarter circle, so the text reads from top to bottom  -->
+                            <TextBlock.LayoutTransform>
+                                <RotateTransform Angle="90" />
+                            </TextBlock.LayoutTransform>
+                        </TextBlock>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!--  Open: the page list and the campaign. Hidden when the panel is folded away.  -->
+            <DockPanel>
+                <DockPanel.Style>
+                    <Style TargetType="DockPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DockPanel.Style>
+
+                <!--  The open campaign, below the page list  -->
+                <StackPanel Margin="12" DockPanel.Dock="Bottom">
+                    <TextBlock Style="{StaticResource SecondaryText}" Text="Campaign" />
+                    <TextBlock FontWeight="SemiBold"
+                               Text="{Binding CampaignName}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding CampaignName}" />
+                    <TextBlock Margin="0,4,0,0"
+                               Text="{Binding CampaignMessage}"
+                               TextWrapping="Wrap" />
+                    <Button Margin="0,8,0,0"
+                            Padding="12,4"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding ReloadCampaignCommand}"
+                            Content="Reload"
+                            ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
+                            Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
+                    <Button Margin="0,8,0,0"
+                            Padding="12,4"
+                            HorizontalAlignment="Stretch"
+                            Command="{Binding OpenCampaignCommand}"
+                            Content="Open campaign..."
+                            ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
+                </StackPanel>
+
+                <ListBox DisplayMemberPath="Title"
+                         ItemsSource="{Binding Pages}"
+                         SelectedItem="{Binding CurrentPage}" />
+            </DockPanel>
         </DockPanel>
 
         <ContentControl Grid.Column="1"

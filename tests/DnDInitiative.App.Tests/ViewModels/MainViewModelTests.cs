@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
+using DnDInitiative.App.Services;
 using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Campaigns;
@@ -21,6 +22,7 @@ public class MainViewModelTests
     private readonly InMemoryPartyRepository _parties = new();
     private readonly FakeCampaignService _campaigns = new();
     private readonly FakeFolderPicker _folderPicker = new();
+    private readonly InMemoryUiStateStore _uiState = new();
 
     public MainViewModelTests()
     {
@@ -59,7 +61,8 @@ public class MainViewModelTests
             _messenger,
             _confirmation,
             _campaigns,
-            _folderPicker);
+            _folderPicker,
+            _uiState);
     }
 
     [Fact]
@@ -218,5 +221,77 @@ public class MainViewModelTests
         Assert.Equal("Pulled from git", Assert.Single(_partySetup.Parties).Name);
         Assert.False(_viewModel.HasPendingExternalChanges);
         Assert.Single(_confirmation.Questions);
+    }
+
+    [Fact]
+    public void ToggleNavigationCommand_FoldsThePanelAwayAndBringsItBack()
+    {
+        Assert.False(_viewModel.IsNavigationCollapsed);
+
+        _viewModel.ToggleNavigationCommand.Execute(null);
+        Assert.True(_viewModel.IsNavigationCollapsed);
+
+        _viewModel.ToggleNavigationCommand.Execute(null);
+        Assert.False(_viewModel.IsNavigationCollapsed);
+    }
+
+    [Fact]
+    public void FilesChangedExternally_PanelFoldedAwayAndEditsUnsaved_ShowsThePanelSoReloadCanBeSeen()
+    {
+        _partySetup.NewPartyCommand.Execute(null);
+        _viewModel.ToggleNavigationCommand.Execute(null);
+
+        _campaigns.RaiseFilesChanged();
+
+        Assert.True(_viewModel.HasPendingExternalChanges);
+        Assert.False(_viewModel.IsNavigationCollapsed);
+    }
+
+    [Fact]
+    public void ToggleNavigationCommand_SavesTheNewStateEachTime()
+    {
+        _viewModel.ToggleNavigationCommand.Execute(null);
+        Assert.True(_uiState.State.IsNavigationCollapsed);
+
+        _viewModel.ToggleNavigationCommand.Execute(null);
+        Assert.False(_uiState.State.IsNavigationCollapsed);
+        Assert.Equal(2, _uiState.SaveCount);
+    }
+
+    [Fact]
+    public void Constructor_PanelWasFoldedAwayLastTime_StartsFoldedAwayWithoutSavingAgain()
+    {
+        var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true } };
+        var parties = new InMemoryPartyRepository();
+        var statBlocks = new InMemoryStatBlockRepository();
+        var messenger = new WeakReferenceMessenger();
+
+        var viewModel = new MainViewModel(
+            new InitiativeTrackerViewModel(
+                new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
+                parties,
+                statBlocks,
+                messenger,
+                _confirmation),
+            new StatBlocksViewModel(statBlocks, new FakeStatBlockImporter(), new FakeFolderPicker(), _confirmation, messenger),
+            _encounterBuilder,
+            _partySetup,
+            (ImportViewModel)_viewModel.Pages[4],
+            messenger,
+            _confirmation,
+            _campaigns,
+            _folderPicker,
+            uiState);
+
+        Assert.True(viewModel.IsNavigationCollapsed);
+        Assert.Equal(0, uiState.SaveCount);
+    }
+
+    [Fact]
+    public void Pages_HaveShortNamesForTheFoldedAwayPanel()
+    {
+        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party", "Import"];
+
+        Assert.Equal(expected, _viewModel.Pages.Select(page => page.ShortTitle).ToArray());
     }
 }

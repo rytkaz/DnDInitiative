@@ -9,6 +9,9 @@ public abstract class PageViewModel : ObservableObject
 {
     public abstract string Title { get; }
 
+    /// <summary>A one-word name for places with little room, such as the folded-away page list.</summary>
+    public virtual string ShortTitle => Title;
+
     /// <summary>
     /// A description of each thing on this page that would be lost if the app closed now.
     /// </summary>

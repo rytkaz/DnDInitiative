@@ -65,6 +65,8 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     public override string Title => "Encounter Builder";
 
+    public override string ShortTitle => "Encounters";
+
     public ObservableCollection<EncounterEditorViewModel> Encounters { get; } = [];
 
     public ObservableCollection<Party> Parties { get; } = [];
