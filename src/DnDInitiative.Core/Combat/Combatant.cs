@@ -11,7 +11,9 @@ public sealed class Combatant
         int initiative,
         int? maxHp = null,
         int? armorClass = null,
-        Guid? statBlockId = null)
+        Guid? statBlockId = null,
+        int initiativeModifier = 0,
+        bool isPlayer = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
@@ -19,6 +21,8 @@ public sealed class Combatant
         Initiative = initiative;
         ArmorClass = armorClass;
         StatBlockId = statBlockId;
+        InitiativeModifier = initiativeModifier;
+        IsPlayer = isPlayer;
         SetMaxHp(maxHp);
     }
 
@@ -39,7 +43,12 @@ public sealed class Combatant
     /// <summary>Null exactly when <see cref="MaxHp"/> is null.</summary>
     public int? CurrentHp { get; private set; }
 
+    public int InitiativeModifier { get; }
+
+    public bool IsPlayer { get; }
+
     public bool TracksHp => MaxHp is not null;
+
 
     public void TakeDamage(int amount)
     {

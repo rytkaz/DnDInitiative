@@ -199,4 +199,47 @@ public partial class InitiativeTrackerView : UserControl
             viewModel.StatBlockPanelWidth -= e.HorizontalChange;
         }
     }
+
+    // Opens the popup whose resource key is in the clicked button's Tag, anchored to that button.
+    private void OnOpenPopupClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string resourceKey } button
+            && Resources[resourceKey] is Popup popup)
+        {
+            // A popup kept in the resources is not part of the page, so it does not
+            // inherit the page's DataContext and has to be given it.
+            popup.DataContext = DataContext;
+            popup.PlacementTarget = button;
+            popup.IsOpen = true;
+        }
+    }
+
+    // Puts the cursor in the first text box, so you can start typing straight away.
+    private void OnAddPopupOpened(object? sender, EventArgs e)
+    {
+        if (sender is Popup { Child: { } content })
+        {
+            FindFirst<TextBox>(content)?.Focus();
+        }
+    }
+
+    // Depth-first search through an element's children for the first one of a given type.
+    private static T? FindFirst<T>(DependencyObject parent)
+        where T : DependencyObject
+    {
+        foreach (DependencyObject child in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())
+        {
+            if (child is T match)
+            {
+                return match;
+            }
+
+            if (FindFirst<T>(child) is { } nested)
+            {
+                return nested;
+            }
+        }
+
+        return null;
+    }
 }

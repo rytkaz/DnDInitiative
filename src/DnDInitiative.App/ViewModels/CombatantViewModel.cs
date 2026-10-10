@@ -128,4 +128,9 @@ public sealed partial class CombatantViewModel : ObservableObject
         HealCommand.NotifyCanExecuteChanged();
         SetHpCommand.NotifyCanExecuteChanged();
     }
+
+    public void RefreshInitiative()
+    {
+        OnPropertyChanged(nameof(Initiative));
+    }
 }

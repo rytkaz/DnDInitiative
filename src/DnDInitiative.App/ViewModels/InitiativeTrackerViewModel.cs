@@ -38,9 +38,6 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private bool HasSelectedLibraryStatBlock => SelectedLibraryStatBlock is not null;
 
     [ObservableProperty]
-    private bool _isLibraryExpanded = true;
-
-    [ObservableProperty]
     private string _librarySearchText = "";
 
     [ObservableProperty]
@@ -97,6 +94,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         get => _statBlockPanelWidth;
         set => SetProperty(ref _statBlockPanelWidth, Math.Clamp(value, MinPanelWidth, MaxPanelWidth));
     }
+
+    private RollMode CreatureRollMode => RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal;
 
     public InitiativeTrackerViewModel(
         CombatantFactory combatantFactory,
@@ -163,7 +162,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
             .Repeat(blueprint, Math.Clamp(NewQuantity, 1, MaxQuantity))
             .ToList();
 
-        AddCombatants(blueprints, RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal);
+        AddCombatants(blueprints, CreatureRollMode);
         SyncOrder();
     }
 
@@ -400,7 +399,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
             .Repeat(statBlock.ToBlueprint(), Math.Clamp(NewQuantity, 1, MaxQuantity))
             .ToList();
 
-        AddCombatants(blueprints, RollWithDisadvantage ? RollMode.Disadvantage : RollMode.Normal);
+        AddCombatants(blueprints, CreatureRollMode);
         SyncOrder();
     }
 
@@ -433,5 +432,24 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private void ClearParty()
     {
         SelectedParty = null;
+    }
+
+    [RelayCommand]
+    private void RerollInitiative()
+    {
+        // A copy of the list, because each new initiative re-sorts the one being walked.
+        List<Combatant> creatures = _tracker.Combatants.Where(combatant => !combatant.IsPlayer).ToList();
+
+        foreach (Combatant creature in creatures)
+        {
+            _tracker.SetInitiative(creature, _combatantFactory.RollInitiative(creature, CreatureRollMode));
+        }
+
+        SyncOrder();
+
+        foreach (CombatantViewModel row in Combatants)
+        {
+            row.RefreshInitiative();
+        }
     }
 }

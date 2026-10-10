@@ -30,9 +30,23 @@ public sealed class CombatantFactory
             CombatantBlueprint blueprint = blueprints[i];
             InitiativeRoll roll = _initiativeRoller.Roll(blueprint.InitiativeModifier, rollMode);
 
-            combatants.Add(new Combatant(names[i], roll.Total, blueprint.MaxHp, blueprint.ArmorClass, blueprint.StatBlockId));
+            combatants.Add(new Combatant(
+                names[i],
+                roll.Total,
+                blueprint.MaxHp,
+                blueprint.ArmorClass,
+                blueprint.StatBlockId,
+                blueprint.InitiativeModifier,
+                blueprint.IsPlayer));
         }
 
         return combatants;
+    }
+
+    /// <summary>Rolls a new initiative total for a combatant that is already in the fight.</summary>
+    public int RollInitiative(Combatant combatant, RollMode rollMode = RollMode.Normal)
+    {
+        ArgumentNullException.ThrowIfNull(combatant);
+        return _initiativeRoller.Roll(combatant.InitiativeModifier, rollMode).Total;
     }
 }

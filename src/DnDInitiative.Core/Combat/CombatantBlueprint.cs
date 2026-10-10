@@ -8,4 +8,5 @@ public sealed record CombatantBlueprint(
     int InitiativeModifier = 0,
     int? MaxHp = null,
     int? ArmorClass = null,
-    Guid? StatBlockId = null);
+    Guid? StatBlockId = null,
+    bool IsPlayer = false);

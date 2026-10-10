@@ -88,6 +88,32 @@ public class CombatantFactoryTests
         Assert.Null(combatants[1].StatBlockId);
     }
 
+    [Fact]
+    public void Create_CarriesTheModifierAndPlayerFlagOntoTheCombatant()
+    {
+        var factory = FactoryRolling(10, 10);
+        CombatantBlueprint[] blueprints =
+        [
+            new CombatantBlueprint("Goblin", InitiativeModifier: 2),
+        new CombatantBlueprint("Aria", IsPlayer: true),
+    ];
+
+        IReadOnlyList<Combatant> combatants = factory.Create(blueprints, new CombatantNamer());
+
+        Assert.Equal(2, combatants[0].InitiativeModifier);
+        Assert.False(combatants[0].IsPlayer);
+        Assert.True(combatants[1].IsPlayer);
+    }
+
+    [Fact]
+    public void RollInitiative_AddsTheCombatantsOwnModifier()
+    {
+        var factory = FactoryRolling(7);
+        var goblin = new Combatant("Goblin", initiative: 20, initiativeModifier: 2);
+
+        Assert.Equal(9, factory.RollInitiative(goblin));
+    }
+
     private static CombatantFactory FactoryRolling(params int[] dice)
     {
         return new CombatantFactory(new InitiativeRoller(new SequenceDiceRoller(dice)));

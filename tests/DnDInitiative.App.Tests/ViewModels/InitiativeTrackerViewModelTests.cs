@@ -370,6 +370,29 @@ public class InitiativeTrackerViewModelTests
         Assert.Equal(expected, viewModel.StatBlockPanelWidth);
     }
 
+    [Fact]
+    public void RerollInitiativeCommand_RerollsCreaturesButNotPlayers()
+    {
+        // Rolls in order: Aria 10, Goblin 10 (+2), then the reroll for the goblin: 3 (+2).
+        var messenger = new WeakReferenceMessenger();
+        var viewModel = new InitiativeTrackerViewModel(
+            new CombatantFactory(new InitiativeRoller(new SequenceDiceRoller(10, 10, 3))),
+            new InMemoryPartyRepository(),
+            new InMemoryStatBlockRepository(),
+            messenger,
+            new FakeConfirmation());
+        var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
+        messenger.Send(new StartCombatMessage("Ambush", [new CombatantBlueprint("Goblin", InitiativeModifier: 2)], party));
+        Assert.Equal("Goblin", viewModel.Combatants[0].Name);
+
+        viewModel.RerollInitiativeCommand.Execute(null);
+
+        Assert.Equal("Aria", viewModel.Combatants[0].Name);
+        Assert.Equal(10, viewModel.Combatants[0].Initiative);
+        Assert.Equal("Goblin", viewModel.Combatants[1].Name);
+        Assert.Equal(5, viewModel.Combatants[1].Initiative);
+    }
+
     private static InitiativeTrackerViewModel CreateViewModelWithLibrary(params StatBlock[] statBlocks)
     {
         return new InitiativeTrackerViewModel(
