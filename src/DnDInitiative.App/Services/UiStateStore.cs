@@ -19,6 +19,12 @@ public sealed record UiState
     /// <summary>Whether the tracker page shows its stat block panel. Null means never changed: shown.</summary>
     public bool? ShowStatBlockPanel { get; init; }
 
+    /// <summary>Width of the stat block panel on the encounter builder page.</summary>
+    public double? EncounterStatBlockPanelWidth { get; init; }
+
+    /// <summary>Whether the encounter builder shows its stat block panel. Null means never changed: shown.</summary>
+    public bool? ShowEncounterStatBlockPanel { get; init; }
+
     /// <summary>The main window's size when it is not maximized.</summary>
     public double? WindowWidth { get; init; }
 

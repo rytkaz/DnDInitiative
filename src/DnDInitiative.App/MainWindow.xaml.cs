@@ -34,6 +34,10 @@ public partial class MainWindow : Window
         AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
         SpellCard.AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
 
+        // Once text in the popup has been clicked, the keyboard belongs to the popup and the
+        // window no longer sees its keys. So the card closes itself on Escape as well.
+        SpellCard.PreviewKeyDown += (_, e) => CloseSpellOnEscape(e);
+
         // Before the window is shown, so it opens at its old size instead of jumping to it.
         RestoreSize();
     }
@@ -53,7 +57,12 @@ public partial class MainWindow : Window
     {
         base.OnPreviewKeyDown(e);
 
-        // The popup never has the keyboard focus, so the window closes it on Escape.
+        // Until something in the popup is clicked, the keyboard is still the window's.
+        CloseSpellOnEscape(e);
+    }
+
+    private void CloseSpellOnEscape(KeyEventArgs e)
+    {
         if (e.Key == Key.Escape && _spellViewer.IsOpen)
         {
             _spellViewer.CloseCommand.Execute(null);

@@ -232,7 +232,8 @@
             </Thumb.Template>
         </Thumb>
         <!--  Turn order  -->
-        <DataGrid AllowDrop="True"
+        <DataGrid behaviors:ClearSelectionOnEmptyClick.IsEnabled="True"
+                  AllowDrop="True"
                   AutoGenerateColumns="False"
                   CanUserSortColumns="False"
                   HeadersVisibility="Column"

@@ -14,22 +14,18 @@
 
         <!-- "Armor Class 15": the property name in bold red. -->
         <DataTemplate x:Key="StatLineTemplate">
-            <TextBlock Margin="0,2" TextWrapping="Wrap">
-                <Run FontWeight="Bold"
-                     Foreground="{StaticResource StatBlockAccent}"
-                     Text="{Binding Label, Mode=OneWay}" />
-                <Span formatting:MarkdownText.Text="{Binding Value}" />
-            </TextBlock>
+            <formatting:MarkdownTextBox Margin="0,2"
+                                        Label="{Binding Label}"
+                                        LabelStyle="{StaticResource CardStatLabel}"
+                                        Markdown="{Binding Value}" />
         </DataTemplate>
 
         <!-- A trait or action: its name in bold italic, then the description. -->
         <DataTemplate x:Key="FeatureTemplate">
-            <TextBlock Margin="0,4" TextWrapping="Wrap">
-                <Run FontStyle="Italic"
-                     FontWeight="Bold"
-                     Text="{Binding Label, Mode=OneWay}" />
-                <Span formatting:MarkdownText.Text="{Binding Value}" />
-            </TextBlock>
+            <formatting:MarkdownTextBox Margin="0,4"
+                                        Label="{Binding Label}"
+                                        LabelStyle="{StaticResource CardFeatureLabel}"
+                                        Markdown="{Binding Value}" />
         </DataTemplate>
     </UserControl.Resources>
 
@@ -50,16 +46,14 @@
         </Border.Style>
 
         <StackPanel>
-            <TextBlock FontFamily="Georgia"
-                       FontSize="26"
-                       FontWeight="Bold"
-                       Foreground="{StaticResource StatBlockAccent}"
-                       Text="{Binding Name}"
-                       TextWrapping="Wrap"
-                       Typography.Capitals="SmallCaps" />
-            <TextBlock FontStyle="Italic"
-                       Text="{Binding Summary}"
-                       TextWrapping="Wrap" />
+            <!--  Label, not Markdown: a name is shown exactly as it is written  -->
+            <formatting:MarkdownTextBox FontFamily="Georgia"
+                                        FontSize="26"
+                                        FontWeight="Bold"
+                                        Foreground="{StaticResource StatBlockAccent}"
+                                        Label="{Binding Name}"
+                                        Typography.Capitals="SmallCaps" />
+            <formatting:MarkdownTextBox FontStyle="Italic" Label="{Binding Summary}" />
 
             <Polygon Style="{StaticResource TaperedRule}" />
 

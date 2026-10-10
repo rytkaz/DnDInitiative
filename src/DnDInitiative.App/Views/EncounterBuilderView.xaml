@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             xmlns:views="clr-namespace:DnDInitiative.App.Views"
              d:DataContext="{d:DesignInstance Type=viewModels:EncounterBuilderViewModel}"
              d:DesignHeight="600"
              d:DesignWidth="1100"
@@ -21,6 +22,9 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="24" />
             <ColumnDefinition Width="260" />
+            <!--  The drag strip and the stat block panel. Both take no room while the panel is hidden.  -->
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
         <!--  Left: saved encounters  -->
@@ -95,11 +99,13 @@
             </StackPanel>
 
             <DataGrid Margin="0,4,0,0"
+                      behaviors:ClearSelectionOnEmptyClick.IsEnabled="True"
                       AutoGenerateColumns="False"
                       CanUserSortColumns="False"
                       HeadersVisibility="Column"
                       IsReadOnly="True"
                       ItemsSource="{Binding SelectedEncounter.Creatures}"
+                      SelectedItem="{Binding SelectedCreature}"
                       SelectionMode="Single">
                 <DataGrid.Resources>
                     <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
@@ -154,6 +160,12 @@
             <TextBox Margin="0,0,0,8"
                      DockPanel.Dock="Top"
                      Text="{Binding StatBlockSearchText, UpdateSourceTrigger=PropertyChanged}" />
+            <!--  Docked first, so it sits at the very bottom, under the button  -->
+            <CheckBox Margin="0,8,0,0"
+                      Content="Stat block panel"
+                      DockPanel.Dock="Bottom"
+                      IsChecked="{Binding ShowStatBlockPanel}"
+                      ToolTip="Show the stat block of the creature you click, here or in the encounter" />
             <Button Margin="0,8,0,0"
                     Padding="12,4"
                     Command="{Binding AddCreatureCommand}"
@@ -165,5 +177,31 @@
                      SelectedItem="{Binding SelectedStatBlock}"
                      TextSearch.TextPath="Name" />
         </DockPanel>
+
+        <!--  Drag strip between the library and the panel  -->
+        <Thumb Grid.Column="5"
+               Width="12"
+               Cursor="SizeWE"
+               DragCompleted="OnPanelResizeDragCompleted"
+               DragDelta="OnPanelResizeDragDelta"
+               ToolTip="Drag to resize"
+               Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
+            <Thumb.Template>
+                <ControlTemplate>
+                    <!--  Transparent, but still catches the mouse  -->
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
+
+        <!--  Far right: the stat block of whatever was clicked last  -->
+        <Border Grid.Column="6"
+                Width="{Binding StatBlockPanelWidth}"
+                Style="{StaticResource PanelBorder}"
+                Visibility="{Binding ShowStatBlockPanel, Converter={StaticResource BoolToVisibility}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <views:StatBlockDetailsView Margin="0,0,8,0" DataContext="{Binding StatBlockDetails}" />
+            </ScrollViewer>
+        </Border>
     </Grid>
 </UserControl>

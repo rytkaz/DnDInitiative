@@ -17,16 +17,13 @@
         <!--  Inside the border, so the coloured edges stay put while a long spell scrolls  -->
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="14,10">
-                <TextBlock FontFamily="Georgia"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource StatBlockAccent}"
-                           Text="{Binding Name}"
-                           TextWrapping="Wrap"
-                           Typography.Capitals="SmallCaps" />
-                <TextBlock FontStyle="Italic"
-                           Text="{Binding Summary}"
-                           TextWrapping="Wrap" />
+                <formatting:MarkdownTextBox FontFamily="Georgia"
+                                            FontSize="24"
+                                            FontWeight="Bold"
+                                            Foreground="{StaticResource StatBlockAccent}"
+                                            Label="{Binding Name}"
+                                            Typography.Capitals="SmallCaps" />
+                <formatting:MarkdownTextBox FontStyle="Italic" Label="{Binding Summary}" />
 
                 <Polygon Style="{StaticResource TaperedRule}" />
 
@@ -34,12 +31,10 @@
                 <ItemsControl ItemsSource="{Binding Stats}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Margin="0,2" TextWrapping="Wrap">
-                                <Run FontWeight="Bold"
-                                     Foreground="{StaticResource StatBlockAccent}"
-                                     Text="{Binding Label, Mode=OneWay}" />
-                                <Span formatting:MarkdownText.Text="{Binding Value}" />
-                            </TextBlock>
+                            <formatting:MarkdownTextBox Margin="0,2"
+                                                        Label="{Binding Label}"
+                                                        LabelStyle="{StaticResource CardStatLabel}"
+                                                        Markdown="{Binding Value}" />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -57,9 +52,7 @@
                                            DockPanel.Dock="Left"
                                            Text="•"
                                            Visibility="Collapsed" />
-                                <TextBlock x:Name="BlockText" TextWrapping="Wrap">
-                                    <Span formatting:MarkdownText.Text="{Binding Text}" />
-                                </TextBlock>
+                                <formatting:MarkdownTextBox x:Name="BlockText" Markdown="{Binding Text}" />
                             </DockPanel>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding Kind}" Value="Heading">

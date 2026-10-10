@@ -16,6 +16,8 @@ namespace DnDInitiative.App.ViewModels;
 public sealed partial class EncounterBuilderViewModel : PageViewModel
 {
     private const int PageSize = 100;
+    private const double MinPanelWidth = 260;
+    private const double MaxPanelWidth = 1200;
 
     private int _statBlockListVersion;
     private bool _hasMoreStatBlocks;
@@ -26,6 +28,11 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     private readonly IMessenger _messenger;
     private readonly IClipboardService _clipboard;
     private readonly IConfirmationService _confirmation;
+    private readonly IUiStateStore _uiState;
+
+    // Increased for every stat block shown, so a slow load cannot overwrite a newer one.
+    private int _statBlockDetailsVersion;
+    private double _statBlockPanelWidth = 380;
 
     // Only the stat blocks that encounters on this page actually use.
     private readonly Dictionary<Guid, StatBlock> _statBlocksById = new();
@@ -49,6 +56,17 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddCreatureCommand))]
     private StatBlockSummary? _selectedStatBlock;
+
+    /// <summary>The row selected in the encounter's list of creatures.</summary>
+    [ObservableProperty]
+    private EncounterCreatureViewModel? _selectedCreature;
+
+    /// <summary>The stat block of whatever was clicked last: a creature in the encounter, or one in the library.</summary>
+    [ObservableProperty]
+    private StatBlockDetailsViewModel? _statBlockDetails;
+
+    [ObservableProperty]
+    private bool _showStatBlockPanel = true;
 
     [ObservableProperty]
     private XpBudget _budget = new(0, 0, 0);
@@ -75,6 +93,13 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     public bool HasSelectedEncounter => SelectedEncounter is not null;
 
+    /// <summary>Width of the stat block panel. Kept within sensible limits.</summary>
+    public double StatBlockPanelWidth
+    {
+        get => _statBlockPanelWidth;
+        set => SetProperty(ref _statBlockPanelWidth, Math.Clamp(value, MinPanelWidth, MaxPanelWidth));
+    }
+
     private bool CanAddCreature => SelectedEncounter is not null && SelectedStatBlock is not null;
 
     public override IReadOnlyList<string> UnsavedChanges => Encounters
@@ -88,14 +113,40 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         IPartyRepository partyRepository,
         IMessenger messenger,
         IClipboardService clipboard,
-        IConfirmationService confirmation)
+        IConfirmationService confirmation,
+        IUiStateStore uiState)
     {
+        ArgumentNullException.ThrowIfNull(uiState);
+
         _encounterRepository = encounterRepository;
         _statBlockRepository = statBlockRepository;
         _partyRepository = partyRepository;
         _messenger = messenger;
         _clipboard = clipboard;
         _confirmation = confirmation;
+        _uiState = uiState;
+
+        UiState saved = uiState.Load();
+
+        // Through the property, not the field, so a size saved by hand in the file is still clamped.
+        if (saved.EncounterStatBlockPanelWidth is { } savedWidth)
+        {
+            StatBlockPanelWidth = savedWidth;
+        }
+
+        // The opposite here: assigned to the field, so restoring the choice does not save it again.
+        _showStatBlockPanel = saved.ShowEncounterStatBlockPanel ?? true;
+    }
+
+    partial void OnShowStatBlockPanelChanged(bool value)
+    {
+        _uiState.Save(_uiState.Load() with { ShowEncounterStatBlockPanel = value });
+    }
+
+    /// <summary>Remembers the panel width for the next run. Called when a drag ends.</summary>
+    public void SaveLayout()
+    {
+        _uiState.Save(_uiState.Load() with { EncounterStatBlockPanelWidth = StatBlockPanelWidth });
     }
 
     public override async Task ReloadCampaignDataAsync()
@@ -103,6 +154,10 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         Encounters.Clear();
         SelectedEncounter = null;
         StatusMessage = "";
+
+        // Whatever was being previewed came from the old campaign.
+        _statBlockDetailsVersion++;
+        StatBlockDetails = null;
 
         // Stat blocks cached for the old campaign's encounters may not exist in the new one.
         _statBlocksById.Clear();
@@ -123,6 +178,41 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     partial void OnStatBlockSearchTextChanged(string value)
     {
         RefreshStatBlockListAsync().Forget();
+    }
+
+    // Both lists clear their selection when they are refilled or when another encounter is
+    // chosen. That should not blank the panel, so only a real selection changes it.
+    partial void OnSelectedStatBlockChanged(StatBlockSummary? value)
+    {
+        if (value is not null)
+        {
+            ShowStatBlockAsync(value.Id).Forget();
+        }
+    }
+
+    partial void OnSelectedCreatureChanged(EncounterCreatureViewModel? value)
+    {
+        if (value is not null)
+        {
+            ShowStatBlockAsync(value.StatBlockId).Forget();
+        }
+    }
+
+    private async Task ShowStatBlockAsync(Guid statBlockId)
+    {
+        int version = ++_statBlockDetailsVersion;
+
+        // Read from the repository, not from the cache this page keeps for XP totals:
+        // the stat block may have been edited on the Stat Blocks page since it was cached.
+        StatBlock? statBlock = await _statBlockRepository.GetAsync(statBlockId);
+
+        // Something else was selected while this one was loading: drop the stale result.
+        if (version != _statBlockDetailsVersion)
+        {
+            return;
+        }
+
+        StatBlockDetails = statBlock is null ? null : new StatBlockDetailsViewModel(statBlock);
     }
 
     [RelayCommand]

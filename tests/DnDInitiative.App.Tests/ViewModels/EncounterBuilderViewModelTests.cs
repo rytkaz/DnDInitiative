@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
+using DnDInitiative.App.Services;
 using DnDInitiative.App.Tests.Fakes;
 using DnDInitiative.App.ViewModels;
 using DnDInitiative.Core.Encounters;
@@ -175,7 +176,8 @@ public class EncounterBuilderViewModelTests
             new InMemoryPartyRepository(_party),
             new WeakReferenceMessenger(),
             new FakeClipboard(),
-            new FakeConfirmation());
+            new FakeConfirmation(),
+            new InMemoryUiStateStore());
         await viewModel.LoadCommand.ExecuteAsync(null);
         Assert.Equal(100, viewModel.FilteredStatBlocks.Count);
 
@@ -226,11 +228,89 @@ public class EncounterBuilderViewModelTests
         Assert.Empty(viewModel.UnsavedChanges);
     }
 
+    [Fact]
+    public async Task SelectedStatBlock_InTheLibrary_ShowsItsStatBlock()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
+
+        viewModel.SelectedStatBlock = viewModel.FilteredStatBlocks.Single(summary => summary.Id == _goblin.Id);
+
+        Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
+    }
+
+    [Fact]
+    public async Task SelectedCreature_InTheEncounter_ShowsItsStatBlock()
+    {
+        var encounters = new InMemoryEncounterRepository(
+            new Encounter(Guid.NewGuid(), "Ambush", [new EncounterCreature(_goblin.Id, 2)]));
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
+        Assert.Null(viewModel.StatBlockDetails);
+
+        viewModel.SelectedCreature = Assert.Single(SelectedEditor(viewModel).Creatures);
+
+        Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
+    }
+
+    [Fact]
+    public async Task SelectedStatBlock_Cleared_KeepsShowingTheLastStatBlock()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
+        viewModel.SelectedStatBlock = viewModel.FilteredStatBlocks[0];
+
+        // What the list does when a search refills it.
+        viewModel.SelectedStatBlock = null;
+        viewModel.SelectedCreature = null;
+
+        Assert.Equal("Goblin", viewModel.StatBlockDetails?.Name);
+    }
+
+    [Fact]
+    public async Task ReloadCampaignDataAsync_ClearsThePreview()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
+        viewModel.SelectedStatBlock = viewModel.FilteredStatBlocks[0];
+
+        await viewModel.ReloadCampaignDataAsync();
+
+        Assert.Null(viewModel.StatBlockDetails);
+    }
+
+    [Fact]
+    public async Task Constructor_UsesTheSavedPanelLayout()
+    {
+        var uiState = new InMemoryUiStateStore
+        {
+            State = new UiState { EncounterStatBlockPanelWidth = 99999, ShowEncounterStatBlockPanel = false },
+        };
+
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(uiState: uiState);
+
+        Assert.Equal(1200, viewModel.StatBlockPanelWidth);
+        Assert.False(viewModel.ShowStatBlockPanel);
+        Assert.Equal(0, uiState.SaveCount);
+    }
+
+    [Fact]
+    public async Task PanelLayout_IsSavedWithoutDisturbingTheRestOfTheState()
+    {
+        var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true } };
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(uiState: uiState);
+
+        viewModel.ShowStatBlockPanel = false;
+        viewModel.StatBlockPanelWidth = 500;
+        viewModel.SaveLayout();
+
+        Assert.Equal(
+            new UiState { IsNavigationCollapsed = true, ShowEncounterStatBlockPanel = false, EncounterStatBlockPanelWidth = 500 },
+            uiState.State);
+    }
+
     private async Task<EncounterBuilderViewModel> CreateLoadedViewModelAsync(
         InMemoryEncounterRepository? encounters = null,
         IMessenger? messenger = null,
         FakeClipboard? clipboard = null,
-        FakeConfirmation? confirmation = null)
+        FakeConfirmation? confirmation = null,
+        InMemoryUiStateStore? uiState = null)
     {
         var viewModel = new EncounterBuilderViewModel(
             encounters ?? new InMemoryEncounterRepository(),
@@ -238,7 +318,8 @@ public class EncounterBuilderViewModelTests
             new InMemoryPartyRepository(_party),
             messenger ?? new WeakReferenceMessenger(),
             clipboard ?? new FakeClipboard(),
-            confirmation ?? new FakeConfirmation());
+            confirmation ?? new FakeConfirmation(),
+            uiState ?? new InMemoryUiStateStore());
         await viewModel.LoadCommand.ExecuteAsync(null);
         return viewModel;
     }
