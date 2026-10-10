@@ -9,6 +9,9 @@
              d:DesignWidth="900"
              Loaded="OnLoaded"
              mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
     <DockPanel>
         <TextBlock DockPanel.Dock="Top"
                    Style="{StaticResource PageTitle}"
@@ -88,7 +91,7 @@
                    TextWrapping="Wrap" />
 
         <!--  Which books to import. Filled from the chosen data folder.  -->
-        <DockPanel Height="190"
+        <DockPanel Height="{Binding SourcesPanelHeight}"
                    Margin="0,12,0,0"
                    DockPanel.Dock="Top"
                    IsEnabled="{Binding IsIdle}">
@@ -103,8 +106,15 @@
                             Content="Clear" />
                 </StackPanel>
                 <TextBlock VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
                            FontWeight="SemiBold"
                            Text="Books to import" />
+                <TextBlock Margin="24,0,8,0"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           Text="Search" />
+                <!--  Fills the space between the heading and the buttons  -->
+                <TextBox Margin="0,0,12,0" Text="{Binding SourceSearchText, UpdateSourceTrigger=PropertyChanged}" />
             </DockPanel>
 
             <Border Padding="8" Style="{StaticResource PanelBorder}">
@@ -118,13 +128,30 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected}" />
+                                <!--  Collapsed, not removed, while the search hides it: the tick is kept  -->
+                                <CheckBox Content="{Binding Label}"
+                                          IsChecked="{Binding IsSelected}"
+                                          Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibility}}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
             </Border>
         </DockPanel>
+
+        <!--  Drag strip under the book list: pull it down to see more books  -->
+        <Thumb Height="10"
+               Cursor="SizeNS"
+               DockPanel.Dock="Top"
+               DragDelta="OnSourcesResizeDragDelta"
+               ToolTip="Drag to resize the book list">
+            <Thumb.Template>
+                <ControlTemplate>
+                    <!--  Transparent, but still catches the mouse  -->
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
 
         <StackPanel Margin="0,12,0,0"
                     DockPanel.Dock="Top"

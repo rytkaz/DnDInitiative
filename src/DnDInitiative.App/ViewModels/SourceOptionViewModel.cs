@@ -10,6 +10,10 @@ public sealed partial class SourceOptionViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    /// <summary>False while the search box is hiding this book. A hidden book keeps its tick.</summary>
+    [ObservableProperty]
+    private bool _isVisible = true;
+
     public SourceOptionViewModel(SourceBook book, bool isSelected)
     {
         ArgumentNullException.ThrowIfNull(book);
@@ -22,4 +26,11 @@ public sealed partial class SourceOptionViewModel : ObservableObject
     public string Id { get; }
 
     public string Label { get; }
+
+    /// <summary>Whether the search text appears anywhere in the name or abbreviation.</summary>
+    public bool Matches(string searchText)
+    {
+        ArgumentNullException.ThrowIfNull(searchText);
+        return searchText.Length == 0 || Label.Contains(searchText, StringComparison.OrdinalIgnoreCase);
+    }
 }

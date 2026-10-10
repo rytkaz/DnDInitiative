@@ -21,6 +21,8 @@ public sealed partial class ImportViewModel : PageViewModel
     private const string ZipFilter = "Zip files (*.zip)|*.zip|All files (*.*)|*.*";
     private const string NotDataFolderMessage =
         "That folder does not look like 5eTools data. Pick the 'data' folder, the one that contains 'bestiary'.";
+    private const double MinSourcesPanelHeight = 100;
+    private const double MaxSourcesPanelHeight = 800;
 
     private readonly IConversionSettingsStore _settingsStore;
     private readonly IStatBlockConverter _converter;
@@ -55,11 +57,23 @@ public sealed partial class ImportViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
+    [ObservableProperty]
+    private string _sourceSearchText = "";
+
     // The ticks from the last session, kept until the book list has been read from the data folder.
     private IReadOnlyList<string> _savedSources = [];
 
+    private double _sourcesPanelHeight = 190;
+
     /// <summary>The books in the chosen data folder that contain monsters.</summary>
     public ObservableCollection<SourceOptionViewModel> Sources { get; } = [];
+
+    /// <summary>Height of the book list, changed by dragging its lower edge. Kept within sensible limits.</summary>
+    public double SourcesPanelHeight
+    {
+        get => _sourcesPanelHeight;
+        set => SetProperty(ref _sourcesPanelHeight, Math.Clamp(value, MinSourcesPanelHeight, MaxSourcesPanelHeight));
+    }
 
     public ImportViewModel(
         IConversionSettingsStore settingsStore,
@@ -312,10 +326,12 @@ public sealed partial class ImportViewModel : PageViewModel
         };
     }
 
+    // Both buttons act on the books the search is showing, so "search, then select all"
+    // ticks just the matches. With an empty search that is every book.
     [RelayCommand]
     private void SelectAllSources()
     {
-        foreach (SourceOptionViewModel source in Sources)
+        foreach (SourceOptionViewModel source in Sources.Where(source => source.IsVisible))
         {
             source.IsSelected = true;
         }
@@ -324,9 +340,23 @@ public sealed partial class ImportViewModel : PageViewModel
     [RelayCommand]
     private void ClearSources()
     {
-        foreach (SourceOptionViewModel source in Sources)
+        foreach (SourceOptionViewModel source in Sources.Where(source => source.IsVisible))
         {
             source.IsSelected = false;
+        }
+    }
+
+    partial void OnSourceSearchTextChanged(string value)
+    {
+        ApplySourceSearch();
+    }
+
+    private void ApplySourceSearch()
+    {
+        string searchText = SourceSearchText.Trim();
+        foreach (SourceOptionViewModel source in Sources)
+        {
+            source.IsVisible = source.Matches(searchText);
         }
     }
 
@@ -353,5 +383,8 @@ public sealed partial class ImportViewModel : PageViewModel
         {
             Sources.Add(new SourceOptionViewModel(book, selected.Contains(book.Id)));
         }
+
+        // A search typed before the list was rebuilt still applies to the new list.
+        ApplySourceSearch();
     }
 }

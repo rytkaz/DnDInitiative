@@ -312,6 +312,71 @@ public class ImportViewModelTests
     }
 
     [Fact]
+    public async Task SourceSearchText_HidesBooksThatDoNotMatchByNameOrAbbreviation()
+    {
+        await LoadThreeBooksAsync();
+
+        _viewModel.SourceSearchText = "monster";
+        bool[] expected = [true, true, false];
+        Assert.Equal(expected, _viewModel.Sources.Select(source => source.IsVisible).ToArray());
+
+        _viewModel.SourceSearchText = " xmm ";
+        bool[] expectedAfterNarrowing = [false, true, false];
+        Assert.Equal(expectedAfterNarrowing, _viewModel.Sources.Select(source => source.IsVisible).ToArray());
+
+        _viewModel.SourceSearchText = "";
+        Assert.All(_viewModel.Sources, source => Assert.True(source.IsVisible));
+    }
+
+    [Fact]
+    public async Task SelectAllSourcesCommand_WhileSearching_TicksOnlyTheMatches()
+    {
+        await LoadThreeBooksAsync();
+        _viewModel.SourceSearchText = "monster";
+
+        _viewModel.SelectAllSourcesCommand.Execute(null);
+
+        bool[] expected = [true, true, false];
+        Assert.Equal(expected, _viewModel.Sources.Select(source => source.IsSelected).ToArray());
+    }
+
+    [Fact]
+    public async Task ClearSourcesCommand_WhileSearching_KeepsTheTicksOnHiddenBooks()
+    {
+        await LoadThreeBooksAsync();
+        _viewModel.SelectAllSourcesCommand.Execute(null);
+        _viewModel.SourceSearchText = "monster";
+
+        _viewModel.ClearSourcesCommand.Execute(null);
+
+        bool[] expected = [false, false, true];
+        Assert.Equal(expected, _viewModel.Sources.Select(source => source.IsSelected).ToArray());
+    }
+
+    [Fact]
+    public async Task RunCommand_WhileSearching_StillImportsTickedBooksTheSearchIsHiding()
+    {
+        await LoadThreeBooksAsync();
+        _viewModel.SelectAllSourcesCommand.Execute(null);
+        _viewModel.SourceSearchText = "volo";
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal(3, _configWriter.WrittenFor?.Count);
+    }
+
+    [Theory]
+    [InlineData(300, 300)]
+    [InlineData(10, 100)]
+    [InlineData(5000, 800)]
+    public void SourcesPanelHeight_IsKeptWithinLimits(double requested, double expected)
+    {
+        _viewModel.SourcesPanelHeight = requested;
+
+        Assert.Equal(expected, _viewModel.SourcesPanelHeight);
+    }
+
+    [Fact]
     public async Task RunCommand_StatBlocksImported_ThrowsTheNotesAway()
     {
         FillInPaths();
@@ -342,6 +407,18 @@ public class ImportViewModelTests
         await _viewModel.RunCommand.ExecuteAsync(null);
 
         Assert.Equal(0, _converter.DiscardCount);
+    }
+
+    private async Task LoadThreeBooksAsync()
+    {
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data" };
+        _sourceData.Sources =
+        [
+            new SourceBook("MM", "Monster Manual"),
+            new SourceBook("XMM", "Monster Manual (2024)"),
+            new SourceBook("VGM", "Volo's Guide"),
+        ];
+        await _viewModel.LoadCommand.ExecuteAsync(null);
     }
 
     private void FillInPaths()
