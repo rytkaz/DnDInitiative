@@ -26,9 +26,7 @@
         <!-- Left: search and list -->
         <DockPanel Grid.Column="0" IsEnabled="{Binding IsBrowsing}">
             <TextBlock DockPanel.Dock="Top"
-                       Margin="0,0,0,12"
-                       FontSize="28"
-                       FontWeight="SemiBold"
+                       Style="{StaticResource PageTitle}"
                        Text="{Binding Title}" />
             <TextBlock DockPanel.Dock="Top" Text="Search" />
             <TextBox DockPanel.Dock="Top"
@@ -124,8 +122,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,16,0,0">
-                                    <TextBlock FontSize="18"
-                                               FontWeight="SemiBold"
+                                    <TextBlock Style="{StaticResource SectionTitle}"
                                                Text="{Binding Title}" />
                                     <Separator Margin="0,2,0,6" />
 

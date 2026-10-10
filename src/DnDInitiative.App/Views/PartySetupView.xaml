@@ -19,9 +19,7 @@
         <!-- Left: the list of parties -->
         <DockPanel Grid.Column="0">
             <TextBlock DockPanel.Dock="Top"
-                       Margin="0,0,0,12"
-                       FontSize="28"
-                       FontWeight="SemiBold"
+                       Style="{StaticResource PageTitle}"
                        Text="{Binding Title}" />
 
             <StackPanel DockPanel.Dock="Bottom"

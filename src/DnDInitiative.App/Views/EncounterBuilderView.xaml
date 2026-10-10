@@ -26,9 +26,7 @@
         <!-- Left: saved encounters -->
         <DockPanel Grid.Column="0">
             <TextBlock DockPanel.Dock="Top"
-                       Margin="0,0,0,12"
-                       FontSize="28"
-                       FontWeight="SemiBold"
+                       Style="{StaticResource PageTitle}"
                        Text="Encounters" />
             <StackPanel DockPanel.Dock="Bottom"
                         Margin="0,8,0,0"
@@ -65,12 +63,11 @@
                 </StackPanel>
 
                 <StackPanel Margin="0,12,0,0" Orientation="Horizontal">
-                    <TextBlock FontSize="18"
-                               FontWeight="SemiBold"
+                    <TextBlock Style="{StaticResource SectionTitle}"
                                Text="{Binding TotalXp, StringFormat='Total: {0:N0} XP'}" />
                     <TextBlock Margin="16,0,0,0"
                                VerticalAlignment="Center"
-                               FontSize="18"
+                               Style="{StaticResource SectionTitle}"
                                Text="{Binding DifficultyText}" />
                 </StackPanel>
 
@@ -106,7 +103,7 @@
                       ItemsSource="{Binding SelectedEncounter.Creatures}"
                       SelectionMode="Single">
                 <DataGrid.Resources>
-                    <Style TargetType="TextBox">
+                    <Style BasedOn="{StaticResource {x:Type TextBox}}" TargetType="TextBox">
                         <Setter Property="Background" Value="Transparent" />
                         <Setter Property="BorderThickness" Value="0" />
                     </Style>
@@ -153,8 +150,7 @@
         <DockPanel Grid.Column="4">
             <TextBlock DockPanel.Dock="Top"
                        Margin="0,0,0,12"
-                       FontSize="18"
-                       FontWeight="SemiBold"
+                       Style="{StaticResource SectionTitle}"
                        Text="Stat blocks" />
             <TextBox DockPanel.Dock="Top"
                      Margin="0,0,0,8"
@@ -171,8 +167,7 @@
                     <DataTemplate>
                         <TextBlock>
                             <Run Text="{Binding Name, Mode=OneWay}" />
-                            <Run Foreground="Gray" Text="{Binding ChallengeRating, Mode=OneWay, StringFormat='CR {0}'}" />
-                        </TextBlock>
+                            <Run Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding ChallengeRating, Mode=OneWay, StringFormat='CR {0}'}" />                        </TextBlock>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
