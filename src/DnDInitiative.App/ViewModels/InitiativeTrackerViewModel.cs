@@ -18,7 +18,7 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
     private const int MaxQuantity = 50;
     private const int LibraryPageSize = 50;
     private const double MinPanelWidth = 260;
-    private const double MaxPanelWidth = 800;
+    private const double MaxPanelWidth = 1200;
 
     private readonly CombatantFactory _combatantFactory;
     private readonly IPartyRepository _partyRepository;

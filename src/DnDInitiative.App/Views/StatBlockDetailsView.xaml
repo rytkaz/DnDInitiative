@@ -10,58 +10,117 @@
              d:DesignWidth="400"
              d:DesignHeight="600">
     <UserControl.Resources>
-        <!-- "Label value" on one wrapping line, with the label in bold. -->
-        <DataTemplate x:Key="LabeledValueTemplate">
+        <!-- Fixed colours: the card is "printed paper" and does not follow the light/dark theme. -->
+        <SolidColorBrush x:Key="StatBlockPaper" Color="#FDF1DC" />
+        <SolidColorBrush x:Key="StatBlockInk" Color="#1E1A16" />
+        <SolidColorBrush x:Key="StatBlockAccent" Color="#7A200D" />
+        <SolidColorBrush x:Key="StatBlockEdge" Color="#E69A28" />
+
+        <!-- The rule that is thick on the left and tapers to a point on the right. -->
+        <Style x:Key="TaperedRule" TargetType="Polygon">
+            <Setter Property="Points" Value="0,0 1,0.5 0,1" />
+            <Setter Property="Stretch" Value="Fill" />
+            <Setter Property="Height" Value="5" />
+            <Setter Property="Margin" Value="0,8" />
+            <Setter Property="Fill" Value="{StaticResource StatBlockAccent}" />
+        </Style>
+
+        <!-- "Armor Class 15": the property name in bold red. -->
+        <DataTemplate x:Key="StatLineTemplate">
             <TextBlock Margin="0,2" TextWrapping="Wrap">
-                <Run FontWeight="Bold" Text="{Binding Label, Mode=OneWay}" />
+                <Run FontWeight="Bold"
+                     Foreground="{StaticResource StatBlockAccent}"
+                     Text="{Binding Label, Mode=OneWay}" />
+                <Span formatting:MarkdownText.Text="{Binding Value}" />
+            </TextBlock>
+        </DataTemplate>
+
+        <!-- A trait or action: its name in bold italic, then the description. -->
+        <DataTemplate x:Key="FeatureTemplate">
+            <TextBlock Margin="0,4" TextWrapping="Wrap">
+                <Run FontStyle="Italic"
+                     FontWeight="Bold"
+                     Text="{Binding Label, Mode=OneWay}" />
                 <Span formatting:MarkdownText.Text="{Binding Value}" />
             </TextBlock>
         </DataTemplate>
     </UserControl.Resources>
 
-    <StackPanel>
-        <TextBlock FontSize="26"
-                   FontWeight="SemiBold"
-                   Text="{Binding Name}"
-                   TextWrapping="Wrap" />
-        <TextBlock Margin="0,0,0,12"
-                   FontStyle="Italic"
-                   Text="{Binding Summary}"
-                   TextWrapping="Wrap" />
+    <Border Padding="14,10"
+            Background="{StaticResource StatBlockPaper}"
+            BorderBrush="{StaticResource StatBlockEdge}"
+            BorderThickness="0,5"
+            TextElement.Foreground="{StaticResource StatBlockInk}">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <!-- Nothing selected: no empty sheet of parchment. -->
+                    <DataTrigger Binding="{Binding}" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
 
-        <ItemsControl ItemTemplate="{StaticResource LabeledValueTemplate}" ItemsSource="{Binding CoreStats}" />
+        <StackPanel>
+            <TextBlock FontFamily="Georgia"
+                       FontSize="26"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource StatBlockAccent}"
+                       Text="{Binding Name}"
+                       TextWrapping="Wrap"
+                       Typography.Capitals="SmallCaps" />
+            <TextBlock FontStyle="Italic"
+                       Text="{Binding Summary}"
+                       TextWrapping="Wrap" />
 
-        <ItemsControl Margin="0,12" ItemsSource="{Binding Abilities}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <UniformGrid Rows="1" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel>
-                        <TextBlock HorizontalAlignment="Center"
-                                   FontWeight="Bold"
-                                   Text="{Binding Label}" />
-                        <TextBlock HorizontalAlignment="Center" Text="{Binding Value}" />
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+            <Polygon Style="{StaticResource TaperedRule}" />
 
-        <ItemsControl ItemTemplate="{StaticResource LabeledValueTemplate}" ItemsSource="{Binding OtherStats}" />
+            <ItemsControl ItemTemplate="{StaticResource StatLineTemplate}" ItemsSource="{Binding CoreStats}" />
 
-        <ItemsControl ItemsSource="{Binding Sections}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="0,16,0,0">
-                        <TextBlock Style="{StaticResource SectionTitle}"
-                                   Text="{Binding Title}" />
-                        <Separator Margin="0,2,0,6" />
-                        <ItemsControl ItemTemplate="{StaticResource LabeledValueTemplate}" ItemsSource="{Binding Entries}" />
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </StackPanel>
+            <Polygon Style="{StaticResource TaperedRule}" />
+
+            <ItemsControl ItemsSource="{Binding Abilities}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock HorizontalAlignment="Center"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource StatBlockAccent}"
+                                       Text="{Binding Label}" />
+                            <TextBlock HorizontalAlignment="Center" Text="{Binding Value}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Polygon Style="{StaticResource TaperedRule}" />
+
+            <ItemsControl ItemTemplate="{StaticResource StatLineTemplate}" ItemsSource="{Binding OtherStats}" />
+
+            <ItemsControl ItemsSource="{Binding Sections}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,14,0,0">
+                            <!-- Section heading with a thin red line under it. -->
+                            <Border Margin="0,0,0,4"
+                                    BorderBrush="{StaticResource StatBlockAccent}"
+                                    BorderThickness="0,0,0,1">
+                                <TextBlock FontFamily="Georgia"
+                                           FontSize="20"
+                                           Foreground="{StaticResource StatBlockAccent}"
+                                           Text="{Binding Title}" />
+                            </Border>
+                            <ItemsControl ItemTemplate="{StaticResource FeatureTemplate}" ItemsSource="{Binding Entries}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
 </UserControl>
