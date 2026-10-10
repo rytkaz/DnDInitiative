@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using DnDInitiative.Core.StatBlocks;
@@ -15,6 +16,7 @@ internal sealed class ConverterConfigWriter : IConverterConfigWriter
     private const string ConfigFileName = "config.json";
     private const string TemplateFileName = "monster-statblock.txt";
     private const string SpellTemplateFileName = "spell-note.txt";
+    private const string HomebrewFolderName = "homebrew";
 
     // What the converter can write a stat block for. Used to keep these out of the
     // library when a book is only being converted for its spells.
@@ -83,7 +85,7 @@ internal sealed class ConverterConfigWriter : IConverterConfigWriter
             ["reference"] = wanted.Concat(spellOnly).Order(StringComparer.OrdinalIgnoreCase).ToList(),
         };
 
-        IReadOnlyCollection<string> homebrewFiles = options.HomebrewFiles;
+        IReadOnlyList<string> homebrewFiles = await PrepareHomebrewAsync(options.HomebrewFiles, cancellationToken).ConfigureAwait(false);
         if (homebrewFiles.Count > 0)
         {
             // A homebrew file is named by its path, and brings its own books with it; they are
@@ -120,6 +122,48 @@ internal sealed class ConverterConfigWriter : IConverterConfigWriter
         await File.WriteAllTextAsync(configPath, json, cancellationToken).ConfigureAwait(false);
 
         return configPath;
+    }
+
+    /// <summary>
+    /// Copies the homebrew files next to the configuration, with their web links rewritten
+    /// (see <see cref="HomebrewLinks"/>). The converter is given the copies; the user's own
+    /// files are only ever read.
+    /// </summary>
+    /// <returns>The paths of the copies, in the order the files were given.</returns>
+    private async Task<IReadOnlyList<string>> PrepareHomebrewAsync(
+        IReadOnlyCollection<string> files,
+        CancellationToken cancellationToken)
+    {
+        string folder = Path.Combine(_folder, HomebrewFolderName);
+
+        // Copies from an earlier run, for files that may since have been removed from the list.
+        if (Directory.Exists(folder))
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+
+        var copies = new List<string>();
+        if (files.Count == 0)
+        {
+            return copies;
+        }
+
+        Directory.CreateDirectory(folder);
+
+        foreach (string file in files)
+        {
+            string json = await File.ReadAllTextAsync(file, cancellationToken).ConfigureAwait(false);
+
+            // Numbered, so two files with the same name from different folders do not collide.
+            string copy = Path.Combine(
+                folder,
+                string.Create(CultureInfo.InvariantCulture, $"{copies.Count + 1}-{Path.GetFileName(file)}"));
+
+            await File.WriteAllTextAsync(copy, HomebrewLinks.ToMarkdown(json), cancellationToken).ConfigureAwait(false);
+            copies.Add(copy);
+        }
+
+        return copies;
     }
 
     /// <summary>

@@ -16,13 +16,19 @@ public partial class MainWindow : Window
     private readonly MainViewModel _viewModel;
     private readonly IUiStateStore _uiState;
     private readonly SpellViewerViewModel _spellViewer;
+    private readonly ILinkOpener _linkOpener;
 
-    public MainWindow(MainViewModel viewModel, IUiStateStore uiState, SpellViewerViewModel spellViewer)
+    public MainWindow(
+        MainViewModel viewModel,
+        IUiStateStore uiState,
+        SpellViewerViewModel spellViewer,
+        ILinkOpener linkOpener)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _uiState = uiState;
         _spellViewer = spellViewer;
+        _linkOpener = linkOpener;
         DataContext = viewModel;
         SpellPopup.DataContext = spellViewer;
 
@@ -49,6 +55,12 @@ public partial class MainWindow : Window
             _spellViewer.ShowCommand.Execute(reference);
 
             // Stops the event here, so it is not handled a second time further up.
+            e.Handled = true;
+        }
+        else if (WebLink.IsWebAddress(e.Uri))
+        {
+            // Nothing to do if no browser starts; the link's tooltip still shows the address.
+            _linkOpener.TryOpen(e.Uri);
             e.Handled = true;
         }
     }

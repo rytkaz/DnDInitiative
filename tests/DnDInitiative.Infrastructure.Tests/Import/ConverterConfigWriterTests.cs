@@ -132,20 +132,70 @@ public sealed class ConverterConfigWriterTests : IDisposable
     }
 
     [Fact]
-    public async Task WriteAsync_HomebrewFiles_AreListedByFullPathWithForwardSlashes()
+    public async Task WriteAsync_HomebrewFiles_AreCopiedWithTheirWebLinksRewrittenAndTheCopiesAreListed()
     {
         var writer = new ConverterConfigWriter(new StorageOptions(_dataFolder));
-        string file = Path.Combine(_dataFolder, "brew", "Flee, Mortals!.json");
+        string original = "{ \"monster\": [ { \"entries\": [ \"is {@link Grappled|https://example.com/rules}\" ] } ] }";
+        string file = WriteHomebrew("brew", "Flee, Mortals!.json", original);
 
         string configPath = await writer.WriteAsync(new ConverterConfigOptions { Sources = ["MM"], HomebrewFiles = [file] });
 
         using JsonDocument config = JsonDocument.Parse(await File.ReadAllTextAsync(configPath));
         JsonElement sources = config.RootElement.GetProperty("sources");
 
-        string? written = Assert.Single(sources.GetProperty("homebrew").EnumerateArray()).GetString();
-        Assert.Equal(file.Replace('\\', '/'), written);
+        // A full path with forward slashes, to a copy beside the configuration.
+        string copy = Assert.Single(sources.GetProperty("homebrew").EnumerateArray()).GetString() ?? "";
+        Assert.DoesNotContain("\\", copy, StringComparison.Ordinal);
+        Assert.True(Path.IsPathFullyQualified(copy));
+        Assert.Equal(
+            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(configPath)!, "homebrew", "1-Flee, Mortals!.json")),
+            Path.GetFullPath(copy));
+
+        Assert.Contains("is [Grappled](https://example.com/rules)", await File.ReadAllTextAsync(copy), StringComparison.Ordinal);
+
+        // The user's own file is only read.
+        Assert.Equal(original, await File.ReadAllTextAsync(file));
 
         // The books are still there; homebrew is added to them, not instead of them.
         Assert.Equal("MM", Assert.Single(sources.GetProperty("reference").EnumerateArray()).GetString());
+    }
+
+    [Fact]
+    public async Task WriteAsync_TwoHomebrewFilesWithTheSameName_GetSeparateCopies()
+    {
+        var writer = new ConverterConfigWriter(new StorageOptions(_dataFolder));
+        string first = WriteHomebrew("a", "brew.json", "{ \"id\": 1 }");
+        string second = WriteHomebrew("b", "brew.json", "{ \"id\": 2 }");
+
+        string configPath = await writer.WriteAsync(new ConverterConfigOptions { HomebrewFiles = [first, second] });
+
+        using JsonDocument config = JsonDocument.Parse(await File.ReadAllTextAsync(configPath));
+        string?[] copies = Strings(config.RootElement.GetProperty("sources").GetProperty("homebrew"));
+
+        Assert.Equal(2, copies.Distinct().Count());
+        Assert.Contains("1", await File.ReadAllTextAsync(copies[0]!), StringComparison.Ordinal);
+        Assert.Contains("2", await File.ReadAllTextAsync(copies[1]!), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WriteAsync_HomebrewFileRemovedFromTheList_ItsCopyIsRemovedToo()
+    {
+        var writer = new ConverterConfigWriter(new StorageOptions(_dataFolder));
+        string file = WriteHomebrew("brew", "brew.json", "{}");
+        string firstConfig = await writer.WriteAsync(new ConverterConfigOptions { HomebrewFiles = [file] });
+        string copies = Path.Combine(Path.GetDirectoryName(firstConfig)!, "homebrew");
+        Assert.Single(Directory.GetFiles(copies));
+
+        await writer.WriteAsync(new ConverterConfigOptions());
+
+        Assert.False(Directory.Exists(copies));
+    }
+
+    private string WriteHomebrew(string folder, string name, string content)
+    {
+        string path = Path.Combine(_dataFolder, "originals", folder, name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, content);
+        return path;
     }
 }

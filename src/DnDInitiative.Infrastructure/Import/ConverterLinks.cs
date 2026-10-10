@@ -14,7 +14,8 @@ internal static partial class ConverterLinks
 
     /// <summary>
     /// Rewrites links to spells so they carry the spell's key, as in [fireball](spell:fireball-xphb),
-    /// and reduces every other link to its text. Embedded images are removed, and so are HTML
+    /// keeps links to web pages, and reduces every other link to its text, since it points at
+    /// a note this app does not have. Embedded images are removed, and so are HTML
     /// tags: &lt;span title='...'&gt;SRD&lt;/span&gt; becomes SRD.
     /// </summary>
     public static string Simplify(string text)
@@ -45,9 +46,27 @@ internal static partial class ConverterLinks
 
         string linkText = match.Groups["text"].Value;
 
-        return SpellKey(match.Groups["target"].Value) is { } key
-            ? $"[{linkText}]({SpellScheme}{key})"
-            : linkText;
+        string target = match.Groups["target"].Value;
+
+        // Checked first: a web page whose address happens to end in "spells/x.md" is still a web page.
+        if (WebAddress(target) is { } address)
+        {
+            return $"[{linkText}]({address})";
+        }
+
+        return SpellKey(target) is { } key ? $"[{linkText}]({SpellScheme}{key})" : linkText;
+    }
+
+    /// <summary>Returns the address if the target is a web page, without any title that follows it.</summary>
+    private static string? WebAddress(string target)
+    {
+        int end = target.IndexOf(' ', StringComparison.Ordinal);
+        string address = (end < 0 ? target : target[..end]).Trim();
+
+        return address.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || address.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                ? address
+                : null;
     }
 
     /// <summary>

@@ -25,6 +25,22 @@ public class ConverterLinksTests
         Assert.Equal(expected, ConverterLinks.Simplify(text));
     }
 
+    [Theory]
+    [InlineData("is [Grappled](https://example.com/rules) (escape DC 17)", "is [Grappled](https://example.com/rules) (escape DC 17)")]
+    [InlineData("[Rules](HTTP://example.com/a \"The rules\")", "[Rules](HTTP://example.com/a)")]
+    public void Simplify_LinkToAWebPage_IsKeptWithoutItsTitle(string text, string expected)
+    {
+        Assert.Equal(expected, ConverterLinks.Simplify(text));
+    }
+
+    [Theory]
+    [InlineData("[Run me](file:///C:/Windows/notepad.exe)", "Run me")]
+    [InlineData("[Mail](mailto:hello@example.com)", "Mail")]
+    public void Simplify_LinkWithAnotherKindOfAddress_BecomesItsText(string text, string expected)
+    {
+        Assert.Equal(expected, ConverterLinks.Simplify(text));
+    }
+
     [Fact]
     public void Simplify_EmbeddedImage_IsRemoved()
     {
