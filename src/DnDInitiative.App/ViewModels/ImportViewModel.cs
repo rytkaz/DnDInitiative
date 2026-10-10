@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -29,6 +30,7 @@ public sealed partial class ImportViewModel : PageViewModel
     private readonly IMessenger _messenger;
     private readonly IConverterInstaller _installer;
     private readonly ISourceDataService _sourceData;
+    private readonly IConverterConfigWriter _configWriter;
     private bool _isLoaded;
 
     [ObservableProperty]
@@ -57,6 +59,12 @@ public sealed partial class ImportViewModel : PageViewModel
     [ObservableProperty]
     private string _statusMessage = "";
 
+    // The ticks from the last session, kept until the book list has been read from the data folder.
+    private IReadOnlyList<string> _savedSources = [];
+
+    /// <summary>The books in the chosen data folder that contain monsters.</summary>
+    public ObservableCollection<SourceOptionViewModel> Sources { get; } = [];
+
     public ImportViewModel(
         IConversionSettingsStore settingsStore,
         IStatBlockConverter converter,
@@ -65,7 +73,8 @@ public sealed partial class ImportViewModel : PageViewModel
         IFilePicker filePicker,
         IMessenger messenger,
         IConverterInstaller installer,
-        ISourceDataService sourceData)
+        ISourceDataService sourceData,
+        IConverterConfigWriter configWriter)
     {
         _settingsStore = settingsStore;
         _converter = converter;
@@ -75,6 +84,7 @@ public sealed partial class ImportViewModel : PageViewModel
         _messenger = messenger;
         _installer = installer;
         _sourceData = sourceData;
+        _configWriter = configWriter;
     }
 
     public override string Title => "5eTools Import";
@@ -102,6 +112,8 @@ public sealed partial class ImportViewModel : PageViewModel
         ConfigPath = settings.ConfigPath;
         DataDirectory = settings.DataDirectory;
         OutputDirectory = settings.OutputDirectory;
+        _savedSources = settings.Sources;
+        await RefreshSourcesAsync();
     }
 
     [RelayCommand]
@@ -123,7 +135,7 @@ public sealed partial class ImportViewModel : PageViewModel
     }
 
     [RelayCommand]
-    private void BrowseData()
+    private async Task BrowseDataAsync()
     {
         if (_folderPicker.PickFolder("Select the 5eTools data folder") is not { } picked)
         {
@@ -134,6 +146,7 @@ public sealed partial class ImportViewModel : PageViewModel
         string? dataFolder = _sourceData.FindDataFolder(picked);
         DataDirectory = dataFolder ?? picked;
         StatusMessage = dataFolder is null ? NotDataFolderMessage : "";
+        await RefreshSourcesAsync();
     }
 
     [RelayCommand]
@@ -171,11 +184,12 @@ public sealed partial class ImportViewModel : PageViewModel
             var progress = new UiProgress<string>(AppendToLog);
             string toolPath = await ResolveToolAsync(settings.ToolPath, progress, cancellationToken);
 
-            var request = new ConversionRequest(
-                toolPath,
-                settings.DataDirectory,
-                settings.OutputDirectory,
-                settings.ConfigPath);
+            // The user's own configuration wins. Otherwise write one for the ticked books.
+            string configPath = settings.ConfigPath.Length > 0
+                ? settings.ConfigPath
+                : await _configWriter.WriteAsync(settings.Sources, cancellationToken);
+
+            var request = new ConversionRequest(toolPath, settings.DataDirectory, settings.OutputDirectory, configPath);
             await _converter.ConvertAsync(request, progress, cancellationToken);
 
             StatusMessage = "Importing the converted notes...";
@@ -279,7 +293,7 @@ public sealed partial class ImportViewModel : PageViewModel
         try
         {
             DataDirectory = await _sourceData.ImportZipAsync(zipPath, new UiProgress<string>(AppendToLog));
-
+            await RefreshSourcesAsync();
             // Saved straight away: the unpacked data stays on disk, so the path should survive too.
             await _settingsStore.SaveAsync(CurrentSettings());
             StatusMessage = "The data is unpacked and ready. You can delete the zip file.";
@@ -302,6 +316,50 @@ public sealed partial class ImportViewModel : PageViewModel
             ConfigPath = Clean(ConfigPath),
             DataDirectory = Clean(DataDirectory),
             OutputDirectory = Clean(OutputDirectory),
+            Sources = SelectedSourceIds(),
         };
+    }
+
+    [RelayCommand]
+    private void SelectAllSources()
+    {
+        foreach (SourceOptionViewModel source in Sources)
+        {
+            source.IsSelected = true;
+        }
+    }
+
+    [RelayCommand]
+    private void ClearSources()
+    {
+        foreach (SourceOptionViewModel source in Sources)
+        {
+            source.IsSelected = false;
+        }
+    }
+
+    private IReadOnlyList<string> SelectedSourceIds()
+    {
+        // Before the list has been read, the saved ticks are still the truth.
+        return Sources.Count > 0
+            ? Sources.Where(source => source.IsSelected).Select(source => source.Id).ToList()
+            : _savedSources;
+    }
+
+    // Rebuilds the list from the data folder, keeping whatever was ticked.
+    private async Task RefreshSourcesAsync()
+    {
+        var selected = new HashSet<string>(SelectedSourceIds(), StringComparer.OrdinalIgnoreCase);
+        Sources.Clear();
+
+        if (_sourceData.FindDataFolder(Clean(DataDirectory)) is not { } dataFolder)
+        {
+            return;
+        }
+
+        foreach (SourceBook book in await _sourceData.GetMonsterSourcesAsync(dataFolder))
+        {
+            Sources.Add(new SourceOptionViewModel(book, selected.Contains(book.Id)));
+        }
     }
 }

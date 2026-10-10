@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.IO.Compression;
+using System.Text.Json;
 
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Persistence;
@@ -144,5 +145,82 @@ internal sealed class SourceDataService : ISourceDataService
         }
 
         return null;
+    }
+
+    public async Task<IReadOnlyList<SourceBook>> GetMonsterSourcesAsync(
+    string dataFolder,
+    CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dataFolder);
+
+        try
+        {
+            // bestiary/index.json maps each source that has monsters to its file: { "MM": "bestiary-mm.json", ... }
+            List<string> ids = await ReadPropertyNamesAsync(
+                Path.Combine(dataFolder, BestiaryFolder, "index.json"),
+                cancellationToken).ConfigureAwait(false);
+
+            var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            await AddNamesAsync(names, Path.Combine(dataFolder, "books.json"), "book", cancellationToken).ConfigureAwait(false);
+            await AddNamesAsync(names, Path.Combine(dataFolder, "adventures.json"), "adventure", cancellationToken).ConfigureAwait(false);
+
+            return ids
+                .Select(id => new SourceBook(id, names.GetValueOrDefault(id, id)))
+                .OrderBy(book => book.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (JsonException)
+        {
+            // A data folder this code does not understand: offer no list instead of failing the page.
+            return [];
+        }
+    }
+
+    private static async Task<List<string>> ReadPropertyNamesAsync(string path, CancellationToken cancellationToken)
+    {
+        if (!File.Exists(path))
+        {
+            return [];
+        }
+
+        using JsonDocument document = JsonDocument.Parse(await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false));
+
+        return document.RootElement.ValueKind == JsonValueKind.Object
+            ? document.RootElement.EnumerateObject().Select(property => property.Name).ToList()
+            : [];
+    }
+
+    // books.json looks like { "book": [ { "name": "Monster Manual", "source": "MM", ... }, ... ] }
+    private static async Task AddNamesAsync(
+        Dictionary<string, string> names,
+        string path,
+        string listProperty,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        using JsonDocument document = JsonDocument.Parse(await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false));
+
+        if (document.RootElement.ValueKind != JsonValueKind.Object
+            || !document.RootElement.TryGetProperty(listProperty, out JsonElement list)
+            || list.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (JsonElement entry in list.EnumerateArray())
+        {
+            if (entry.ValueKind == JsonValueKind.Object
+                && entry.TryGetProperty("source", out JsonElement source)
+                && entry.TryGetProperty("name", out JsonElement name)
+                && source.GetString() is { } id
+                && name.GetString() is { } text)
+            {
+                names[id] = text;
+            }
+        }
     }
 }

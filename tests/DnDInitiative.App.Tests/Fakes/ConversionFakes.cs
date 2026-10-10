@@ -105,6 +105,8 @@ internal sealed class FakeSourceDataService : ISourceDataService
 
     public string? FailureMessage { get; set; }
 
+    public IReadOnlyList<SourceBook> Sources { get; set; } = [];
+
     public string? FindDataFolder(string folder)
     {
         return RecognisesFolders ? CorrectedFolder ?? folder : null;
@@ -123,5 +125,22 @@ internal sealed class FakeSourceDataService : ISourceDataService
         ImportedZip = zipPath;
         progress?.Report("Unpacked 3 files.");
         return Task.FromResult("unpacked-data");
+    }
+
+    public Task<IReadOnlyList<SourceBook>> GetMonsterSourcesAsync(string dataFolder, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(Sources);
+    }
+}
+
+internal sealed class FakeConverterConfigWriter : IConverterConfigWriter
+{
+    /// <summary>The books the last generated configuration was written for, or null if none was.</summary>
+    public IReadOnlyCollection<string>? WrittenFor { get; private set; }
+
+    public Task<string> WriteAsync(IReadOnlyCollection<string> sourceIds, CancellationToken cancellationToken = default)
+    {
+        WrittenFor = sourceIds;
+        return Task.FromResult("generated-config.json");
     }
 }

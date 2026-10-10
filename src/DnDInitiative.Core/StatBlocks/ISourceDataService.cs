@@ -1,5 +1,8 @@
 ﻿namespace DnDInitiative.Core.StatBlocks;
 
+/// <summary>A book or adventure in the 5eTools data, such as ("XMM", "Monster Manual (2024)").</summary>
+public sealed record SourceBook(string Id, string Name);
+
 /// <summary>Finds and unpacks the 5eTools data the converter reads.</summary>
 public interface ISourceDataService
 {
@@ -18,4 +21,7 @@ public interface ISourceDataService
         string zipPath,
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Lists the books and adventures in a data folder that contain monsters, by name.</summary>
+    Task<IReadOnlyList<SourceBook>> GetMonsterSourcesAsync(string dataFolder, CancellationToken cancellationToken = default);
 }

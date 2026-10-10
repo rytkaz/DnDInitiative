@@ -10,6 +10,8 @@ public sealed record ConversionSettings
     public string DataDirectory { get; init; } = "";
 
     public string OutputDirectory { get; init; } = "";
+
+    public IReadOnlyList<string> Sources { get; init; } = [];
 }
 
 public interface IConversionSettingsStore

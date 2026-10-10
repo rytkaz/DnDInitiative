@@ -48,7 +48,7 @@
 
             <TextBlock Grid.Row="1"
                        VerticalAlignment="Center"
-                       Text="Configuration file (optional)" />
+                       Text="Configuration file (advanced)" />
             <TextBox Grid.Row="1"
                      Grid.Column="1"
                      Margin="12,4"
@@ -95,6 +95,51 @@
                     Command="{Binding BrowseOutputCommand}"
                     Content="Browse..." />
         </Grid>
+
+        <TextBlock Margin="0,4,0,0"
+                   DockPanel.Dock="Top"
+                   Style="{StaticResource SecondaryText}"
+                   Text="Leave the program empty to use the app's own copy of the converter. Leave the configuration empty to import the books ticked below; a configuration file of your own replaces that list."
+                   TextWrapping="Wrap" />
+
+        <!--  Which books to import. Filled from the chosen data folder.  -->
+        <DockPanel Height="190"
+                   Margin="0,12,0,0"
+                   DockPanel.Dock="Top"
+                   IsEnabled="{Binding IsIdle}">
+            <DockPanel Margin="0,0,0,4" DockPanel.Dock="Top">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Padding="8,2"
+                            Command="{Binding SelectAllSourcesCommand}"
+                            Content="Select all" />
+                    <Button Margin="8,0,0,0"
+                            Padding="8,2"
+                            Command="{Binding ClearSourcesCommand}"
+                            Content="Clear" />
+                </StackPanel>
+                <TextBlock VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Text="Books to import" />
+            </DockPanel>
+
+            <Border Padding="8" Style="{StaticResource PanelBorder}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Sources}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <!--  Flows into as many columns as fit the width.  -->
+                                <WrapPanel ItemWidth="320" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+        </DockPanel>
 
         <StackPanel Margin="0,12,0,0"
                     DockPanel.Dock="Top"

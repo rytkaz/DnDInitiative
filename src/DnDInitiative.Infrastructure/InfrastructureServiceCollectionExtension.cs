@@ -64,6 +64,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IStatBlockConverter, TtrpgConvertConverter>();
         services.AddSingleton<IConversionSettingsStore, JsonConversionSettingsStore>();
         services.AddSingleton<ISourceDataService, SourceDataService>();
+        services.AddSingleton<IConverterConfigWriter, ConverterConfigWriter>();
         // One HttpClient for the app's lifetime. GitHub's API rejects requests without a User-Agent.
         services.AddSingleton(_ =>
         {

@@ -18,6 +18,7 @@ public class ImportViewModelTests
     private readonly ImportViewModel _viewModel;
     private readonly FakeConverterInstaller _installer = new();
     private readonly FakeSourceDataService _sourceData = new();
+    private readonly FakeConverterConfigWriter _configWriter = new();
     private StatBlocksImportedMessage? _received;
 
     public ImportViewModelTests()
@@ -26,7 +27,7 @@ public class ImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData);
+        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter);
     }
 
     [Fact]
@@ -256,6 +257,61 @@ public class ImportViewModelTests
         await _viewModel.UseDataZipCommand.ExecuteAsync(null);
 
         Assert.Null(_sourceData.ImportedZip);
+    }
+
+    [Fact]
+    public async Task LoadCommand_ListsTheBooksInTheDataFolderAndRestoresTheTicks()
+    {
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data", Sources = ["XMM"] };
+        _sourceData.Sources = [new SourceBook("MM", "Monster Manual"), new SourceBook("XMM", "Monster Manual (2024)")];
+
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, _viewModel.Sources.Count);
+        Assert.False(_viewModel.Sources[0].IsSelected);
+        Assert.True(_viewModel.Sources[1].IsSelected);
+        Assert.Equal("Monster Manual (2024) (XMM)", _viewModel.Sources[1].Label);
+    }
+
+    [Fact]
+    public async Task RunCommand_NoConfigurationChosen_WritesOneForTheTickedBooksAndRemembersThem()
+    {
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data", OutputDirectory = "output" };
+        _sourceData.Sources = [new SourceBook("MM", "Monster Manual"), new SourceBook("XMM", "Monster Manual (2024)")];
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+        _viewModel.Sources[1].IsSelected = true;
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        string[] expected = ["XMM"];
+        Assert.Equal(expected, _configWriter.WrittenFor?.ToArray());
+        Assert.Equal("generated-config.json", _converter.Request?.ConfigPath);
+        Assert.Equal(expected, _settingsStore.Settings.Sources.ToArray());
+    }
+
+    [Fact]
+    public async Task RunCommand_OwnConfigurationChosen_UsesItAndWritesNothing()
+    {
+        FillInPaths();
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal("config.json", _converter.Request?.ConfigPath);
+        Assert.Null(_configWriter.WrittenFor);
+    }
+
+    [Fact]
+    public async Task SelectAllAndClearSourcesCommands_TickAndUntickEveryBook()
+    {
+        _settingsStore.Settings = new ConversionSettings { DataDirectory = "data" };
+        _sourceData.Sources = [new SourceBook("MM", "Monster Manual"), new SourceBook("XMM", "Monster Manual (2024)")];
+        await _viewModel.LoadCommand.ExecuteAsync(null);
+
+        _viewModel.SelectAllSourcesCommand.Execute(null);
+        Assert.All(_viewModel.Sources, source => Assert.True(source.IsSelected));
+
+        _viewModel.ClearSourcesCommand.Execute(null);
+        Assert.All(_viewModel.Sources, source => Assert.False(source.IsSelected));
     }
 
     private void FillInPaths()

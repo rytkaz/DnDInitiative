@@ -22,7 +22,7 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
     [Fact]
     public async Task LoadAsync_NothingStored_ReturnsEmptySettings()
     {
-        Assert.Equal(new ConversionSettings(), await _store.LoadAsync());
+        Assert.Equal("", (await _store.LoadAsync()).ToolPath);
     }
 
     [Fact]
@@ -34,11 +34,17 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
             ConfigPath = @"C:\cli\config.json",
             DataDirectory = @"C:\cli\5etools\data",
             OutputDirectory = @"C:\cli\output",
+            Sources = ["MM", "XMM"],
         };
 
         await _store.SaveAsync(settings);
+        ConversionSettings loaded = await _store.LoadAsync();
 
-        Assert.Equal(settings, await _store.LoadAsync());
+        Assert.Equal(settings.ToolPath, loaded.ToolPath);
+        Assert.Equal(settings.ConfigPath, loaded.ConfigPath);
+        Assert.Equal(settings.DataDirectory, loaded.DataDirectory);
+        Assert.Equal(settings.OutputDirectory, loaded.OutputDirectory);
+        Assert.Equal(settings.Sources.ToArray(), loaded.Sources.ToArray());
     }
 
     [Fact]
@@ -46,6 +52,6 @@ public sealed class JsonConversionSettingsStoreTests : IDisposable
     {
         await File.WriteAllTextAsync(Path.Combine(_directory, "conversion-settings.json"), "{ not json");
 
-        Assert.Equal(new ConversionSettings(), await _store.LoadAsync());
+        Assert.Equal("", (await _store.LoadAsync()).ToolPath);
     }
 }

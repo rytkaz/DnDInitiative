@@ -107,6 +107,43 @@ public sealed class SourceDataServiceTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_root, "appdata", "escaped.txt")));
     }
 
+    [Fact]
+    public async Task GetMonsterSourcesAsync_ListsSourcesWithMonstersByName()
+    {
+        string data = Path.Combine(_root, "data");
+        Directory.CreateDirectory(Path.Combine(data, "bestiary"));
+        await File.WriteAllTextAsync(
+            Path.Combine(data, "bestiary", "index.json"),
+            """{ "XMM": "bestiary-xmm.json", "LMoP": "bestiary-lmop.json", "ZZZ": "bestiary-zzz.json" }""");
+        await File.WriteAllTextAsync(
+            Path.Combine(data, "books.json"),
+            """{ "book": [ { "name": "Monster Manual (2024)", "source": "XMM" }, { "name": "Player's Handbook", "source": "PHB" } ] }""");
+        await File.WriteAllTextAsync(
+            Path.Combine(data, "adventures.json"),
+            """{ "adventure": [ { "name": "Lost Mine of Phandelver", "source": "LMoP" } ] }""");
+
+        IReadOnlyList<SourceBook> sources = await _service.GetMonsterSourcesAsync(data);
+
+        SourceBook[] expected =
+        [
+            new("LMoP", "Lost Mine of Phandelver"),
+        new("XMM", "Monster Manual (2024)"),
+        new("ZZZ", "ZZZ"),
+    ];
+        Assert.Equal(expected, sources.ToArray());
+    }
+
+    [Fact]
+    public async Task GetMonsterSourcesAsync_FilesMissingOrUnreadable_ReturnsAnEmptyList()
+    {
+        string data = Path.Combine(_root, "data");
+        Directory.CreateDirectory(Path.Combine(data, "bestiary"));
+        Assert.Empty(await _service.GetMonsterSourcesAsync(data));
+
+        await File.WriteAllTextAsync(Path.Combine(data, "bestiary", "index.json"), "not json");
+        Assert.Empty(await _service.GetMonsterSourcesAsync(data));
+    }
+
     private string CreateZip(params string[] entryNames)
     {
         string path = Path.Combine(_root, Path.GetRandomFileName() + ".zip");
