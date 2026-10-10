@@ -1,12 +1,14 @@
 ﻿using DnDInitiative.Core.Campaigns;
 using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
+using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Campaigns;
 using DnDInitiative.Infrastructure.Encounters;
 using DnDInitiative.Infrastructure.Import;
 using DnDInitiative.Infrastructure.Parties;
 using DnDInitiative.Infrastructure.Persistence;
+using DnDInitiative.Infrastructure.Spells;
 using DnDInitiative.Infrastructure.StatBlocks;
 
 using Microsoft.Data.Sqlite;
@@ -46,6 +48,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<SqliteEncounterRepository>();
         services.AddSingleton<SqliteStatBlockRepository>();
         services.AddSingleton<IStatBlockLibrary>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
+        services.AddSingleton<ISpellRepository, SqliteSpellRepository>();
 
         // The campaign folder. This is what the rest of the app reads and writes.
         services.AddSingleton<CampaignLocation>();

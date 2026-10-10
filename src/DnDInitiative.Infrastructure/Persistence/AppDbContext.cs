@@ -15,6 +15,8 @@ internal sealed class AppDbContext : DbContext
 
     public DbSet<EncounterEntity> Encounters => Set<EncounterEntity>();
 
+    public DbSet<SpellEntity> Spells => Set<SpellEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PartyEntity>(party =>
@@ -60,6 +62,18 @@ internal sealed class AppDbContext : DbContext
         {
             creature.ToTable("EncounterCreatures");
             creature.HasKey(entity => entity.Id);
+        });
+
+        modelBuilder.Entity<SpellEntity>(spell =>
+        {
+            spell.ToTable("Spells");
+
+            // Not called "Id", so EF Core has to be told this is the key.
+            spell.HasKey(entity => entity.Key);
+
+            // Looked up by name when a link names a spell instead of giving its key.
+            spell.Property(entity => entity.Name).IsRequired().UseCollation("NOCASE");
+            spell.HasIndex(entity => entity.Name);
         });
     }
 }

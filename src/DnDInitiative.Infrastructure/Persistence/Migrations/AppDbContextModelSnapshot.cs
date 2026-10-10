@@ -107,6 +107,58 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                     b.ToTable("PlayerCharacters", (string)null);
                 });
 
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.SpellEntity", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CastingTime")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Components")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Duration")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRitual")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("Range")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("School")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Spells", (string)null);
+                });
+
             modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.StatBlockEntity", b =>
                 {
                     b.Property<Guid>("Id")
