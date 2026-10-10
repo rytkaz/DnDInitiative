@@ -207,6 +207,7 @@
                   IsReadOnly="True"
                   ItemsSource="{Binding Combatants}"
                   PreviewDragOver="OnGridPreviewDragOver"
+                  PreviewDragLeave="OnGridPreviewDragLeave"
                   PreviewDrop="OnGridPreviewDrop"
                   PreviewMouseLeftButtonDown="OnGridPreviewMouseLeftButtonDown"
                   PreviewMouseMove="OnGridPreviewMouseMove"
@@ -227,12 +228,29 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="DataGridRow">
-                                <!-- The Fluent row template ignores Background, so the highlight
-                         below needs a template that paints it. -->
-                                <Border Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
-                                    <DataGridCellsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"
-                                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
-                                </Border>
+                                <Grid>
+                                    <Border Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                                        <DataGridCellsPresenter ItemsPanel="{TemplateBinding ItemsPanel}"
+                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                    </Border>
+
+                                    <!-- Drawn over the row's edge while something is dragged onto it. -->
+                                    <Border x:Name="DropLine"
+                                            Height="2"
+                                            VerticalAlignment="Top"
+                                            Background="{DynamicResource AccentFillColorDefaultBrush}"
+                                            IsHitTestVisible="False"
+                                            Visibility="Collapsed" />
+                                </Grid>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="behaviors:DropIndicator.Position" Value="Above">
+                                        <Setter TargetName="DropLine" Property="Visibility" Value="Visible" />
+                                    </Trigger>
+                                    <Trigger Property="behaviors:DropIndicator.Position" Value="Below">
+                                        <Setter TargetName="DropLine" Property="Visibility" Value="Visible" />
+                                        <Setter TargetName="DropLine" Property="VerticalAlignment" Value="Bottom" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>

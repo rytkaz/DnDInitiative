@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
+using DnDInitiative.App.Behaviors;
 using DnDInitiative.App.ViewModels;
 
 namespace DnDInitiative.App.Views;
@@ -12,6 +13,8 @@ public partial class InitiativeTrackerView : UserControl
 {
     private CombatantViewModel? _dragRow;
     private Point _dragStart;
+    // The row currently showing the insertion line, so it can be cleared when the mouse moves on.
+    private DataGridRow? _dropRow;
 
     public InitiativeTrackerView()
     {
@@ -74,18 +77,40 @@ public partial class InitiativeTrackerView : UserControl
         CombatantViewModel row = _dragRow;
         _dragRow = null;
         DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(typeof(CombatantViewModel), row), DragDropEffects.Move);
+
+        // DoDragDrop only returns once the drag is over, however it ended: dropped here,
+        // dropped elsewhere, or cancelled with Escape. One clean-up covers all three.
+        ShowDropIndicator(null, DropPosition.None);
     }
 
-    // Accept our own rows anywhere in the grid, including over the text boxes.
+    // Accept our own rows anywhere in the grid, and show where the row would land.
     private void OnGridPreviewDragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(typeof(CombatantViewModel)) ? DragDropEffects.Move : DragDropEffects.None;
         e.Handled = true;
+
+        if (!e.Data.GetDataPresent(typeof(CombatantViewModel)))
+        {
+            e.Effects = DragDropEffects.None;
+            ShowDropIndicator(null, DropPosition.None);
+            return;
+        }
+
+        e.Effects = DragDropEffects.Move;
+
+        DataGridRow? row = FindRow(e.OriginalSource as DependencyObject);
+        ShowDropIndicator(row, GetDropPosition(e.Data, row));
+    }
+
+    // The mouse left the grid while still dragging: there is no target any more.
+    private void OnGridPreviewDragLeave(object sender, DragEventArgs e)
+    {
+        ShowDropIndicator(null, DropPosition.None);
     }
 
     private void OnGridPreviewDrop(object sender, DragEventArgs e)
     {
         e.Handled = true;
+        ShowDropIndicator(null, DropPosition.None);
 
         if (DataContext is InitiativeTrackerViewModel viewModel
             && e.Data.GetData(typeof(CombatantViewModel)) is CombatantViewModel dragged
@@ -93,6 +118,44 @@ public partial class InitiativeTrackerView : UserControl
         {
             viewModel.MoveCombatant(dragged, target);
         }
+    }
+
+    // The dragged row takes the target's place. Coming from above, that puts it below the
+    // target; coming from below, above it.
+    private DropPosition GetDropPosition(IDataObject data, DataGridRow? targetRow)
+    {
+        if (DataContext is not InitiativeTrackerViewModel viewModel
+            || data.GetData(typeof(CombatantViewModel)) is not CombatantViewModel dragged
+            || targetRow?.DataContext is not CombatantViewModel target)
+        {
+            return DropPosition.None;
+        }
+
+        int from = viewModel.Combatants.IndexOf(dragged);
+        int to = viewModel.Combatants.IndexOf(target);
+
+        return from.CompareTo(to) switch
+        {
+            < 0 => DropPosition.Below,
+            > 0 => DropPosition.Above,
+            _ => DropPosition.None,
+        };
+    }
+
+    // Moves the insertion line to the given row, or removes it when position is None.
+    private void ShowDropIndicator(DataGridRow? row, DropPosition position)
+    {
+        if (_dropRow is not null && !ReferenceEquals(_dropRow, row))
+        {
+            DropIndicator.SetPosition(_dropRow, DropPosition.None);
+        }
+
+        if (row is not null)
+        {
+            DropIndicator.SetPosition(row, position);
+        }
+
+        _dropRow = position == DropPosition.None ? null : row;
     }
 
     // Walks up from whatever was under the mouse to the row that contains it.
