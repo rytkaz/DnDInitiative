@@ -131,6 +131,7 @@ public partial class App : Application
         services.AddSingleton<PartySetupViewModel>();
         services.AddSingleton<ImportViewModel>();
         services.AddSingleton<MainViewModel>();
+        services.AddSingleton<SpellViewerViewModel>();
 
         // Windows
         services.AddSingleton<MainWindow>();

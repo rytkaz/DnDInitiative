@@ -32,6 +32,24 @@ public class ConverterLinksTests
     }
 
     [Theory]
+    [InlineData("Available in the <span title='Systems Reference Document (5.2)'>SRD</span> and the Free Rules", "Available in the SRD and the Free Rules")]
+    [InlineData("First line<br/>second line", "First linesecond line")]
+    [InlineData("<b>[fireball](compendium/spells/fireball.md)</b>", "[fireball](spell:fireball)")]
+    public void Simplify_HtmlTags_AreRemovedAndTheirTextKept(string text, string expected)
+    {
+        Assert.Equal(expected, ConverterLinks.Simplify(text));
+    }
+
+    [Theory]
+    [InlineData("a range of < 5 ft. and > 2 ft.")]
+    [InlineData("if 3 <5 and 7> 2")]
+    [InlineData("an unclosed <span")]
+    public void Simplify_AngleBracketsThatAreNotTags_AreUnchanged(string text)
+    {
+        Assert.Equal(text, ConverterLinks.Simplify(text));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("Speed 30 ft.")]
     [InlineData("*Hit:* 7 (1d6 + 4) damage [see below]")]

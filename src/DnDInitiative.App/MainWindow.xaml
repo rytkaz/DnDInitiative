@@ -127,5 +127,23 @@
                 </DataTemplate>
             </ContentControl.Resources>
         </ContentControl>
+
+        <!--
+            The spell a clicked link refers to. It opens where the mouse is and closes on a click
+            anywhere else. Its data context is the spell viewer, set in the code-behind.
+        -->
+        <Popup x:Name="SpellPopup"
+               AllowsTransparency="True"
+               IsOpen="{Binding IsOpen, Mode=TwoWay}"
+               Placement="Mouse"
+               PopupAnimation="Fade"
+               StaysOpen="False">
+            <Border BorderBrush="#B8A47E" BorderThickness="1">
+                <views:SpellDetailsView x:Name="SpellCard"
+                                        Width="460"
+                                        MaxHeight="620"
+                                        DataContext="{Binding Details}" />
+            </Border>
+        </Popup>
     </Grid>
 </Window>

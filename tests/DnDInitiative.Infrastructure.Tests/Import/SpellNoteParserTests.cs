@@ -67,6 +67,17 @@ public class SpellNoteParserTests
     }
 
     [Fact]
+    public void Parse_SourceWithAnHtmlTag_KeepsOnlyTheText()
+    {
+        // What the converter really writes for a 2024 spell.
+        string note = $"{Fence}spell\nname: Thaumaturgy\nsource: Player's Handbook (2024) p. 333. Available in the <span title='Systems Reference Document (5.2)'>SRD</span> and the Free Rules (2024)\n{Fence}";
+
+        Assert.Equal(
+            "Player's Handbook (2024) p. 333. Available in the SRD and the Free Rules (2024)",
+            SpellNoteParser.Parse(note, "thaumaturgy")?.Source);
+    }
+
+    [Fact]
     public void Parse_WindowsLineEndings_GiveTheSameSpell()
     {
         string unix = DetectMagicNote.Replace("\r\n", "\n", StringComparison.Ordinal);

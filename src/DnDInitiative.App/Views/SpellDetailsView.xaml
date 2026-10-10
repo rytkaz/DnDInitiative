@@ -1,0 +1,82 @@
+﻿<UserControl x:Class="DnDInitiative.App.Views.SpellDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:formatting="clr-namespace:DnDInitiative.App.Formatting"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewModels:SpellDetailsViewModel}"
+             d:DesignHeight="500"
+             d:DesignWidth="460"
+             mc:Ignorable="d">
+    <!--  The same printed card as a stat block; the colours and the rule come from Styles/AppStyles.xaml  -->
+    <Border Background="{StaticResource StatBlockPaper}"
+            BorderBrush="{StaticResource StatBlockEdge}"
+            BorderThickness="0,5"
+            TextElement.Foreground="{StaticResource StatBlockInk}">
+        <!--  Inside the border, so the coloured edges stay put while a long spell scrolls  -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="14,10">
+                <TextBlock FontFamily="Georgia"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource StatBlockAccent}"
+                           Text="{Binding Name}"
+                           TextWrapping="Wrap"
+                           Typography.Capitals="SmallCaps" />
+                <TextBlock FontStyle="Italic"
+                           Text="{Binding Summary}"
+                           TextWrapping="Wrap" />
+
+                <Polygon Style="{StaticResource TaperedRule}" />
+
+                <!--  "Casting Time 1 action": the label in bold red  -->
+                <ItemsControl ItemsSource="{Binding Stats}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="0,2" TextWrapping="Wrap">
+                                <Run FontWeight="Bold"
+                                     Foreground="{StaticResource StatBlockAccent}"
+                                     Text="{Binding Label, Mode=OneWay}" />
+                                <Span formatting:MarkdownText.Text="{Binding Value}" />
+                            </TextBlock>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Polygon Style="{StaticResource TaperedRule}" />
+
+                <!--  The rules text, one block at a time  -->
+                <ItemsControl ItemsSource="{Binding Blocks}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel x:Name="Row" Margin="0,4">
+                                <!--  Only shown for list items; see the trigger below  -->
+                                <TextBlock x:Name="BulletMark"
+                                           Margin="8,0,8,0"
+                                           DockPanel.Dock="Left"
+                                           Text="•"
+                                           Visibility="Collapsed" />
+                                <TextBlock x:Name="BlockText" TextWrapping="Wrap">
+                                    <Span formatting:MarkdownText.Text="{Binding Text}" />
+                                </TextBlock>
+                            </DockPanel>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Kind}" Value="Heading">
+                                    <Setter TargetName="Row" Property="Margin" Value="0,10,0,2" />
+                                    <Setter TargetName="BlockText" Property="FontFamily" Value="Georgia" />
+                                    <Setter TargetName="BlockText" Property="FontSize" Value="17" />
+                                    <Setter TargetName="BlockText" Property="Foreground" Value="{StaticResource StatBlockAccent}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Kind}" Value="Bullet">
+                                    <Setter TargetName="Row" Property="Margin" Value="0,2" />
+                                    <Setter TargetName="BulletMark" Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

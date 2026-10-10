@@ -1,8 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
+using DnDInitiative.App.Formatting;
 using DnDInitiative.App.Services;
 using DnDInitiative.App.ViewModels;
 
@@ -12,16 +15,50 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly IUiStateStore _uiState;
+    private readonly SpellViewerViewModel _spellViewer;
 
-    public MainWindow(MainViewModel viewModel, IUiStateStore uiState)
+    public MainWindow(MainViewModel viewModel, IUiStateStore uiState, SpellViewerViewModel spellViewer)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _uiState = uiState;
+        _spellViewer = spellViewer;
         DataContext = viewModel;
+        SpellPopup.DataContext = spellViewer;
+
+        // A clicked link raises RequestNavigate, which travels up from the link through
+        // everything that contains it. Listening here catches links on every page. The card
+        // in the popup listens as well: a spell's text can link to other spells, and a popup
+        // is a separate little window that may not pass the event on.
+        var onLinkClicked = new RequestNavigateEventHandler(OnLinkClicked);
+        AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
+        SpellCard.AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
 
         // Before the window is shown, so it opens at its old size instead of jumping to it.
         RestoreSize();
+    }
+
+    private void OnLinkClicked(object sender, RequestNavigateEventArgs e)
+    {
+        if (SpellLink.ToReference(e.Uri) is { } reference)
+        {
+            _spellViewer.ShowCommand.Execute(reference);
+
+            // Stops the event here, so it is not handled a second time further up.
+            e.Handled = true;
+        }
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        base.OnPreviewKeyDown(e);
+
+        // The popup never has the keyboard focus, so the window closes it on Escape.
+        if (e.Key == Key.Escape && _spellViewer.IsOpen)
+        {
+            _spellViewer.CloseCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private void RestoreSize()

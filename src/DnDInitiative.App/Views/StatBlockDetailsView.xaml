@@ -10,20 +10,7 @@
              d:DesignWidth="400"
              d:DesignHeight="600">
     <UserControl.Resources>
-        <!-- Fixed colours: the card is "printed paper" and does not follow the light/dark theme. -->
-        <SolidColorBrush x:Key="StatBlockPaper" Color="#FDF1DC" />
-        <SolidColorBrush x:Key="StatBlockInk" Color="#1E1A16" />
-        <SolidColorBrush x:Key="StatBlockAccent" Color="#7A200D" />
-        <SolidColorBrush x:Key="StatBlockEdge" Color="#E69A28" />
-
-        <!-- The rule that is thick on the left and tapers to a point on the right. -->
-        <Style x:Key="TaperedRule" TargetType="Polygon">
-            <Setter Property="Points" Value="0,0 1,0.5 0,1" />
-            <Setter Property="Stretch" Value="Fill" />
-            <Setter Property="Height" Value="5" />
-            <Setter Property="Margin" Value="0,8" />
-            <Setter Property="Fill" Value="{StaticResource StatBlockAccent}" />
-        </Style>
+        <!-- The paper colours and the tapered rule are in Styles/AppStyles.xaml, shared with the spell card. -->
 
         <!-- "Armor Class 15": the property name in bold red. -->
         <DataTemplate x:Key="StatLineTemplate">

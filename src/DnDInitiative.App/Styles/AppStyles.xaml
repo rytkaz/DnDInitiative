@@ -26,6 +26,36 @@
         <Setter Property="Padding" Value="12" />
     </Style>
 
+    <!--
+        The "printed page" look shared by the stat block card and the spell card.
+        Fixed colours: the paper does not follow the light/dark theme.
+    -->
+    <SolidColorBrush x:Key="StatBlockPaper" Color="#FDF1DC" />
+    <SolidColorBrush x:Key="StatBlockInk" Color="#1E1A16" />
+    <SolidColorBrush x:Key="StatBlockAccent" Color="#7A200D" />
+    <SolidColorBrush x:Key="StatBlockEdge" Color="#E69A28" />
+
+    <!--  The rule that is thick on the left and tapers to a point on the right.  -->
+    <Style x:Key="TaperedRule" TargetType="Polygon">
+        <Setter Property="Points" Value="0,0 1,0.5 0,1" />
+        <Setter Property="Stretch" Value="Fill" />
+        <Setter Property="Height" Value="5" />
+        <Setter Property="Margin" Value="0,8" />
+        <Setter Property="Fill" Value="{StaticResource StatBlockAccent}" />
+    </Style>
+
+    <!--  A link in a card's text, such as a spell's name. Applied by MarkdownText.  -->
+    <Style x:Key="MarkdownLink" TargetType="Hyperlink">
+        <Setter Property="Foreground" Value="{StaticResource StatBlockAccent}" />
+        <Setter Property="TextDecorations" Value="Underline" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="#B5361A" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!--  One row in a list of stat blocks: name, challenge rating, and a tag on the user's own.  -->
     <DataTemplate x:Key="StatBlockSummaryTemplate">
         <StackPanel Orientation="Horizontal">

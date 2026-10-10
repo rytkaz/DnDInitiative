@@ -31,6 +31,46 @@ public class InlineMarkdownTests
             new TextSegment("both", IsBold: true, IsItalic: true));
     }
 
+    [Fact]
+    public void Parse_Link_IsASegmentWithItsTarget()
+    {
+        AssertSegments(
+            "Casts [Fireball](spell:fireball-xphb) once.",
+            new TextSegment("Casts "),
+            new TextSegment("Fireball", LinkTarget: "spell:fireball-xphb"),
+            new TextSegment(" once."));
+    }
+
+    [Fact]
+    public void Parse_LinksAfterABoldLabel_AreSeparateSegments()
+    {
+        // How a creature's spell list arrives.
+        AssertSegments(
+            "**At will:** [detect magic](spell:detect-magic), [light](spell:light)",
+            new TextSegment("At will:", IsBold: true),
+            new TextSegment(" "),
+            new TextSegment("detect magic", LinkTarget: "spell:detect-magic"),
+            new TextSegment(", "),
+            new TextSegment("light", LinkTarget: "spell:light"));
+    }
+
+    [Fact]
+    public void Parse_LinkInsideEmphasis_KeepsTheEmphasis()
+    {
+        AssertSegments(
+            "*[fireball](spell:fireball)*",
+            new TextSegment("fireball", IsItalic: true, LinkTarget: "spell:fireball"));
+    }
+
+    [Theory]
+    [InlineData("damage [see below]")]
+    [InlineData("an empty link []() is not one")]
+    [InlineData("(parentheses) and [brackets] apart")]
+    public void Parse_BracketsThatAreNotLinks_AreLeftAsText(string text)
+    {
+        AssertSegments(text, new TextSegment(text));
+    }
+
     [Theory]
     [InlineData("2 * 3 * 4")]
     [InlineData("an unmatched *asterisk")]

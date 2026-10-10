@@ -4,7 +4,8 @@ namespace DnDInitiative.Infrastructure.Import;
 
 /// <summary>
 /// Deals with the Markdown links the converter puts in its text. They point at other notes
-/// in an Obsidian vault, which this app does not have.
+/// in an Obsidian vault, which this app does not have. It also removes the HTML tags the
+/// converter uses here and there, which this app would show as they are written.
 /// </summary>
 internal static partial class ConverterLinks
 {
@@ -13,14 +14,25 @@ internal static partial class ConverterLinks
 
     /// <summary>
     /// Rewrites links to spells so they carry the spell's key, as in [fireball](spell:fireball-xphb),
-    /// and reduces every other link to its text. Embedded images are removed.
+    /// and reduces every other link to its text. Embedded images are removed, and so are HTML
+    /// tags: &lt;span title='...'&gt;SRD&lt;/span&gt; becomes SRD.
     /// </summary>
     public static string Simplify(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        // Nearly all text has no link in it; skip the regular expression for those.
-        return text.Contains("](", StringComparison.Ordinal) ? MarkdownLink().Replace(text, Rewrite) : text;
+        // Nearly all text has neither in it; skip the regular expressions for those.
+        if (text.Contains("](", StringComparison.Ordinal))
+        {
+            text = MarkdownLink().Replace(text, Rewrite);
+        }
+
+        if (text.Contains('<', StringComparison.Ordinal))
+        {
+            text = HtmlTag().Replace(text, "");
+        }
+
+        return text;
     }
 
     private static string Rewrite(Match match)
@@ -56,6 +68,11 @@ internal static partial class ConverterLinks
     // [text](target), with an optional "!" in front that makes it an image.
     [GeneratedRegex(@"(?<image>!)?\[(?<text>[^\]]+)\]\((?<target>[^)]*)\)")]
     private static partial Regex MarkdownLink();
+
+    // An opening or closing tag: "<", an optional "/", a name that starts with a letter, then
+    // anything up to ">". The letter keeps "if it is < 5 and > 2" from being taken for a tag.
+    [GeneratedRegex(@"</?[A-Za-z][^<>]*>")]
+    private static partial Regex HtmlTag();
 
     // "spells" must be a whole folder name: at the start of the path or right after a slash.
     [GeneratedRegex(@"(?:^|/)spells/(?<key>[^/]+)\.md$", RegexOptions.IgnoreCase)]

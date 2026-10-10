@@ -8,6 +8,12 @@ namespace DnDInitiative.App.Formatting;
 /// </summary>
 public static class MarkdownText
 {
+    /// <summary>
+    /// The resource key of the style given to links. Set from code because a link inside a
+    /// data template does not pick up an implicit style from the view around it.
+    /// </summary>
+    public const string LinkStyleKey = "MarkdownLink";
+
     public static readonly DependencyProperty TextProperty = DependencyProperty.RegisterAttached(
         "Text",
         typeof(string),
@@ -47,7 +53,19 @@ public static class MarkdownText
                 run.FontStyle = FontStyles.Italic;
             }
 
-            span.Inlines.Add(run);
+            // Only links to spells lead anywhere in this app. Any other link is shown as its text.
+            if (SpellLink.ToUri(segment.LinkTarget) is { } uri)
+            {
+                // Clicking raises Hyperlink.RequestNavigate with this URI. The event travels up
+                // through the page to the main window, which opens the spell.
+                var link = new Hyperlink(run) { NavigateUri = uri };
+                link.SetResourceReference(FrameworkContentElement.StyleProperty, LinkStyleKey);
+                span.Inlines.Add(link);
+            }
+            else
+            {
+                span.Inlines.Add(run);
+            }
         }
     }
 }
