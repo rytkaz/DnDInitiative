@@ -32,12 +32,26 @@
             <TextBlock DockPanel.Dock="Top"
                        Style="{StaticResource PageTitle}"
                        Text="Encounters" />
+            <DockPanel Margin="0,0,0,8" DockPanel.Dock="Top">
+                <TextBlock Margin="0,0,8,0"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           Text="Sort by" />
+                <ComboBox DisplayMemberPath="Label"
+                          ItemsSource="{Binding SortOptions}"
+                          SelectedItem="{Binding SelectedSort}" />
+            </DockPanel>
             <StackPanel Margin="0,8,0,0"
                         DockPanel.Dock="Bottom"
                         Orientation="Horizontal">
                 <Button Padding="12,4"
                         Command="{Binding NewEncounterCommand}"
                         Content="New" />
+                <Button Margin="8,0,0,0"
+                        Padding="12,4"
+                        Command="{Binding CopyCommand}"
+                        Content="Copy"
+                        ToolTip="Make a copy of the selected encounter" />
                 <Button Margin="8,0,0,0"
                         Padding="12,4"
                         Command="{Binding DeleteCommand}"

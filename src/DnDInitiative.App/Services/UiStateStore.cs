@@ -25,6 +25,9 @@ public sealed record UiState
     /// <summary>Whether the encounter builder shows its stat block panel. Null means never changed: shown.</summary>
     public bool? ShowEncounterStatBlockPanel { get; init; }
 
+    /// <summary>Whether the encounter list is sorted by date, newest first, and not by name.</summary>
+    public bool SortEncountersByDate { get; init; }
+
     /// <summary>The main window's size when it is not maximized.</summary>
     public double? WindowWidth { get; init; }
 

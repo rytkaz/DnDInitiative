@@ -29,6 +29,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     private readonly IClipboardService _clipboard;
     private readonly IConfirmationService _confirmation;
     private readonly IUiStateStore _uiState;
+    private readonly TimeProvider _time;
 
     // Increased for every stat block shown, so a slow load cannot overwrite a newer one.
     private int _statBlockDetailsVersion;
@@ -42,6 +43,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [NotifyPropertyChangedFor(nameof(HasSelectedEncounter))]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddCreatureCommand))]
     [NotifyCanExecuteChangedFor(nameof(StartEncounterCommand))]
     [NotifyCanExecuteChangedFor(nameof(CopyLinkCommand))]
@@ -49,6 +51,9 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     [ObservableProperty]
     private Party? _selectedParty;
+
+    [ObservableProperty]
+    private EncounterSortOption _selectedSort;
 
     [ObservableProperty]
     private string _statBlockSearchText = "";
@@ -87,6 +92,12 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
     public ObservableCollection<EncounterEditorViewModel> Encounters { get; } = [];
 
+    public IReadOnlyList<EncounterSortOption> SortOptions { get; } =
+    [
+        new(EncounterSortOrder.Name, "Name"),
+        new(EncounterSortOrder.Modified, "Last modified"),
+    ];
+
     public ObservableCollection<Party> Parties { get; } = [];
 
     public ObservableCollection<StatBlockSummary> FilteredStatBlocks { get; } = [];
@@ -114,7 +125,8 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         IMessenger messenger,
         IClipboardService clipboard,
         IConfirmationService confirmation,
-        IUiStateStore uiState)
+        IUiStateStore uiState,
+        TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(uiState);
 
@@ -125,8 +137,12 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         _clipboard = clipboard;
         _confirmation = confirmation;
         _uiState = uiState;
+        _time = timeProvider;
 
         UiState saved = uiState.Load();
+
+        // To the field, so restoring the choice does not save it again.
+        _selectedSort = SortOptions[saved.SortEncountersByDate ? 1 : 0];
 
         // Through the property, not the field, so a size saved by hand in the file is still clamped.
         if (saved.EncounterStatBlockPanelWidth is { } savedWidth)
@@ -136,6 +152,42 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
         // The opposite here: assigned to the field, so restoring the choice does not save it again.
         _showStatBlockPanel = saved.ShowEncounterStatBlockPanel ?? true;
+    }
+
+    partial void OnSelectedSortChanged(EncounterSortOption value)
+    {
+        _uiState.Save(_uiState.Load() with { SortEncountersByDate = value.Order == EncounterSortOrder.Modified });
+        SortEncounters();
+    }
+
+    /// <summary>
+    /// Puts the list in the chosen order. Called when encounters are loaded, added or saved,
+    /// and not while a name is being typed, so a row does not jump away mid-word.
+    /// </summary>
+    private void SortEncounters()
+    {
+        IEnumerable<EncounterEditorViewModel> ordered = SelectedSort.Order == EncounterSortOrder.Modified
+
+            // Newest first. Encounters from before dates were recorded have none, and go last.
+            ? Encounters
+                .OrderByDescending(encounter => encounter.Modified ?? DateTimeOffset.MinValue)
+                .ThenBy(encounter => encounter.Name, StringComparer.OrdinalIgnoreCase)
+            : Encounters
+                .OrderBy(encounter => encounter.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(encounter => encounter.Id);
+
+        List<EncounterEditorViewModel> target = ordered.ToList();
+
+        // Rows are moved into place one at a time instead of clearing and refilling the list,
+        // because a list box drops its selection when the selected row is removed.
+        for (int index = 0; index < target.Count; index++)
+        {
+            int current = Encounters.IndexOf(target[index]);
+            if (current != index)
+            {
+                Encounters.Move(current, index);
+            }
+        }
     }
 
     partial void OnShowStatBlockPanelChanged(bool value)
@@ -252,6 +304,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
                 Encounters.Add(CreateEditor(encounter));
             }
 
+            SortEncounters();
             SelectedEncounter = Encounters.FirstOrDefault();
         }
 
@@ -261,10 +314,35 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [RelayCommand]
     private void NewEncounter()
     {
-        var editor = new EncounterEditorViewModel(Guid.NewGuid()) { Name = "New encounter" };
+        // Dated now, so that sorted by date a new encounter starts at the top, where it can be seen.
+        var editor = new EncounterEditorViewModel(Guid.NewGuid()) { Name = "New encounter", Modified = _time.GetUtcNow() };
         Encounters.Add(editor);
+        SortEncounters();
         SelectedEncounter = editor;
         StatusMessage = "";
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedEncounter))]
+    private async Task CopyAsync()
+    {
+        if (SelectedEncounter is not { } editor)
+        {
+            return;
+        }
+
+        // A copy of what is on screen, including edits that have not been saved yet.
+        Encounter source = editor.ToEncounter();
+        string sourceName = source.Name.Length > 0 ? source.Name : "Encounter";
+        Encounter copy = source with { Id = Guid.NewGuid(), Name = $"{sourceName} (copy)", Modified = _time.GetUtcNow() };
+
+        // Stored straight away, like a copied stat block, so the copy cannot be lost by forgetting to save it.
+        await _encounterRepository.SaveAsync(copy);
+
+        EncounterEditorViewModel copyEditor = CreateEditor(copy);
+        Encounters.Add(copyEditor);
+        SortEncounters();
+        SelectedEncounter = copyEditor;
+        StatusMessage = $"Copied {sourceName}.";
     }
 
     [RelayCommand(CanExecute = nameof(HasSelectedEncounter))]
@@ -281,8 +359,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
             return;
         }
 
-        await _encounterRepository.SaveAsync(editor.ToEncounter());
-        editor.MarkSaved();
+        await StoreAsync(editor);
         StatusMessage = $"Saved {editor.Name}.";
     }
 
@@ -376,9 +453,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         }
 
         // The link only holds an Id, so the encounter has to be stored for it to work.
-        Encounter encounter = editor.ToEncounter();
-        await _encounterRepository.SaveAsync(encounter);
-        editor.MarkSaved();
+        Encounter encounter = await StoreAsync(editor);
         var link = new EncounterLink(encounter.Id, SelectedParty?.Id);
         string markdown = $"[{encounter.Name}]({link})";
 
@@ -387,9 +462,23 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
             : "Saved, but the clipboard was busy. Try again.";
     }
 
+    // Every save goes through here, so every save is dated and the list is put back in order:
+    // the name may have changed, and the date just did.
+    private async Task<Encounter> StoreAsync(EncounterEditorViewModel editor)
+    {
+        editor.Modified = _time.GetUtcNow();
+        Encounter encounter = editor.ToEncounter();
+
+        await _encounterRepository.SaveAsync(encounter);
+        editor.MarkSaved();
+        SortEncounters();
+
+        return encounter;
+    }
+
     private EncounterEditorViewModel CreateEditor(Encounter encounter)
     {
-        var editor = new EncounterEditorViewModel(encounter.Id) { Name = encounter.Name };
+        var editor = new EncounterEditorViewModel(encounter.Id) { Name = encounter.Name, Modified = encounter.Modified };
         foreach (EncounterCreature creature in encounter.Creatures)
         {
             editor.Creatures.Add(CreateRow(creature));

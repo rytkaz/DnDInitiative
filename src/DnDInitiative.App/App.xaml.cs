@@ -104,6 +104,7 @@ public partial class App : Application
     {
         // Domain services
         services.AddSingleton(Random.Shared);
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IDiceRoller, RandomDiceRoller>();
         services.AddSingleton<InitiativeRoller>();
         services.AddSingleton<CombatantFactory>();

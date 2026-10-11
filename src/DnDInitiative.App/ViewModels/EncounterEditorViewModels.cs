@@ -57,6 +57,15 @@ public sealed partial class EncounterCreatureViewModel : ObservableObject
     }
 }
 
+public enum EncounterSortOrder
+{
+    Name,
+    Modified,
+}
+
+/// <summary>One choice in the encounter list's "Sort by" box.</summary>
+public sealed record EncounterSortOption(EncounterSortOrder Order, string Label);
+
 public sealed partial class EncounterEditorViewModel : ObservableValidator
 {
     private readonly SavedState<Encounter> _savedState;
@@ -81,6 +90,9 @@ public sealed partial class EncounterEditorViewModel : ObservableValidator
 
     public Guid Id { get; }
 
+    /// <summary>When the encounter was last saved, or created if it never was. Not something the user edits.</summary>
+    public DateTimeOffset? Modified { get; set; }
+
     public ObservableCollection<EncounterCreatureViewModel> Creatures { get; } = [];
 
     public bool Validate()
@@ -91,6 +103,6 @@ public sealed partial class EncounterEditorViewModel : ObservableValidator
 
     public Encounter ToEncounter()
     {
-        return new Encounter(Id, Name.Trim(), Creatures.Select(creature => creature.ToCreature()).ToList());
+        return new Encounter(Id, Name.Trim(), Creatures.Select(creature => creature.ToCreature()).ToList(), Modified);
     }
 }

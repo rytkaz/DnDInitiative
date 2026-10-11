@@ -8,7 +8,16 @@ namespace DnDInitiative.Core.Encounters;
 /// </summary>
 public sealed record EncounterCreature(Guid StatBlockId, int Quantity = 1, string? CustomName = null);
 
-public sealed record Encounter(Guid Id, string Name, IReadOnlyList<EncounterCreature> Creatures)
+/// <param name="Modified">
+/// When the encounter was last saved. Kept in the encounter's own file, not taken from the
+/// file's date, so it survives a git checkout or a copy to another computer. Null for
+/// encounters saved before this was recorded.
+/// </param>
+public sealed record Encounter(
+    Guid Id,
+    string Name,
+    IReadOnlyList<EncounterCreature> Creatures,
+    DateTimeOffset? Modified = null)
 {
     /// <summary>
     /// Expands the encounter into one blueprint per creature. Lines whose stat block is missing are skipped.

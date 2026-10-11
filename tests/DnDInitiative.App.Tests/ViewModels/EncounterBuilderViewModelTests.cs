@@ -12,6 +12,11 @@ namespace DnDInitiative.App.Tests.ViewModels;
 
 public class EncounterBuilderViewModelTests
 {
+    private static readonly DateTimeOffset Monday = new(2026, 10, 5, 9, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Tuesday = Monday.AddDays(1);
+    private static readonly DateTimeOffset Wednesday = Monday.AddDays(2);
+
+    private readonly FixedTimeProvider _clock = new() { Now = Wednesday };
     private readonly StatBlock _goblin = new() { Id = Guid.NewGuid(), Name = "Goblin", ChallengeRating = "1/4" };
 
     // Four level 1 characters: budgets of 200 / 300 / 400 XP.
@@ -177,7 +182,8 @@ public class EncounterBuilderViewModelTests
             new WeakReferenceMessenger(),
             new FakeClipboard(),
             new FakeConfirmation(),
-            new InMemoryUiStateStore());
+            new InMemoryUiStateStore(),
+            _clock);
         await viewModel.LoadCommand.ExecuteAsync(null);
         Assert.Equal(100, viewModel.FilteredStatBlocks.Count);
 
@@ -226,6 +232,134 @@ public class EncounterBuilderViewModelTests
 
         await viewModel.SaveCommand.ExecuteAsync(null);
         Assert.Empty(viewModel.UnsavedChanges);
+    }
+
+    [Fact]
+    public async Task LoadCommand_ListsEncountersByNameUnlessToldOtherwise()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(ThreeEncounters());
+
+        Assert.Equal(["Ambush", "bridge", "Crypt"], Names(viewModel));
+        Assert.Equal(EncounterSortOrder.Name, viewModel.SelectedSort.Order);
+    }
+
+    [Fact]
+    public async Task SelectedSort_LastModified_PutsTheNewestFirstAndUndatedOnesLast()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(ThreeEncounters());
+
+        viewModel.SelectedSort = viewModel.SortOptions.Single(option => option.Order == EncounterSortOrder.Modified);
+
+        // Crypt was saved on Tuesday, Ambush on Monday, and bridge has no date.
+        Assert.Equal(["Crypt", "Ambush", "bridge"], Names(viewModel));
+    }
+
+    [Fact]
+    public async Task SelectedSort_Changed_KeepsTheSelectedEncounterSelected()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(ThreeEncounters());
+        EncounterEditorViewModel ambush = SelectedEditor(viewModel);
+
+        viewModel.SelectedSort = viewModel.SortOptions[1];
+
+        Assert.Same(ambush, viewModel.SelectedEncounter);
+    }
+
+    [Fact]
+    public async Task SelectedSort_IsRememberedForNextTime()
+    {
+        var uiState = new InMemoryUiStateStore();
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(ThreeEncounters(), uiState: uiState);
+
+        viewModel.SelectedSort = viewModel.SortOptions[1];
+        Assert.True(uiState.State.SortEncountersByDate);
+
+        EncounterBuilderViewModel reopened = await CreateLoadedViewModelAsync(ThreeEncounters(), uiState: uiState);
+        Assert.Equal(EncounterSortOrder.Modified, reopened.SelectedSort.Order);
+        Assert.Equal(["Crypt", "Ambush", "bridge"], Names(reopened));
+    }
+
+    [Fact]
+    public async Task SaveCommand_DatesTheEncounterAndMovesItToItsNewPlace()
+    {
+        InMemoryEncounterRepository encounters = ThreeEncounters();
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
+        viewModel.SelectedSort = viewModel.SortOptions[1];
+        viewModel.SelectedEncounter = viewModel.Encounters.Single(encounter => encounter.Name == "bridge");
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal(Wednesday, encounters.Encounters.Single(encounter => encounter.Name == "bridge").Modified);
+        Assert.Equal(["bridge", "Crypt", "Ambush"], Names(viewModel));
+        Assert.Empty(viewModel.UnsavedChanges);
+    }
+
+    [Fact]
+    public async Task SaveCommand_RenamedEncounter_MovesToItsAlphabeticalPlace()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(ThreeEncounters());
+        SelectedEditor(viewModel).Name = "Zombie ambush";
+
+        // Not while typing, only once it is saved.
+        Assert.Equal(["Zombie ambush", "bridge", "Crypt"], Names(viewModel));
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal(["bridge", "Crypt", "Zombie ambush"], Names(viewModel));
+    }
+
+    [Fact]
+    public async Task NewEncounterCommand_SortedByDate_StartsAtTheTop()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(ThreeEncounters());
+        viewModel.SelectedSort = viewModel.SortOptions[1];
+
+        viewModel.NewEncounterCommand.Execute(null);
+
+        Assert.Equal("New encounter", viewModel.Encounters[0].Name);
+        Assert.Same(viewModel.Encounters[0], viewModel.SelectedEncounter);
+    }
+
+    [Fact]
+    public async Task CopyCommand_StoresACopyWithItsOwnIdAndSelectsIt()
+    {
+        var original = new Encounter(Guid.NewGuid(), "Ambush", [new EncounterCreature(_goblin.Id, 3, "Sneak")], Monday);
+        var encounters = new InMemoryEncounterRepository(original);
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
+
+        await viewModel.CopyCommand.ExecuteAsync(null);
+
+        Encounter copy = encounters.Encounters.Single(encounter => encounter.Id != original.Id);
+        Assert.Equal("Ambush (copy)", copy.Name);
+        Assert.Equal(new EncounterCreature(_goblin.Id, 3, "Sneak"), Assert.Single(copy.Creatures));
+        Assert.Equal(Wednesday, copy.Modified);
+
+        Assert.Equal(["Ambush", "Ambush (copy)"], Names(viewModel));
+        Assert.Equal(copy.Id, SelectedEditor(viewModel).Id);
+        Assert.Empty(viewModel.UnsavedChanges);
+    }
+
+    [Fact]
+    public async Task CopyCommand_CopiesUnsavedEditsAndLeavesTheOriginalAsItWas()
+    {
+        var original = new Encounter(Guid.NewGuid(), "Ambush", [new EncounterCreature(_goblin.Id, 1)], Monday);
+        var encounters = new InMemoryEncounterRepository(original);
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(encounters);
+        Assert.Single(SelectedEditor(viewModel).Creatures).Quantity = 5;
+
+        await viewModel.CopyCommand.ExecuteAsync(null);
+
+        Encounter copy = encounters.Encounters.Single(encounter => encounter.Id != original.Id);
+        Assert.Equal(5, Assert.Single(copy.Creatures).Quantity);
+        Assert.Equal(1, Assert.Single(encounters.Encounters.Single(encounter => encounter.Id == original.Id).Creatures).Quantity);
+    }
+
+    [Fact]
+    public async Task CopyCommand_NothingSelected_IsNotAvailable()
+    {
+        EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync();
+
+        Assert.False(viewModel.CopyCommand.CanExecute(null));
     }
 
     [Fact]
@@ -319,9 +453,23 @@ public class EncounterBuilderViewModelTests
             messenger ?? new WeakReferenceMessenger(),
             clipboard ?? new FakeClipboard(),
             confirmation ?? new FakeConfirmation(),
-            uiState ?? new InMemoryUiStateStore());
+            uiState ?? new InMemoryUiStateStore(),
+            _clock);
         await viewModel.LoadCommand.ExecuteAsync(null);
         return viewModel;
+    }
+
+    private static InMemoryEncounterRepository ThreeEncounters()
+    {
+        return new InMemoryEncounterRepository(
+            new Encounter(Guid.NewGuid(), "Crypt", [], Tuesday),
+            new Encounter(Guid.NewGuid(), "Ambush", [], Monday),
+            new Encounter(Guid.NewGuid(), "bridge", []));
+    }
+
+    private static string[] Names(EncounterBuilderViewModel viewModel)
+    {
+        return viewModel.Encounters.Select(encounter => encounter.Name).ToArray();
     }
 
     private static EncounterEditorViewModel SelectedEditor(EncounterBuilderViewModel viewModel)

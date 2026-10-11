@@ -42,7 +42,8 @@ public class MainViewModelTests
             _messenger,
             new FakeClipboard(),
             _confirmation,
-            new InMemoryUiStateStore());
+            new InMemoryUiStateStore(),
+            new FixedTimeProvider());
         _partySetup = new PartySetupViewModel(_parties, _confirmation);
         var import = new ImportViewModel(
             new InMemoryConversionSettingsStore(),
