@@ -28,7 +28,22 @@ public sealed partial class CombatantViewModel : ObservableObject
 
     public Combatant Combatant { get; }
 
-    public string Name => Combatant.Name;
+    public string Name
+    {
+        get => Combatant.Name;
+        set
+        {
+            // A combatant must have a name. Clearing the box is taken as a change of mind.
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                Combatant.Rename(value);
+            }
+
+            // Raised even when nothing changed, so the text box goes back to showing the
+            // real name: the old one after a refused edit, or the new one without stray spaces.
+            OnPropertyChanged();
+        }
+    }
 
     public int Initiative
     {

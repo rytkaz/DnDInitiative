@@ -31,7 +31,7 @@ public sealed class Combatant
 
     public Guid Id { get; } = Guid.NewGuid();
 
-    public string Name { get; }
+    public string Name { get; private set; }
 
     public int Initiative { get; set; }
 
@@ -49,6 +49,15 @@ public sealed class Combatant
 
     public bool TracksHp => MaxHp is not null;
 
+    /// <summary>
+    /// Gives the combatant another name for the rest of the combat, such as "Goblin 2" becoming
+    /// "Goblin (burning)". Like every other edit here, it does not touch the stat block.
+    /// </summary>
+    public void Rename(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name.Trim();
+    }
 
     public void TakeDamage(int amount)
     {

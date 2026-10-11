@@ -315,9 +315,14 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Width="*"
-                                    Binding="{Binding Name, Mode=OneWay}"
-                                    Header="Name" />
+                <!--  Editable like the initiative: type a new name, then press Enter or click away  -->
+                <DataGridTemplateColumn Width="*" Header="Name">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Name}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
                 <DataGridTemplateColumn Width="110" Header="HP">
                     <DataGridTemplateColumn.CellTemplate>
