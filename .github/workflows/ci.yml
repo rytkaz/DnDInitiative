@@ -46,7 +46,7 @@ jobs:
       # Runs even when tests failed. That is exactly when you want the results.
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: TestResults
