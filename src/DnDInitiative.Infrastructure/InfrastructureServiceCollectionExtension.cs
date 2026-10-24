@@ -1,12 +1,14 @@
 ﻿using DnDInitiative.Core.Campaigns;
 using DnDInitiative.Core.Conditions;
 using DnDInitiative.Core.Encounters;
+using DnDInitiative.Core.Homebrewery;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Campaigns;
 using DnDInitiative.Infrastructure.Conditions;
 using DnDInitiative.Infrastructure.Encounters;
+using DnDInitiative.Infrastructure.Homebrewery;
 using DnDInitiative.Infrastructure.Import;
 using DnDInitiative.Infrastructure.Parties;
 using DnDInitiative.Infrastructure.Persistence;
@@ -81,6 +83,8 @@ public static class InfrastructureServiceCollectionExtensions
             return http;
         });
         services.AddSingleton<IConverterInstaller, GitHubConverterInstaller>();
+        services.AddSingleton<IHomebreweryImporter, HomebreweryImporter>();
+        services.AddSingleton<IHomebrewerySettingsStore, JsonHomebrewerySettingsStore>();
 
         // Start-up
         services.AddSingleton<LegacyDatabaseMover>();

@@ -91,6 +91,14 @@ Content comes from the user's own 5eTools data, converted by [ttrpg-convert-cli]
    - HTML tags and images are removed
 6. In the app, `InlineMarkdown`, `MarkdownBlocks` and `MarkdownText` turn that text into WPF inlines. Links resolve through `ReferenceLink` and `WebLink`, and `MainWindow` opens the reference popup or the browser.
 
+The Homebrewery import (`Infrastructure/Homebrewery/`) is a second, separate pipeline:
+
+1. `PdfLinkReader` reads the links out of a PDF with PdfPig; `HomebreweryLinks` keeps the Homebrewery ones.
+2. `HomebreweryImporter` downloads each document's Markdown source from `/download/{shareId}`, a few at a time.
+3. A document titled "... Conditions" goes to `HomebreweryConditionParser`. Conditions whose stored source is the PHB or SRD (`ConditionSources.IsCoreRules`) are not replaced.
+4. Every document goes to `HomebreweryStatBlockParser`, which knows the legacy block-quote layout and the V3 `{{monster}}` layouts. `ConditionLinkRewriter` turns links into the conditions document into `condition:` links, and links condition names written without one (standard conditions in any case, homebrew ones only when capitalised). Creature names get the source appended, "Goblin (Source)", as the converter does for books other than the Monster Manual.
+5. `ImportedStatBlocks` saves the stat blocks, with the same rules as the 5eTools import.
+
 When converter behaviour matters, check its source (`Tools5eLinkifier`, `QuteMonster`, `Json2QuteCompose`) rather than guessing. Note which assumptions you couldn't verify against real output.
 
 ## Code conventions

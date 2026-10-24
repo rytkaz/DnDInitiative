@@ -98,6 +98,16 @@ Importing again updates what is already in the library instead of duplicating it
 
 Spells are imported from every book in the data, whichever books are ticked, because creatures cast spells from books other than their own.
 
+### From the Homebrewery
+
+The **Homebrewery Import** page brings in creatures and conditions written on [the Homebrewery](https://homebrewery.naturalcrit.com):
+
+1. **Choose a PDF** whose links point at Homebrewery documents, such as a monthly creature catalog, and/or **add links** to single documents by hand.
+2. **Name the source.** Every creature is filed under it, and it is part of how encounters find a creature again, so use the same name each time you import the same collection.
+3. Choose **Download and import**.
+
+The app downloads each linked document's source and reads the monster stat blocks in it, in both the legacy and the V3 layouts. A linked document titled "... Conditions" is read as a list of conditions; links to it from the stat blocks open those conditions in the app. Conditions the library already has from the Player's Handbook or the SRD are left as they are.
+
 ### The converter
 
 The first conversion downloads the latest Windows release of ttrpg-convert-cli from its GitHub releases page, checks the download against the checksum published with it, and runs it on your computer. It is a separate open-source project, not part of this app. **Download latest converter** replaces the copy with the newest release.
@@ -118,6 +128,7 @@ Your campaigns are wherever you put them. Everything else is under `%AppData%\Dn
 | `app-state.json` | Which campaign was open last |
 | `ui-state.json` | Window size and panel layout |
 | `conversion-settings.json` | The choices made on the import page |
+| `homebrewery-settings.json` | The choices made on the Homebrewery import page |
 | `converter\` | The downloaded converter and the configuration written for it |
 | `source-data\` | Data unpacked from a zip file |
 | `logs\` | One log file per day, kept for 14 days |

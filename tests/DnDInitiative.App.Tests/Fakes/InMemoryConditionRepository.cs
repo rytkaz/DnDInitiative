@@ -19,6 +19,11 @@ internal sealed class InMemoryConditionRepository : IConditionRepository
         return Task.FromResult(_conditions.GetValueOrDefault(name.Trim()));
     }
 
+    public Task<IReadOnlyList<string>> GetNamesAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<string>>(_conditions.Keys.ToList());
+    }
+
     public Task SaveManyAsync(IReadOnlyCollection<Condition> conditions, CancellationToken cancellationToken = default)
     {
         foreach (Condition condition in conditions)

@@ -58,12 +58,18 @@ public class MainViewModelTests
             new InMemoryUiStateStore(),
             new FakeSpellImporter(),
             new FakeConditionImporter());
+        var homebreweryImport = new HomebreweryImportViewModel(
+            new FakeHomebreweryImporter(),
+            new InMemoryHomebrewerySettingsStore(),
+            new FakeFilePicker(),
+            _messenger);
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, _confirmation, _messenger),
             _encounterBuilder,
             _partySetup,
             import,
+            homebreweryImport,
             _messenger,
             _confirmation,
             _campaigns,
@@ -294,6 +300,7 @@ public class MainViewModelTests
             _encounterBuilder,
             _partySetup,
             (ImportViewModel)_viewModel.Pages[4],
+            (HomebreweryImportViewModel)_viewModel.Pages[5],
             messenger,
             _confirmation,
             _campaigns,
@@ -307,7 +314,7 @@ public class MainViewModelTests
     [Fact]
     public void Pages_HaveShortNamesForTheFoldedAwayPanel()
     {
-        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party", "Import"];
+        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party", "Import", "Homebrew"];
 
         Assert.Equal(expected, _viewModel.Pages.Select(page => page.ShortTitle).ToArray());
     }

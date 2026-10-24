@@ -37,6 +37,17 @@ internal sealed class SqliteConditionRepository : IConditionRepository
             : new Condition { Name = entity.Name, Source = entity.Source, Description = entity.Description };
     }
 
+    public async Task<IReadOnlyList<string>> GetNamesAsync(CancellationToken cancellationToken = default)
+    {
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        return await db.Conditions
+            .AsNoTracking()
+            .Select(condition => condition.Name)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task SaveManyAsync(IReadOnlyCollection<Condition> conditions, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(conditions);

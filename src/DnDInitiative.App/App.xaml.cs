@@ -132,6 +132,7 @@ public partial class App : Application
         services.AddSingleton<EncounterBuilderViewModel>();
         services.AddSingleton<PartySetupViewModel>();
         services.AddSingleton<ImportViewModel>();
+        services.AddSingleton<HomebreweryImportViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<ReferenceViewerViewModel>();
 

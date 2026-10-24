@@ -125,6 +125,9 @@
                 <DataTemplate DataType="{x:Type viewModels:ImportViewModel}">
                     <views:ImportView />
                 </DataTemplate>
+                <DataTemplate DataType="{x:Type viewModels:HomebreweryImportViewModel}">
+                    <views:HomebreweryImportView />
+                </DataTemplate>
             </ContentControl.Resources>
         </ContentControl>
 

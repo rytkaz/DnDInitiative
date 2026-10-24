@@ -1,0 +1,102 @@
+﻿<UserControl x:Class="DnDInitiative.App.Views.HomebreweryImportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewModels:HomebreweryImportViewModel}"
+             d:DesignHeight="600"
+             d:DesignWidth="900"
+             Loaded="OnLoaded"
+             mc:Ignorable="d">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top"
+                   Style="{StaticResource PageTitle}"
+                   Text="{Binding Title}" />
+        <TextBlock Margin="0,0,0,12"
+                   DockPanel.Dock="Top"
+                   Text="Downloads Homebrewery documents and adds the stat blocks and conditions in them to the library. Conditions the library already has from the Player's Handbook or the SRD are kept as they are."
+                   TextWrapping="Wrap" />
+
+        <!--  The inputs. Disabled as a group while a run is in progress.  -->
+        <Grid DockPanel.Dock="Top" IsEnabled="{Binding IsIdle}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       VerticalAlignment="Center"
+                       Text="PDF with links" />
+            <TextBox Grid.Row="0"
+                     Grid.Column="1"
+                     Margin="12,4"
+                     Text="{Binding PdfPath, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Row="0"
+                    Grid.Column="2"
+                    Margin="0,4"
+                    Padding="12,4"
+                    Command="{Binding BrowsePdfCommand}"
+                    Content="Browse..." />
+
+            <TextBlock Grid.Row="1"
+                       Margin="0,8,0,0"
+                       VerticalAlignment="Top"
+                       Text="More links (optional)" />
+            <TextBox Grid.Row="1"
+                     Grid.Column="1"
+                     Height="72"
+                     Margin="12,4"
+                     AcceptsReturn="True"
+                     Text="{Binding Links, UpdateSourceTrigger=PropertyChanged}"
+                     TextWrapping="NoWrap"
+                     ToolTip="Homebrewery share links, one per line"
+                     VerticalScrollBarVisibility="Auto" />
+
+            <TextBlock Grid.Row="2"
+                       VerticalAlignment="Center"
+                       Text="Source name" />
+            <TextBox Grid.Row="2"
+                     Grid.Column="1"
+                     Margin="12,4"
+                     Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <TextBlock Margin="0,4,0,0"
+                   DockPanel.Dock="Top"
+                   Style="{StaticResource SecondaryText}"
+                   Text="Every Homebrewery link in the PDF is followed, and so is every link added above. The source name is stored with each creature and is part of how encounters find it again, so use the same name every time you import the same collection."
+                   TextWrapping="Wrap" />
+
+        <StackPanel Margin="0,12,0,0"
+                    DockPanel.Dock="Top"
+                    Orientation="Horizontal">
+            <Button Padding="12,4"
+                    Command="{Binding RunCommand}"
+                    Content="Download and import" />
+            <Button Margin="8,0,0,0"
+                    Padding="12,4"
+                    Command="{Binding RunCancelCommand}"
+                    Content="Cancel" />
+        </StackPanel>
+
+        <TextBlock Margin="0,12,0,8"
+                   DockPanel.Dock="Top"
+                   Text="{Binding StatusMessage}"
+                   TextWrapping="Wrap" />
+
+        <!--  What the import reported along the way. Fills whatever space is left.  -->
+        <TextBox FontFamily="Consolas"
+                 HorizontalScrollBarVisibility="Auto"
+                 IsReadOnly="True"
+                 Text="{Binding Log, Mode=OneWay}"
+                 TextChanged="OnLogTextChanged"
+                 VerticalScrollBarVisibility="Auto" />
+    </DockPanel>
+</UserControl>

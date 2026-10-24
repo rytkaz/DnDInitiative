@@ -38,6 +38,6 @@ public sealed class ConditionDetailsViewModel : IReferenceCard
         return new ConditionDetailsViewModel(
             name,
             "Condition not found",
-            "This condition is not in the library. Conditions are brought in by Convert and import on the 5eTools Import page.");
+            "This condition is not in the library. Conditions are brought in by the 5eTools Import and Homebrewery Import pages.");
     }
 }

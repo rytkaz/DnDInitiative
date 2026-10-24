@@ -43,6 +43,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         EncounterBuilderViewModel encounterBuilder,
         PartySetupViewModel partySetup,
         ImportViewModel import,
+        HomebreweryImportViewModel homebreweryImport,
         IMessenger messenger,
         IConfirmationService confirmation,
         ICampaignService campaigns,
@@ -61,7 +62,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
 
         // Assigned to the field, not the property, so restoring the state does not save it again.
         _isNavigationCollapsed = uiState.Load().IsNavigationCollapsed;
-        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import];
+        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import, homebreweryImport];
         _currentPage = initiativeTracker;
 
         // Storage opens a campaign during start-up, before any window exists.
