@@ -116,6 +116,15 @@ Spells are imported from every book in the data, whichever books are ticked, bec
 
 The app downloads each linked document's source and reads the monster stat blocks in it, in both the legacy and the V3 layouts. A linked document titled "... Conditions" is read as a list of conditions; links to it from the stat blocks open those conditions in the app. Conditions the library already has from the Player's Handbook or the SRD are left as they are.
 
+### Martial exploits from GM Binder
+
+**Import → Martial Exploits (GM Binder)...** brings in the martial exploits of laserllama's Alternate Fighter from [GM Binder](https://www.gmbinder.com). The links to the base document and to Alternate Fighter: Expanded are filled in already; add others, one per line, if you have them.
+
+1. **Check the class.** Every exploit is filed under it, Fighter by default, because the documents do not say.
+2. Choose **Download and import**.
+
+The app reads each document's page and keeps every exploit under a "1st-Degree Exploits" to "5th-Degree Exploits" heading, with its degree and its prerequisites. The document's title becomes the source, so an exploit that both documents have is kept once for each. Importing again updates the exploits instead of duplicating them.
+
 ### The converter
 
 The first conversion downloads the latest Windows release of ttrpg-convert-cli from its GitHub releases page, checks the download against the checksum published with it, and runs it on your computer. It is a separate open-source project, not part of this app. **Download latest converter** replaces the copy with the newest release.
@@ -132,7 +141,7 @@ Your campaigns are wherever you put them. Everything else is under `%AppData%\Dn
 
 | Path | Contents |
 |---|---|
-| `dndinitiative.db` | Imported stat blocks and spells (SQLite) |
+| `dndinitiative.db` | Imported stat blocks, spells, conditions and martial exploits (SQLite) |
 | `app-state.json` | Which campaign was open last |
 | `ui-state.json` | Window size and panel layout |
 | `conversion-settings.json` | The choices made in the 5eTools import window |

@@ -10,6 +10,7 @@ public sealed class WindowService : IWindowService
 {
     private readonly ImportViewModel _fiveEToolsImport;
     private readonly HomebreweryImportViewModel _homebreweryImport;
+    private readonly MartialExploitImportViewModel _martialExploitImport;
     private readonly IConfirmationService _confirmation;
     private readonly IUiStateStore _uiState;
 
@@ -22,11 +23,13 @@ public sealed class WindowService : IWindowService
     public WindowService(
         ImportViewModel fiveEToolsImport,
         HomebreweryImportViewModel homebreweryImport,
+        MartialExploitImportViewModel martialExploitImport,
         IConfirmationService confirmation,
         IUiStateStore uiState)
     {
         _fiveEToolsImport = fiveEToolsImport;
         _homebreweryImport = homebreweryImport;
+        _martialExploitImport = martialExploitImport;
         _confirmation = confirmation;
         _uiState = uiState;
     }
@@ -101,6 +104,7 @@ public sealed class WindowService : IWindowService
         {
             ImportKind.FiveETools => _fiveEToolsImport,
             ImportKind.Homebrewery => _homebreweryImport,
+            ImportKind.MartialExploits => _martialExploitImport,
             _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "There is no window for this import."),
         };
     }

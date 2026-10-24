@@ -29,6 +29,37 @@ internal sealed class InMemorySpellRepository : ISpellRepository
             ?? _spells.Values.FirstOrDefault(spell => string.Equals(spell.Name, key, StringComparison.OrdinalIgnoreCase));
     }
 
+    public Task<IReadOnlyList<SpellSummary>> SearchAsync(
+        SpellQuery query,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<SpellSummary> matches = _spells.Values
+            .Where(spell => spell.Name.Contains(query.Text.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Where(spell => query.Class is null || spell.Classes.Contains(query.Class))
+            .Where(spell => query.Level is null || spell.LevelNumber == query.Level)
+            .Where(spell => query.IsRitual is null || spell.IsRitual == query.IsRitual)
+            .Where(spell => query.IsConcentration is null || spell.IsConcentration == query.IsConcentration)
+            .Where(spell => query.Source is null || spell.Source == query.Source)
+            .OrderBy(spell => spell.LevelNumber)
+            .ThenBy(spell => spell.Name, StringComparer.OrdinalIgnoreCase)
+            .Skip(skip)
+            .Take(take)
+            .Select(spell => new SpellSummary(
+                spell.Key,
+                spell.Name,
+                spell.LevelNumber,
+                spell.School,
+                spell.IsRitual,
+                spell.IsConcentration,
+                spell.Classes,
+                spell.Source))
+            .ToList();
+
+        return Task.FromResult(matches);
+    }
+
     public Task<SpellSaveResult> SaveManyAsync(IReadOnlyCollection<Spell> spells, CancellationToken cancellationToken = default)
     {
         foreach (Spell spell in spells)

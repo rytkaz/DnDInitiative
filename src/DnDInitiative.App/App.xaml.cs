@@ -135,6 +135,7 @@ public partial class App : Application
         services.AddSingleton<PartySetupViewModel>();
         services.AddSingleton<ImportViewModel>();
         services.AddSingleton<HomebreweryImportViewModel>();
+        services.AddSingleton<MartialExploitImportViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<ReferenceViewerViewModel>();
 

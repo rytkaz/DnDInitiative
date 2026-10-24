@@ -52,6 +52,10 @@
                           CommandParameter="{x:Static services:ImportKind.Homebrewery}"
                           Header="_Homebrewery..."
                           ToolTip="Download Homebrewery documents and add their stat blocks and conditions to the library" />
+                <MenuItem Command="{Binding ShowImportCommand}"
+                          CommandParameter="{x:Static services:ImportKind.MartialExploits}"
+                          Header="_Martial Exploits (GM Binder)..."
+                          ToolTip="Download GM Binder documents, such as the Alternate Fighter, and add their martial exploits to the library" />
             </MenuItem>
         </Menu>
 

@@ -83,7 +83,14 @@ public class SpellNoteParserTests
         string unix = DetectMagicNote.Replace("\r\n", "\n", StringComparison.Ordinal);
         string windows = unix.Replace("\n", "\r\n", StringComparison.Ordinal);
 
-        Assert.Equal(SpellNoteParser.Parse(unix, "detect-magic"), SpellNoteParser.Parse(windows, "detect-magic"));
+        Spell? fromUnix = SpellNoteParser.Parse(unix, "detect-magic");
+        Spell? fromWindows = SpellNoteParser.Parse(windows, "detect-magic");
+        Assert.NotNull(fromUnix);
+        Assert.NotNull(fromWindows);
+
+        // Records compare lists by reference, so the classes are compared on their own.
+        Assert.Equal(fromUnix.Classes.ToArray(), fromWindows.Classes.ToArray());
+        Assert.Equal(fromUnix, fromWindows with { Classes = fromUnix.Classes });
     }
 
     [Theory]

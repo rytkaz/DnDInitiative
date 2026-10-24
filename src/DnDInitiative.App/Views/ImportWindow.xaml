@@ -18,6 +18,9 @@
             <DataTemplate DataType="{x:Type viewModels:HomebreweryImportViewModel}">
                 <views:HomebreweryImportView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type viewModels:MartialExploitImportViewModel}">
+                <views:MartialExploitImportView />
+            </DataTemplate>
         </ContentControl.Resources>
     </ContentControl>
 </Window>

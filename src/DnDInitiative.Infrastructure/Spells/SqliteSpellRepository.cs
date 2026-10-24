@@ -46,6 +46,72 @@ internal sealed class SqliteSpellRepository : ISpellRepository
         return entity is null ? null : ToDomain(entity);
     }
 
+    public async Task<IReadOnlyList<SpellSummary>> SearchAsync(
+        SpellQuery query,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfNegative(skip);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(take);
+
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        IQueryable<SpellEntity> spells = db.Spells.AsNoTracking();
+
+        string text = query.Text.Trim();
+        if (text.Length > 0)
+        {
+            string pattern = LikePattern.Containing(text);
+            spells = spells.Where(spell => EF.Functions.Like(spell.Name, pattern, LikePattern.Escape));
+        }
+
+        if (query.Class is { } className)
+        {
+            spells = spells.Where(spell => spell.Classes.Contains(className));
+        }
+
+        if (query.Level is { } level)
+        {
+            spells = spells.Where(spell => spell.LevelNumber == level);
+        }
+
+        if (query.IsRitual is { } isRitual)
+        {
+            spells = spells.Where(spell => spell.IsRitual == isRitual);
+        }
+
+        if (query.IsConcentration is { } isConcentration)
+        {
+            spells = spells.Where(spell => spell.IsConcentration == isConcentration);
+        }
+
+        if (query.Source is { } source)
+        {
+            spells = spells.Where(spell => spell.Source == source);
+        }
+
+        // The key last, so two spells of the same name from different books keep their order between pages.
+        return await spells
+            .OrderBy(spell => spell.LevelNumber)
+            .ThenBy(spell => spell.Name)
+            .ThenBy(spell => spell.Key)
+            .Skip(skip)
+            .Take(take)
+            .Select(spell => new SpellSummary(
+                spell.Key,
+                spell.Name,
+                spell.LevelNumber,
+                spell.School,
+                spell.IsRitual,
+                spell.IsConcentration,
+                spell.Classes,
+                spell.Source))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<SpellSaveResult> SaveManyAsync(IReadOnlyCollection<Spell> spells, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(spells);
@@ -100,12 +166,15 @@ internal sealed class SqliteSpellRepository : ISpellRepository
             Key = NormalizeKey(spell.Key),
             Name = spell.Name,
             Level = spell.Level,
+            LevelNumber = spell.LevelNumber,
             School = spell.School,
             IsRitual = spell.IsRitual,
             CastingTime = spell.CastingTime,
             Range = spell.Range,
             Components = spell.Components,
             Duration = spell.Duration,
+            IsConcentration = spell.IsConcentration,
+            Classes = [.. spell.Classes],
             Source = spell.Source,
             Description = spell.Description,
         };
@@ -118,12 +187,15 @@ internal sealed class SqliteSpellRepository : ISpellRepository
             Key = entity.Key,
             Name = entity.Name,
             Level = entity.Level,
+            LevelNumber = entity.LevelNumber,
             School = entity.School,
             IsRitual = entity.IsRitual,
             CastingTime = entity.CastingTime,
             Range = entity.Range,
             Components = entity.Components,
             Duration = entity.Duration,
+            IsConcentration = entity.IsConcentration,
+            Classes = entity.Classes,
             Source = entity.Source,
             Description = entity.Description,
         };

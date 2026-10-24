@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 
 using DnDInitiative.Core.Spells;
 
@@ -16,7 +17,7 @@ internal static partial class SpellNoteParser
 
     /// <summary>The fields the template writes, in order. The parser reads them back by these names.</summary>
     public static readonly IReadOnlyList<string> FieldNames =
-        ["name", "level", "school", "ritual", "time", "range", "components", "duration", "source"];
+        ["name", "level", "school", "ritual", "time", "range", "components", "duration", "classes", "source"];
 
     /// <param name="markdown">The whole note.</param>
     /// <param name="key">The note's file name without its extension, which is what links to the spell contain.</param>
@@ -40,17 +41,23 @@ internal static partial class SpellNoteParser
             return null;
         }
 
+        string level = fields.GetValueOrDefault("level", "");
+        string duration = fields.GetValueOrDefault("duration", "");
+
         return new Spell
         {
             Key = key,
             Name = name,
-            Level = fields.GetValueOrDefault("level", ""),
+            Level = level,
+            LevelNumber = ReadLevelNumber(level),
             School = fields.GetValueOrDefault("school", ""),
             IsRitual = string.Equals(fields.GetValueOrDefault("ritual"), "true", StringComparison.OrdinalIgnoreCase),
             CastingTime = fields.GetValueOrDefault("time", ""),
             Range = fields.GetValueOrDefault("range", ""),
             Components = fields.GetValueOrDefault("components", ""),
-            Duration = fields.GetValueOrDefault("duration", ""),
+            Duration = duration,
+            IsConcentration = duration.StartsWith("Concentration", StringComparison.OrdinalIgnoreCase),
+            Classes = ReadClasses(fields.GetValueOrDefault("classes", "")),
             Source = fields.GetValueOrDefault("source", ""),
             Description = CleanText(match.Groups["text"].Value),
         };
@@ -77,6 +84,29 @@ internal static partial class SpellNoteParser
         return fields;
     }
 
+    /// <summary>"3rd-level" gives 3. A cantrip, or a level written some other way, gives 0.</summary>
+    private static int ReadLevelNumber(string level)
+    {
+        Match match = LeadingNumber().Match(level);
+        return match.Success ? int.Parse(match.Value, CultureInfo.InvariantCulture) : 0;
+    }
+
+    /// <summary>
+    /// The converter writes a link to each spell list that has the spell, separated by
+    /// semicolons; with the links reduced to their text that is "Sorcerer; Wizard; Cleric (Light Domain)".
+    /// Only the classes' own lists are kept. A subclass's list ("Cleric (Light Domain)") is left out,
+    /// because filtering by Cleric should not show every spell one domain adds.
+    /// </summary>
+    private static List<string> ReadClasses(string classes)
+    {
+        return classes
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(name => !name.Contains('(', StringComparison.Ordinal))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     /// <summary>
     /// Prepares a note's text for display: links simplified (see <see cref="ConverterLinks"/>),
     /// Obsidian anchors removed, and runs of empty lines reduced to one.
@@ -95,6 +125,9 @@ internal static partial class SpellNoteParser
     // The opening line, the field lines, the closing fence, then everything after it.
     [GeneratedRegex(@"```spell[^\n]*\r?\n(?<fields>.*?)\r?\n```[^\n]*(?<text>.*)", RegexOptions.Singleline)]
     private static partial Regex SpellNote();
+
+    [GeneratedRegex(@"^\d+")]
+    private static partial Regex LeadingNumber();
 
     [GeneratedRegex(@"^\^[\w-]+[ \t]*$", RegexOptions.Multiline)]
     private static partial Regex BlockId();

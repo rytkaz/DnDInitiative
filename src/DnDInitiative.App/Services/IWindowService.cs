@@ -5,6 +5,7 @@ public enum ImportKind
 {
     FiveETools,
     Homebrewery,
+    MartialExploits,
 }
 
 /// <summary>Opens the app's secondary windows, so view models never create a window themselves.</summary>

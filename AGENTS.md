@@ -104,6 +104,8 @@ The Homebrewery import (`Infrastructure/Homebrewery/`) is a second, separate pip
 4. Every document goes to `HomebreweryStatBlockParser`, which knows the legacy block-quote layout and the V3 `{{monster}}` layouts. `ConditionLinkRewriter` turns links into the conditions document into `condition:` links, and links condition names written without one (standard conditions in any case, homebrew ones only when capitalised). Creature names get the source appended, "Goblin (Source)", as the converter does for books other than the Monster Manual.
 5. `ImportedStatBlocks` saves the stat blocks, with the same rules as the 5eTools import.
 
+The GM Binder import (`Infrastructure/GmBinder/`) brings in martial exploits as `Ability` records. GM Binder keeps a document's Markdown source private, so `MartialExploitImporter` downloads the rendered page from `/share/{id}` and `MartialExploitParser` reads its HTML with AngleSharp. It walks the headings and paragraphs inside the `div.phb` pages in document order, because the pages close in the middle of sections: an h3 "Nth-Degree Exploits" sets the degree, each h4 is an exploit, and a leading `<em>Prerequisite(s): ...</em>` is split off. The document's title (`og:title`, without " by author") is the source.
+
 When converter behaviour matters, check its source (`Tools5eLinkifier`, `QuteMonster`, `Json2QuteCompose`) rather than guessing. Note which assumptions you couldn't verify against real output.
 
 ## Code conventions

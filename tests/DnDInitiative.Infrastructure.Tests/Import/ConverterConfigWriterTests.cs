@@ -105,16 +105,24 @@ public sealed class ConverterConfigWriterTests : IDisposable
             .Replace("{resource.range}", "150 feet", StringComparison.Ordinal)
             .Replace("{resource.components}", "V, S, M (a ball of bat guano and sulfur)", StringComparison.Ordinal)
             .Replace("{resource.duration}", "Instantaneous", StringComparison.Ordinal)
+            .Replace("{resource.classes}", "[Sorcerer](lists/list-spells-classes-sorcerer.md); [Wizard](lists/list-spells-classes-wizard.md)", StringComparison.Ordinal)
             .Replace("{resource.source}", "XPHB p. 274", StringComparison.Ordinal)
             .Replace("{resource.text}", "A bright streak flashes.", StringComparison.Ordinal);
 
         Assert.DoesNotContain("{resource.", note, StringComparison.Ordinal);
+        Spell? parsed = SpellNoteParser.Parse(note, "fireball-xphb");
+        Assert.NotNull(parsed);
+
+        // Records compare lists by reference, so the classes are compared on their own.
+        string[] expectedClasses = ["Sorcerer", "Wizard"];
+        Assert.Equal(expectedClasses, parsed.Classes.ToArray());
         Assert.Equal(
             new Spell
             {
                 Key = "fireball-xphb",
                 Name = "Fireball",
                 Level = "3rd-level",
+                LevelNumber = 3,
                 School = "Evocation",
                 CastingTime = "1 action",
                 Range = "150 feet",
@@ -122,8 +130,9 @@ public sealed class ConverterConfigWriterTests : IDisposable
                 Duration = "Instantaneous",
                 Source = "XPHB p. 274",
                 Description = "A bright streak flashes.",
+                Classes = parsed.Classes,
             },
-            SpellNoteParser.Parse(note, "fireball-xphb"));
+            parsed);
     }
 
     private static string?[] Strings(JsonElement array)

@@ -13,6 +13,17 @@ public interface ISpellRepository
     /// <returns>The spell, or null if there is none.</returns>
     Task<Spell?> FindAsync(string reference, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Returns the spells that match the query, ordered by level and then by name. Skips the
+    /// first <paramref name="skip"/> matches and returns at most <paramref name="take"/>, so a
+    /// long list can be loaded a page at a time.
+    /// </summary>
+    Task<IReadOnlyList<SpellSummary>> SearchAsync(
+        SpellQuery query,
+        int skip = 0,
+        int take = 100,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Adds the spells, replacing any stored spell that has the same key.</summary>
     Task<SpellSaveResult> SaveManyAsync(IReadOnlyCollection<Spell> spells, CancellationToken cancellationToken = default);
 }

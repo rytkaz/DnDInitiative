@@ -17,6 +17,46 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.AbilityEntity", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("Classes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Degree")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("Prerequisites")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Abilities", (string)null);
+                });
+
             modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.ConditionEntity", b =>
                 {
                     b.Property<string>("Name")
@@ -135,6 +175,10 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.PrimitiveCollection<string>("Classes")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Components")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -147,12 +191,18 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsConcentration")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsRitual")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Level")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("LevelNumber")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -172,6 +222,8 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Key");
+
+                    b.HasIndex("LevelNumber");
 
                     b.HasIndex("Name");
 

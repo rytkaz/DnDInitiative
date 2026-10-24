@@ -26,20 +26,28 @@ public sealed class SqliteSpellRepositoryTests : IDisposable
             Key = "fireball-xphb",
             Name = "Fireball",
             Level = "3rd-level",
+            LevelNumber = 3,
             School = "Evocation",
             IsRitual = true,
             CastingTime = "1 action",
             Range = "150 feet",
             Components = "V, S, M (a ball of bat guano and sulfur)",
             Duration = "Instantaneous",
+            IsConcentration = true,
+            Classes = ["Sorcerer", "Wizard"],
             Source = "XPHB p. 274",
             Description = "A bright streak flashes.\n\n**At Higher Levels.** More damage.",
         };
 
         SpellSaveResult result = await _repository.SaveManyAsync([original]);
+        Spell? found = await _repository.FindAsync("fireball-xphb");
 
         Assert.Equal(new SpellSaveResult(Added: 1, Updated: 0), result);
-        Assert.Equal(original, await _repository.FindAsync("fireball-xphb"));
+        Assert.NotNull(found);
+
+        // Records compare lists by reference, so the classes are compared on their own.
+        Assert.Equal(original.Classes.ToArray(), found.Classes.ToArray());
+        Assert.Equal(original, found with { Classes = original.Classes });
     }
 
     [Fact]

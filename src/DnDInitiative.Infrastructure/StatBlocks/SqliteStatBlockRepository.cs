@@ -9,8 +9,6 @@ namespace DnDInitiative.Infrastructure.StatBlocks;
 
 internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlockLibrary
 {
-    private const string LikeEscape = "\\";
-
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
 
     public SqliteStatBlockRepository(IDbContextFactory<AppDbContext> contextFactory)
@@ -195,8 +193,8 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlo
         string trimmed = searchText.Trim();
         if (trimmed.Length > 0)
         {
-            string pattern = "%" + EscapeLike(trimmed) + "%";
-            query = query.Where(statBlock => EF.Functions.Like(statBlock.Name, pattern, LikeEscape));
+            string pattern = LikePattern.Containing(trimmed);
+            query = query.Where(statBlock => EF.Functions.Like(statBlock.Name, pattern, LikePattern.Escape));
         }
 
         return await query
@@ -248,15 +246,6 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlo
             .ConfigureAwait(false);
 
         return entities.Select(ToDomain).ToList();
-    }
-
-    // In a LIKE pattern, % and _ are wildcards. Typed by a user, they should match themselves.
-    private static string EscapeLike(string text)
-    {
-        return text
-            .Replace("\\", "\\\\", StringComparison.Ordinal)
-            .Replace("%", "\\%", StringComparison.Ordinal)
-            .Replace("_", "\\_", StringComparison.Ordinal);
     }
 
     public async Task ChangeIdsAsync(IReadOnlyDictionary<Guid, Guid> changes, CancellationToken cancellationToken = default)
