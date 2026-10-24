@@ -57,7 +57,9 @@ public sealed class StatBlockDetailsViewModel
         AddSection(sections, "Actions", statBlock.Actions);
         AddSection(sections, "Bonus Actions", statBlock.BonusActions);
         AddSection(sections, "Reactions", statBlock.Reactions);
-        AddSection(sections, "Legendary Actions", statBlock.LegendaryActions);
+        AddSection(sections, "Legendary Actions", statBlock.LegendaryActions, statBlock.LegendaryActionsDescription);
+        AddSection(sections, "Mythic Actions", statBlock.MythicActions, statBlock.MythicActionsDescription);
+        AddSection(sections, "Lair Actions", statBlock.LairActions, statBlock.LairActionsDescription);
         Sections = sections;
     }
 
@@ -96,14 +98,24 @@ public sealed class StatBlockDetailsViewModel
         }
     }
 
-    private static void AddSection(List<FeatureSection> target, string title, IReadOnlyList<StatBlockFeature> features)
+    /// <param name="description">Text shown before the features, such as how many legendary actions there are.</param>
+    private static void AddSection(List<FeatureSection> target, string title, IReadOnlyList<StatBlockFeature> features, string description = "")
     {
-        if (features.Count > 0)
+        if (features.Count == 0 && string.IsNullOrWhiteSpace(description))
         {
-            target.Add(new FeatureSection(
-                title,
-                features.Select(feature => new LabeledValue(feature.Name + ".", WithoutBlankLines(feature.Description))).ToList()));
+            return;
         }
+
+        var entries = new List<LabeledValue>();
+
+        // An entry without a label shows as a plain paragraph, the way the books print it.
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            entries.Add(new LabeledValue("", WithoutBlankLines(description)));
+        }
+
+        entries.AddRange(features.Select(feature => new LabeledValue(feature.Name + ".", WithoutBlankLines(feature.Description))));
+        target.Add(new FeatureSection(title, entries));
     }
 
     /// <summary>

@@ -122,6 +122,15 @@
                                     <TextBlock Style="{StaticResource SectionTitle}" Text="{Binding Title}" />
                                     <Separator Margin="0,2,0,6" />
 
+                                    <!--  The text before the entries, such as how many legendary actions there are  -->
+                                    <TextBox MinHeight="48"
+                                             Margin="0,0,0,8"
+                                             AcceptsReturn="True"
+                                             Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                                             TextWrapping="Wrap"
+                                             ToolTip="Shown before the entries of this section"
+                                             Visibility="{Binding HasDescription, Converter={StaticResource BoolToVisibility}}" />
+
                                     <ItemsControl ItemsSource="{Binding Items}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>

@@ -329,7 +329,7 @@ public class HomebreweryStatBlockParserTests
     }
 
     [Fact]
-    public void Parse_V3Layout_LeavesOutLayoutAndThePreamble()
+    public void Parse_V3Layout_LeavesOutLayoutAndKeepsTheLegendaryRules()
     {
         StatBlock drake = Assert.Single(HomebreweryStatBlockParser.Parse(V3Document, Source, ConditionLinkRewriter.None));
 
@@ -339,6 +339,7 @@ public class HomebreweryStatBlockParserTests
             "Each creature in a 30-foot cone makes a DC 14 Constitution saving throw.\n\nOn a failure it is [Choking](https://homebrewery.naturalcrit.com/share/conditions01).",
             drake.Actions[1].Description);
         Assert.Equal("Flare", Assert.Single(drake.BonusActions).Name);
+        Assert.Equal("The drake can take 2 legendary actions, choosing from the options below.", drake.LegendaryActionsDescription);
         StatBlockFeature legendary = Assert.Single(drake.LegendaryActions);
         Assert.Equal("Wing Buffet", legendary.Name);
         Assert.Equal("The drake beats its wings.", legendary.Description);
@@ -374,6 +375,68 @@ public class HomebreweryStatBlockParserTests
         StatBlockFeature fist = Assert.Single(sentinel.Actions);
         Assert.StartsWith("*Melee Attack Roll:* +7, reach 5 ft.", fist.Description, StringComparison.Ordinal);
         Assert.Contains("| 3-4 | The target is knocked prone. |", fist.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Parse_MythicAndLairActions_GetTheirOwnSectionsWithTheTextBeforeThem()
+    {
+        const string document = """
+        ___
+        > ## Bog Tyrant
+        > - **Armor Class** 18
+        > - **Hit Points** 300 (24d12 + 144)
+        > ### Legendary Actions
+        > **Legendary Action Uses: 3.** Immediately after another creature's turn, the tyrant can expend a use to take one of the following actions.
+        >
+        > The tyrant regains all expended uses at the start of each of its turns.
+        >
+        > ***Stomp.*** The ground shakes.
+        > ### Mythic Actions
+        > If the tyrant's Bog Heart trait has activated in the last hour, it can use the options below.
+        >
+        > ***Mire.*** The area becomes difficult terrain.
+        > ### Lair Actions
+        > On initiative count 20, the tyrant takes a lair action. It can't use the same one two rounds in a row.
+        > - It can't be used while the tyrant is Incapacitated.
+        >
+        > ***Swamp Gas.*** A cloud of gas rises.
+        > ***Sinking Ground.*** Mud swallows a creature's feet.
+        """;
+        var links = new ConditionLinkRewriter([], ["Incapacitated"]);
+
+        StatBlock tyrant = Assert.Single(HomebreweryStatBlockParser.Parse(document, Source, links));
+
+        Assert.Equal(
+            "**Legendary Action Uses: 3.** Immediately after another creature's turn, the tyrant can expend a use to take one of the following actions.\n\nThe tyrant regains all expended uses at the start of each of its turns.",
+            tyrant.LegendaryActionsDescription);
+        Assert.Equal("Stomp", Assert.Single(tyrant.LegendaryActions).Name);
+        Assert.Equal("If the tyrant's Bog Heart trait has activated in the last hour, it can use the options below.", tyrant.MythicActionsDescription);
+        Assert.Equal("Mire", Assert.Single(tyrant.MythicActions).Name);
+        Assert.Equal(
+            "On initiative count 20, the tyrant takes a lair action. It can't use the same one two rounds in a row.\n- It can't be used while the tyrant is [Incapacitated](condition:Incapacitated).",
+            tyrant.LairActionsDescription);
+        string[] lairActions = ["Swamp Gas", "Sinking Ground"];
+        Assert.Equal(lairActions, tyrant.LairActions.Select(feature => feature.Name).ToArray());
+    }
+
+    [Fact]
+    public void Parse_TextBeforeTheFirstAction_IsLeftOut()
+    {
+        const string document = """
+        {{monster,frame
+        ## Reed Imp
+        **AC** :: 13
+        **HP** :: 10
+        ### Actions
+        The imp prefers to flee.
+
+        ***Jab.*** It jabs.
+        }}
+        """;
+
+        StatBlock imp = Assert.Single(HomebreweryStatBlockParser.Parse(document, Source, ConditionLinkRewriter.None));
+
+        Assert.Equal("It jabs.", Assert.Single(imp.Actions).Description);
     }
 
     [Fact]

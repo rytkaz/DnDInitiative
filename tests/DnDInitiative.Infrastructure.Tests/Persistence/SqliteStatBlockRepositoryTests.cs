@@ -44,7 +44,12 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
             Actions = [new StatBlockFeature("Multiattack", "Two attacks."), new StatBlockFeature("Scimitar", "Melee.")],
             BonusActions = [new StatBlockFeature("Dash", "Moves again.")],
             Reactions = [new StatBlockFeature("Redirect Attack", "Swaps places.")],
+            LegendaryActionsDescription = "Legendary Action Uses: 3.",
             LegendaryActions = [new StatBlockFeature("Command", "An ally attacks.")],
+            MythicActionsDescription = "When it rises again.",
+            MythicActions = [new StatBlockFeature("Rally", "Allies stand.")],
+            LairActionsDescription = "On initiative count 20.",
+            LairActions = [new StatBlockFeature("Trapdoor", "The floor opens.")],
         };
 
         await repository.SaveAsync(original);
@@ -55,6 +60,8 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
         Assert.Equal<StatBlockFeature>(original.BonusActions, loaded.BonusActions);
         Assert.Equal<StatBlockFeature>(original.Reactions, loaded.Reactions);
         Assert.Equal<StatBlockFeature>(original.LegendaryActions, loaded.LegendaryActions);
+        Assert.Equal<StatBlockFeature>(original.MythicActions, loaded.MythicActions);
+        Assert.Equal<StatBlockFeature>(original.LairActions, loaded.LairActions);
 
         // With the lists set to the same instances, record equality compares every remaining field.
         StatBlock expected = original with
@@ -64,6 +71,8 @@ public sealed class SqliteStatBlockRepositoryTests : IDisposable
             BonusActions = loaded.BonusActions,
             Reactions = loaded.Reactions,
             LegendaryActions = loaded.LegendaryActions,
+            MythicActions = loaded.MythicActions,
+            LairActions = loaded.LairActions,
         };
         Assert.Equal(expected, loaded);
     }

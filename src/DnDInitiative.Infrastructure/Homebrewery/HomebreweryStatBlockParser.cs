@@ -85,6 +85,8 @@ internal static partial class HomebreweryStatBlockParser
         BonusActions,
         Reactions,
         LegendaryActions,
+        MythicActions,
+        LairActions,
     }
 
     /// <summary>Returns every stat block in the document, in the order they appear.</summary>
@@ -246,11 +248,20 @@ internal static partial class HomebreweryStatBlockParser
             return Section.Reactions;
         }
 
-        // The app has one list for actions taken outside the creature's turn.
+        if (title.Contains("mythic", StringComparison.OrdinalIgnoreCase))
+        {
+            return Section.MythicActions;
+        }
+
+        if (title.Contains("lair", StringComparison.OrdinalIgnoreCase))
+        {
+            return Section.LairActions;
+        }
+
+        // Villain actions, from Flee, Mortals!, are taken between other creatures' turns
+        // like legendary actions, so they share that list.
         if (title.Contains("legendary", StringComparison.OrdinalIgnoreCase)
-            || title.Contains("mythic", StringComparison.OrdinalIgnoreCase)
-            || title.Contains("villain", StringComparison.OrdinalIgnoreCase)
-            || title.Contains("lair", StringComparison.OrdinalIgnoreCase))
+            || title.Contains("villain", StringComparison.OrdinalIgnoreCase))
         {
             return Section.LegendaryActions;
         }
@@ -289,6 +300,7 @@ internal static partial class HomebreweryStatBlockParser
         private readonly ConditionLinkRewriter _links;
         private readonly Dictionary<Stat, string> _stats = new();
         private readonly Dictionary<Section, List<FeatureDraft>> _features = new();
+        private readonly Dictionary<Section, StringBuilder> _descriptions = new();
         private readonly int?[] _scores = new int?[6];
         private readonly int?[] _modifiers = new int?[6];
         private readonly int?[] _saves = new int?[6];
@@ -406,6 +418,13 @@ internal static partial class HomebreweryStatBlockParser
         // heading such as "### Actions" any bold start does, even without the full stop.
         private bool IsFeature(Match feature)
         {
+            // "**Legendary Action Uses: 3.** Immediately after..." looks like a feature, but it
+            // is the section's rules. Bold, because the 2024 books print it that way.
+            if (HasDescription(_section) && UsesLine().IsMatch(feature.Groups["name"].Value))
+            {
+                return false;
+            }
+
             return feature.Groups["name"].Value.TrimEnd().EndsWith('.')
                 || feature.Groups["rest"].Value.TrimStart().StartsWith('.')
                 || _section != Section.None;
@@ -444,14 +463,33 @@ internal static partial class HomebreweryStatBlockParser
 
         private void ContinueFeature(string line)
         {
-            // Text before the first feature of a section, such as "The dragon can take 3
-            // legendary actions...", has nowhere to go in the app's stat block.
-            if (_feature is null)
+            if (_feature is not null)
             {
-                return;
+                AppendParagraphText(_feature.Text, line);
+            }
+            else if (HasDescription(_section))
+            {
+                // "Legendary Action Uses: 3. Immediately after another creature's turn...":
+                // the rules for using the section, kept as its description.
+                if (!_descriptions.TryGetValue(_section, out StringBuilder? description))
+                {
+                    description = new StringBuilder();
+                    _descriptions[_section] = description;
+                }
+
+                AppendParagraphText(description, line);
             }
 
-            StringBuilder text = _feature.Text;
+            // Other text before a section's first feature has nowhere to go in the app's stat block.
+        }
+
+        private static bool HasDescription(Section section)
+        {
+            return section is Section.LegendaryActions or Section.MythicActions or Section.LairActions;
+        }
+
+        private void AppendParagraphText(StringBuilder text, string line)
+        {
             if (text.Length > 0)
             {
                 bool startsOwnLine = line.StartsWith("- ", StringComparison.Ordinal)
@@ -570,7 +608,12 @@ internal static partial class HomebreweryStatBlockParser
                 Actions = Features(Section.Actions),
                 BonusActions = Features(Section.BonusActions),
                 Reactions = Features(Section.Reactions),
+                LegendaryActionsDescription = Description(Section.LegendaryActions),
                 LegendaryActions = Features(Section.LegendaryActions),
+                MythicActionsDescription = Description(Section.MythicActions),
+                MythicActions = Features(Section.MythicActions),
+                LairActionsDescription = Description(Section.LairActions),
+                LairActions = Features(Section.LairActions),
             };
         }
 
@@ -658,6 +701,13 @@ internal static partial class HomebreweryStatBlockParser
             return (bracket < 0 ? text : text[..bracket]).Trim();
         }
 
+        private string Description(Section section)
+        {
+            return _descriptions.TryGetValue(section, out StringBuilder? description)
+                ? _links.LinkNames(Display(description.ToString()).Trim())
+                : "";
+        }
+
         private List<StatBlockFeature> Features(Section section)
         {
             if (!_features.TryGetValue(section, out List<FeatureDraft>? drafts))
@@ -695,6 +745,9 @@ internal static partial class HomebreweryStatBlockParser
     // "> ## Name", the first line of a legacy stat block. Exactly two # signs.
     [GeneratedRegex(@"^\s*>\s*##(?!#)\s*\S")]
     private static partial Regex QuotedNameHeading();
+
+    [GeneratedRegex(@"^\s*(?:Legendary|Mythic|Lair|Villain) Action Uses\b", RegexOptions.IgnoreCase)]
+    private static partial Regex UsesLine();
 
     [GeneratedRegex(@"^\s*>[ \t]?")]
     private static partial Regex QuoteMarker();

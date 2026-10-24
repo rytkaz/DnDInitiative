@@ -60,4 +60,54 @@ public class StatBlockDetailsViewModelTests
         string[] expected = ["Traits", "Reactions"];
         Assert.Equal(expected, viewModel.Sections.Select(section => section.Title).ToArray());
     }
+
+    [Fact]
+    public void Sections_LegendaryDescription_ComesFirstWithoutALabel()
+    {
+        var viewModel = new StatBlockDetailsViewModel(new StatBlock
+        {
+            Id = Guid.NewGuid(),
+            Name = "Adult Black Dragon",
+            LegendaryActionsDescription = "Legendary Action Uses: 3. Immediately after another creature's turn, the dragon can expend a use.\n\nIt regains all uses at the start of its turns.",
+            LegendaryActions = [new StatBlockFeature("Pounce", "The dragon moves.")],
+        });
+
+        FeatureSection legendary = Assert.Single(viewModel.Sections);
+        Assert.Equal("Legendary Actions", legendary.Title);
+        Assert.Equal(
+            new LabeledValue("", "Legendary Action Uses: 3. Immediately after another creature's turn, the dragon can expend a use.\nIt regains all uses at the start of its turns."),
+            legendary.Entries[0]);
+        Assert.Equal("Pounce.", legendary.Entries[1].Label);
+    }
+
+    [Fact]
+    public void Sections_MythicAndLairActions_FollowTheLegendaryActions()
+    {
+        var viewModel = new StatBlockDetailsViewModel(new StatBlock
+        {
+            Id = Guid.NewGuid(),
+            Name = "Bog Tyrant",
+            LairActions = [new StatBlockFeature("Swamp Gas", "A cloud rises.")],
+            MythicActions = [new StatBlockFeature("Mire", "Difficult terrain.")],
+            LegendaryActions = [new StatBlockFeature("Stomp", "The ground shakes.")],
+        });
+
+        string[] expected = ["Legendary Actions", "Mythic Actions", "Lair Actions"];
+        Assert.Equal(expected, viewModel.Sections.Select(section => section.Title).ToArray());
+    }
+
+    [Fact]
+    public void Sections_DescriptionWithoutActions_IsStillShown()
+    {
+        var viewModel = new StatBlockDetailsViewModel(new StatBlock
+        {
+            Id = Guid.NewGuid(),
+            Name = "Bog Tyrant",
+            LairActionsDescription = "The swamp itself fights for the tyrant.",
+        });
+
+        FeatureSection lair = Assert.Single(viewModel.Sections);
+        Assert.Equal("Lair Actions", lair.Title);
+        Assert.Equal("The swamp itself fights for the tyrant.", Assert.Single(lair.Entries).Value);
+    }
 }

@@ -118,6 +118,11 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlo
             BonusActionsJson = JsonSerializer.Serialize(statBlock.BonusActions),
             ReactionsJson = JsonSerializer.Serialize(statBlock.Reactions),
             LegendaryActionsJson = JsonSerializer.Serialize(statBlock.LegendaryActions),
+            MythicActionsJson = JsonSerializer.Serialize(statBlock.MythicActions),
+            LairActionsJson = JsonSerializer.Serialize(statBlock.LairActions),
+            LegendaryActionsDescription = statBlock.LegendaryActionsDescription,
+            MythicActionsDescription = statBlock.MythicActionsDescription,
+            LairActionsDescription = statBlock.LairActionsDescription,
         };
     }
 
@@ -158,6 +163,11 @@ internal sealed class SqliteStatBlockRepository : IStatBlockRepository, IStatBlo
             BonusActions = ToFeatures(entity.BonusActionsJson),
             Reactions = ToFeatures(entity.ReactionsJson),
             LegendaryActions = ToFeatures(entity.LegendaryActionsJson),
+            MythicActions = ToFeatures(entity.MythicActionsJson),
+            LairActions = ToFeatures(entity.LairActionsJson),
+            LegendaryActionsDescription = entity.LegendaryActionsDescription,
+            MythicActionsDescription = entity.MythicActionsDescription,
+            LairActionsDescription = entity.LairActionsDescription,
         };
     }
 

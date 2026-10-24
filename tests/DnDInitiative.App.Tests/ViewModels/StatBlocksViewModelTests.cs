@@ -119,6 +119,34 @@ public class StatBlocksViewModelTests
     }
 
     [Fact]
+    public void Editor_ToStatBlock_KeepsLegendaryMythicAndLairActionsWithTheirDescriptions()
+    {
+        StatBlock original = Create("Bog Tyrant") with
+        {
+            LegendaryActionsDescription = "Legendary Action Uses: 3.",
+            LegendaryActions = [new StatBlockFeature("Stomp", "The ground shakes.")],
+            MythicActionsDescription = "When its heart beats again.",
+            MythicActions = [new StatBlockFeature("Mire", "Difficult terrain.")],
+            LairActionsDescription = "On initiative count 20.",
+            LairActions = [new StatBlockFeature("Swamp Gas", "A cloud rises.")],
+        };
+        var editor = new StatBlockEditorViewModel(original);
+        FeatureListEditorViewModel lair = editor.FeatureLists.Single(list => list.Title == "Lair Actions");
+        lair.Description = "  On initiative count 10.  ";
+
+        StatBlock result = editor.ToStatBlock();
+
+        Assert.Equal("Legendary Action Uses: 3.", result.LegendaryActionsDescription);
+        Assert.Equal("Stomp", Assert.Single(result.LegendaryActions).Name);
+        Assert.Equal("When its heart beats again.", result.MythicActionsDescription);
+        Assert.Equal("Mire", Assert.Single(result.MythicActions).Name);
+        Assert.Equal("On initiative count 10.", result.LairActionsDescription);
+        Assert.Equal("Swamp Gas", Assert.Single(result.LairActions).Name);
+        Assert.False(editor.FeatureLists.Single(list => list.Title == "Traits").HasDescription);
+        Assert.True(lair.HasDescription);
+    }
+
+    [Fact]
     public async Task SaveCommand_EditThatLeavesTheListRowUnchanged_StillRefreshesTheDetails()
     {
         StatBlock goblin = Create("Goblin") with { ArmorClass = 15 };

@@ -245,11 +245,31 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
                     b.Property<int>("Intelligence")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("LairActionsDescription")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LairActionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Languages")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LegendaryActionsDescription")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("LegendaryActionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MythicActionsDescription")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MythicActionsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
 

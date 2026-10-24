@@ -54,11 +54,20 @@ public sealed partial class FeatureEditorViewModel : ObservableObject
 
 public sealed partial class FeatureListEditorViewModel : ObservableObject
 {
-    public FeatureListEditorViewModel(string title, IEnumerable<StatBlockFeature> features)
+    /// <summary>The text before the features, for sections that have one. Markdown.</summary>
+    [ObservableProperty]
+    private string _description = "";
+
+    /// <param name="description">
+    /// The section's description, or null for a section that has none, such as Traits.
+    /// </param>
+    public FeatureListEditorViewModel(string title, IEnumerable<StatBlockFeature> features, string? description = null)
     {
         ArgumentNullException.ThrowIfNull(features);
 
         Title = title;
+        HasDescription = description is not null;
+        _description = description ?? "";
         foreach (StatBlockFeature feature in features)
         {
             Items.Add(new FeatureEditorViewModel { Name = feature.Name, Description = feature.Description });
@@ -66,6 +75,9 @@ public sealed partial class FeatureListEditorViewModel : ObservableObject
     }
 
     public string Title { get; }
+
+    /// <summary>Whether this section has a description to edit, as legendary, mythic and lair actions do.</summary>
+    public bool HasDescription { get; }
 
     public ObservableCollection<FeatureEditorViewModel> Items { get; } = [];
 

@@ -57,7 +57,23 @@ public sealed record StatBlock
 
     public IReadOnlyList<StatBlockFeature> Reactions { get; init; } = [];
 
+    /// <summary>
+    /// What comes before the legendary actions, such as "Legendary Action Uses: 3. Immediately
+    /// after another creature's turn...". In Markdown.
+    /// </summary>
+    public string LegendaryActionsDescription { get; init; } = "";
+
     public IReadOnlyList<StatBlockFeature> LegendaryActions { get; init; } = [];
+
+    /// <summary>What comes before the mythic actions, such as what turns them on. In Markdown.</summary>
+    public string MythicActionsDescription { get; init; } = "";
+
+    public IReadOnlyList<StatBlockFeature> MythicActions { get; init; } = [];
+
+    /// <summary>What comes before the lair actions, such as when they happen. In Markdown.</summary>
+    public string LairActionsDescription { get; init; } = "";
+
+    public IReadOnlyList<StatBlockFeature> LairActions { get; init; } = [];
 
     /// <summary>
     /// Creates what the tracker needs to put this creature into combat.

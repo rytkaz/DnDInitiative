@@ -94,7 +94,13 @@ public static partial class FantasyStatblockParser
             Actions = Features(map, "actions"),
             BonusActions = Features(map, "bonus_actions"),
             Reactions = Features(map, "reactions"),
+            LegendaryActionsDescription = Text(map, "legendary_description"),
             LegendaryActions = Features(map, "legendary_actions"),
+            MythicActionsDescription = Text(map, "mythic_description"),
+            MythicActions = Features(map, "mythic_actions"),
+
+            // The converter writes lair actions as a plain list, without text before it.
+            LairActions = Features(map, "lair_actions"),
         };
     }
 

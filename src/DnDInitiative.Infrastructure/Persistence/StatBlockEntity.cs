@@ -68,4 +68,15 @@ internal sealed class StatBlockEntity
     public string ReactionsJson { get; set; } = "[]";
 
     public string LegendaryActionsJson { get; set; } = "[]";
+
+    public string MythicActionsJson { get; set; } = "[]";
+
+    public string LairActionsJson { get; set; } = "[]";
+
+    // The text before each of these sections, in Markdown.
+    public string LegendaryActionsDescription { get; set; } = "";
+
+    public string MythicActionsDescription { get; set; } = "";
+
+    public string LairActionsDescription { get; set; } = "";
 }

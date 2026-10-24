@@ -43,6 +43,8 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
     private readonly FeatureListEditorViewModel _bonusActions;
     private readonly FeatureListEditorViewModel _reactions;
     private readonly FeatureListEditorViewModel _legendaryActions;
+    private readonly FeatureListEditorViewModel _mythicActions;
+    private readonly FeatureListEditorViewModel _lairActions;
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
@@ -90,7 +92,9 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
         _actions = new FeatureListEditorViewModel("Actions", statBlock.Actions);
         _bonusActions = new FeatureListEditorViewModel("Bonus Actions", statBlock.BonusActions);
         _reactions = new FeatureListEditorViewModel("Reactions", statBlock.Reactions);
-        _legendaryActions = new FeatureListEditorViewModel("Legendary Actions", statBlock.LegendaryActions);
+        _legendaryActions = new FeatureListEditorViewModel("Legendary Actions", statBlock.LegendaryActions, statBlock.LegendaryActionsDescription);
+        _mythicActions = new FeatureListEditorViewModel("Mythic Actions", statBlock.MythicActions, statBlock.MythicActionsDescription);
+        _lairActions = new FeatureListEditorViewModel("Lair Actions", statBlock.LairActions, statBlock.LairActionsDescription);
 
         NumberFields =
         [
@@ -103,7 +107,7 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
             _savingThrows, _skills, _damageVulnerabilities, _damageResistances,
             _damageImmunities, _conditionImmunities, _senses, _languages, _source,
         ];
-        FeatureLists = [_traits, _actions, _bonusActions, _reactions, _legendaryActions];
+        FeatureLists = [_traits, _actions, _bonusActions, _reactions, _legendaryActions, _mythicActions, _lairActions];
 
         _savedState = new SavedState<StatBlock>(ToStatBlock);
         _savedState.MarkSaved();
@@ -156,7 +160,12 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
             Actions = _actions.ToFeatures(),
             BonusActions = _bonusActions.ToFeatures(),
             Reactions = _reactions.ToFeatures(),
+            LegendaryActionsDescription = _legendaryActions.Description.Trim(),
             LegendaryActions = _legendaryActions.ToFeatures(),
+            MythicActionsDescription = _mythicActions.Description.Trim(),
+            MythicActions = _mythicActions.ToFeatures(),
+            LairActionsDescription = _lairActions.Description.Trim(),
+            LairActions = _lairActions.ToFeatures(),
         };
     }
 }

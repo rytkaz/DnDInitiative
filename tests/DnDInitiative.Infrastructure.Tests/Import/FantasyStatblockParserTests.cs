@@ -125,4 +125,32 @@ public class FantasyStatblockParserTests
     {
         Assert.Null(FantasyStatblockParser.ParseYaml("name: [unclosed"));
     }
+
+    [Fact]
+    public void ParseYaml_LegendaryMythicAndLairActions_AreReadWithTheirDescriptions()
+    {
+        const string yaml = """
+        name: Swamp Wyrm
+        legendary_description: "Legendary Action Uses: 3. Immediately after another creature's turn, the wyrm can expend a use."
+        legendary_actions:
+          - name: Tail Swipe
+            desc: The wyrm swipes.
+        mythic_description: If the wyrm's Mythic trait is active, it can use the options below.
+        mythic_actions:
+          - name: Rot
+            desc: Plants wither.
+        lair_actions:
+          - name: Fog
+            desc: Fog rolls in.
+        """;
+
+        StatBlock wyrm = Assert.IsType<StatBlock>(FantasyStatblockParser.ParseYaml(yaml));
+
+        Assert.Equal("Legendary Action Uses: 3. Immediately after another creature's turn, the wyrm can expend a use.", wyrm.LegendaryActionsDescription);
+        Assert.Equal("Tail Swipe", Assert.Single(wyrm.LegendaryActions).Name);
+        Assert.Equal("If the wyrm's Mythic trait is active, it can use the options below.", wyrm.MythicActionsDescription);
+        Assert.Equal("Rot", Assert.Single(wyrm.MythicActions).Name);
+        Assert.Equal("Fog", Assert.Single(wyrm.LairActions).Name);
+        Assert.Equal("", wyrm.LairActionsDescription);
+    }
 }
