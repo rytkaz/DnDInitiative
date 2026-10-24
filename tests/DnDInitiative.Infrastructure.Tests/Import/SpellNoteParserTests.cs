@@ -55,14 +55,14 @@ public class SpellNoteParserTests
     }
 
     [Fact]
-    public void Parse_Text_KeepsParagraphsAndSpellLinksAndDropsObsidianAnchors()
+    public void Parse_Text_KeepsParagraphsAndAppLinksAndDropsObsidianAnchors()
     {
         Spell? spell = SpellNoteParser.Parse(DetectMagicNote, "detect-magic-xphb");
 
         Assert.Equal(
             "For the duration, you sense the presence of magical effects within 30 feet of yourself.\n\n"
             + "The spell is blocked by 1 foot of stone. See also [Identify](spell:identify-xphb)\n"
-            + "and the Invisible condition.",
+            + "and the [Invisible](condition:Invisible) condition.",
             spell?.Description.Replace("\r\n", "\n", StringComparison.Ordinal));
     }
 

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="DnDInitiative.App.Views.SpellDetailsView"
+﻿<UserControl x:Class="DnDInitiative.App.Views.ReferenceCardView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,7 +9,10 @@
              d:DesignHeight="500"
              d:DesignWidth="460"
              mc:Ignorable="d">
-    <!--  The same printed card as a stat block; the colours and the rule come from Styles/AppStyles.xaml  -->
+    <!--
+        A spell or a condition, on the same printed card as a stat block. The data context is an
+        IReferenceCard. The colours and the rule come from Styles/AppStyles.xaml.
+    -->
     <Border Background="{StaticResource StatBlockPaper}"
             BorderBrush="{StaticResource StatBlockEdge}"
             BorderThickness="0,5"

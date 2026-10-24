@@ -77,7 +77,11 @@ internal static partial class SpellNoteParser
         return fields;
     }
 
-    private static string CleanText(string text)
+    /// <summary>
+    /// Prepares a note's text for display: links simplified (see <see cref="ConverterLinks"/>),
+    /// Obsidian anchors removed, and runs of empty lines reduced to one.
+    /// </summary>
+    internal static string CleanText(string text)
     {
         string cleaned = ConverterLinks.Simplify(text.Replace("\r\n", "\n", StringComparison.Ordinal));
 

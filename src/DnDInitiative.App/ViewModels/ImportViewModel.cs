@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Messaging;
 
 using DnDInitiative.App.Messages;
 using DnDInitiative.App.Services;
+using DnDInitiative.Core.Conditions;
 using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 
@@ -37,6 +38,7 @@ public sealed partial class ImportViewModel : PageViewModel
     private readonly IConverterConfigWriter _configWriter;
     private readonly IUiStateStore _uiState;
     private readonly ISpellImporter _spellImporter;
+    private readonly IConditionImporter _conditionImporter;
     private bool _isLoaded;
 
     [ObservableProperty]
@@ -93,7 +95,8 @@ public sealed partial class ImportViewModel : PageViewModel
         ISourceDataService sourceData,
         IConverterConfigWriter configWriter,
         IUiStateStore uiState,
-        ISpellImporter spellImporter)
+        ISpellImporter spellImporter,
+        IConditionImporter conditionImporter)
     {
         ArgumentNullException.ThrowIfNull(uiState);
 
@@ -108,6 +111,7 @@ public sealed partial class ImportViewModel : PageViewModel
         _configWriter = configWriter;
         _uiState = uiState;
         _spellImporter = spellImporter;
+        _conditionImporter = conditionImporter;
 
         // Through the property, not the field, so a size saved by hand in the file is still clamped.
         if (uiState.Load().SourcesPanelHeight is { } savedHeight)
@@ -299,18 +303,19 @@ public sealed partial class ImportViewModel : PageViewModel
 
             // The same notes, read a second time for the spells the stat blocks link to.
             SpellSaveResult spells = await _spellImporter.ImportFolderAsync(notesFolder, cancellationToken);
+            int conditions = await _conditionImporter.ImportFolderAsync(notesFolder, cancellationToken);
 
-            if (result.Added + result.Updated + spells.Added + spells.Updated == 0)
+            if (result.Added + result.Updated + spells.Added + spells.Updated + conditions == 0)
             {
                 // Something is wrong with what the converter wrote. Keep it, so it can be looked at.
-                StatusMessage = "The conversion finished, but its output contains no stat blocks or spells. "
+                StatusMessage = "The conversion finished, but its output contains no stat blocks, spells or conditions. "
                     + $"The notes it wrote were kept in {notesFolder} so you can check them.";
             }
             else
             {
                 // The stat blocks are in the library now; the notes have done their job.
                 _converter.DiscardOutput();
-                StatusMessage = Describe(result, spells);
+                StatusMessage = Describe(result, spells, conditions);
             }
         }
         catch (OperationCanceledException)
@@ -351,11 +356,11 @@ public sealed partial class ImportViewModel : PageViewModel
         return await _configWriter.WriteAsync(options, cancellationToken);
     }
 
-    private static string Describe(StatBlockImportResult result, SpellSaveResult spells)
+    private static string Describe(StatBlockImportResult result, SpellSaveResult spells, int conditions)
     {
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"Done. Imported {result.Added} new and updated {result.Updated} stat blocks, and {spells.Added + spells.Updated} spells, from {result.FilesScanned} files.");
+            $"Done. Imported {result.Added} new and updated {result.Updated} stat blocks, {spells.Added + spells.Updated} spells and {conditions} conditions, from {result.FilesScanned} files.");
     }
 
     // Explorer's "Copy as path" wraps the path in quotes; accept that when it is pasted in.

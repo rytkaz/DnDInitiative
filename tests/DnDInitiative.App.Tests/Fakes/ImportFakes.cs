@@ -1,4 +1,5 @@
 ﻿using DnDInitiative.App.Services;
+using DnDInitiative.Core.Conditions;
 using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 
@@ -36,6 +37,20 @@ internal sealed class FakeSpellImporter : ISpellImporter
     public SpellSaveResult Result { get; set; } = new(Added: 0, Updated: 0);
 
     public Task<SpellSaveResult> ImportFolderAsync(string folderPath, CancellationToken cancellationToken = default)
+    {
+        ImportedFolder = folderPath;
+        return Task.FromResult(Result);
+    }
+}
+
+internal sealed class FakeConditionImporter : IConditionImporter
+{
+    public string? ImportedFolder { get; private set; }
+
+    /// <summary>How many conditions every import reports.</summary>
+    public int Result { get; set; }
+
+    public Task<int> ImportFolderAsync(string folderPath, CancellationToken cancellationToken = default)
     {
         ImportedFolder = folderPath;
         return Task.FromResult(Result);

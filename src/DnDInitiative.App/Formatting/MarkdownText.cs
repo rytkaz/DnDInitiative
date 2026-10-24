@@ -5,7 +5,7 @@ namespace DnDInitiative.App.Formatting;
 
 /// <summary>
 /// Turns Markdown text into WPF text elements: runs for plain, bold and italic text, and
-/// hyperlinks for links to spells and to web pages.
+/// hyperlinks for links to spells, conditions and web pages.
 /// </summary>
 public static class MarkdownText
 {
@@ -33,13 +33,16 @@ public static class MarkdownText
                 run.FontStyle = FontStyles.Italic;
             }
 
-            // Links to spells and to web pages lead somewhere. Any other link is shown as its text.
+            // Links to spells, conditions and web pages lead somewhere. Any other link is shown as its text.
             Uri? webAddress = WebLink.ToUri(segment.LinkTarget);
+            Uri? target = ReferenceLink.Spell.ToUri(segment.LinkTarget)
+                ?? ReferenceLink.Condition.ToUri(segment.LinkTarget)
+                ?? webAddress;
 
-            if ((SpellLink.ToUri(segment.LinkTarget) ?? webAddress) is { } uri)
+            if (target is { } uri)
             {
                 // Clicking raises Hyperlink.RequestNavigate with this URI. The event travels up
-                // through the page to the main window, which opens the spell or the web page.
+                // through the page to the main window, which opens the popup or the web page.
                 var link = new Hyperlink(run) { NavigateUri = uri };
                 link.SetResourceReference(FrameworkContentElement.StyleProperty, LinkStyleKey);
 

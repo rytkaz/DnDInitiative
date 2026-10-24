@@ -20,7 +20,7 @@ Built with C# 14, .NET 10 and WPF.
 
 - Searchable library with a viewer styled after the printed books
 - Create, edit and copy stat blocks; your own are marked and saved with the campaign
-- Spell names in a stat block are links: click one to read the spell in a popup
+- Spell and condition names in a stat block are links: click one to read it in a popup
 - Import whole books, homebrew included, with one button (see [Importing stat blocks and spells](#importing-stat-blocks-and-spells))
 
 **Encounter builder**

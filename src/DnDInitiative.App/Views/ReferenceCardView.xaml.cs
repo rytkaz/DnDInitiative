@@ -2,9 +2,9 @@
 
 namespace DnDInitiative.App.Views;
 
-public partial class SpellDetailsView : UserControl
+public partial class ReferenceCardView : UserControl
 {
-    public SpellDetailsView()
+    public ReferenceCardView()
     {
         InitializeComponent();
     }

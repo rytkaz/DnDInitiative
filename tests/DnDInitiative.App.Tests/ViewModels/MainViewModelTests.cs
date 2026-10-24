@@ -56,7 +56,8 @@ public class MainViewModelTests
             new FakeSourceDataService(),
             new FakeConverterConfigWriter(),
             new InMemoryUiStateStore(),
-            new FakeSpellImporter());
+            new FakeSpellImporter(),
+            new FakeConditionImporter());
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, _confirmation, _messenger),

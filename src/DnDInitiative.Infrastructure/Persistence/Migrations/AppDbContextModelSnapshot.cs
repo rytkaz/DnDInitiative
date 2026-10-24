@@ -17,6 +17,25 @@ namespace DnDInitiative.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.ConditionEntity", b =>
+                {
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Name");
+
+                    b.ToTable("Conditions", (string)null);
+                });
+
             modelBuilder.Entity("DnDInitiative.Infrastructure.Persistence.EncounterCreatureEntity", b =>
                 {
                     b.Property<int>("Id")

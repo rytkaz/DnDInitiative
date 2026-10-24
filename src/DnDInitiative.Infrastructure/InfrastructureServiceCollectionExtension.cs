@@ -1,9 +1,11 @@
 ﻿using DnDInitiative.Core.Campaigns;
+using DnDInitiative.Core.Conditions;
 using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Parties;
 using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Campaigns;
+using DnDInitiative.Infrastructure.Conditions;
 using DnDInitiative.Infrastructure.Encounters;
 using DnDInitiative.Infrastructure.Import;
 using DnDInitiative.Infrastructure.Parties;
@@ -49,6 +51,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<SqliteStatBlockRepository>();
         services.AddSingleton<IStatBlockLibrary>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
         services.AddSingleton<ISpellRepository, SqliteSpellRepository>();
+        services.AddSingleton<IConditionRepository, SqliteConditionRepository>();
 
         // The campaign folder. This is what the rest of the app reads and writes.
         services.AddSingleton<CampaignLocation>();
@@ -64,6 +67,7 @@ public static class InfrastructureServiceCollectionExtensions
         // Importing
         services.AddSingleton<IStatBlockImporter, MarkdownStatBlockImporter>();
         services.AddSingleton<ISpellImporter, MarkdownSpellImporter>();
+        services.AddSingleton<IConditionImporter, MarkdownConditionImporter>();
         services.AddSingleton<IProcessRunner, ProcessRunner>();
         services.AddSingleton<IStatBlockConverter, TtrpgConvertConverter>();
         services.AddSingleton<IConversionSettingsStore, JsonConversionSettingsStore>();

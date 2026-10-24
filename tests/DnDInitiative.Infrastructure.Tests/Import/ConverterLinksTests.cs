@@ -15,8 +15,20 @@ public class ConverterLinksTests
     }
 
     [Theory]
+    [InlineData("[prone](rules/conditions.md#Prone)", "[prone](condition:Prone)")]
+    [InlineData("[blinded](rules/conditions/conditions.md#Blinded)", "[blinded](condition:Blinded)")]
+    [InlineData("[hiding](rules/conditions.md#Hiding%20Spot \"Hiding\")", "[hiding](condition:Hiding Spot)")]
+    public void Simplify_LinkToAConditionHeading_BecomesALinkToTheConditionByName(string text, string expected)
+    {
+        Assert.Equal(expected, ConverterLinks.Simplify(text));
+    }
+
+    [Theory]
     [InlineData("[Stealth](rules/skills.md#Stealth)", "Stealth")]
-    [InlineData("[Prone](rules/conditions.md#Prone) and [Goblin](compendium/bestiary/fey/goblin.md)", "Prone and Goblin")]
+    [InlineData("[Goblin](compendium/bestiary/fey/goblin.md)", "Goblin")]
+    // The note, but no heading in it: there is no one condition to show.
+    [InlineData("[Conditions](rules/conditions.md)", "Conditions")]
+    [InlineData("[Rules](rules/mental-conditions.md#Dazed)", "Rules")]
     // A folder that merely ends in "spells", and a list of spells, are not spell notes.
     [InlineData("[Wizard](compendium/lists/wizard-spells/index.md)", "Wizard")]
     [InlineData("[Spells](compendium/spells.md)", "Spells")]

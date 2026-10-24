@@ -23,6 +23,7 @@ public class ImportViewModelTests
     private readonly FakeConverterConfigWriter _configWriter = new();
     private readonly InMemoryUiStateStore _uiState = new();
     private readonly FakeSpellImporter _spellImporter = new();
+    private readonly FakeConditionImporter _conditionImporter = new();
     private StatBlocksImportedMessage? _received;
 
     public ImportViewModelTests()
@@ -31,7 +32,7 @@ public class ImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState, _spellImporter);
+        _viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState, _spellImporter, _conditionImporter);
     }
 
     [Fact]
@@ -385,7 +386,7 @@ public class ImportViewModelTests
     {
         _uiState.State = new UiState { SourcesPanelHeight = 420 };
 
-        var viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState, _spellImporter);
+        var viewModel = new ImportViewModel(_settingsStore, _converter, _importer, _folderPicker, _filePicker, _messenger, _installer, _sourceData, _configWriter, _uiState, _spellImporter, _conditionImporter);
 
         Assert.Equal(420, viewModel.SourcesPanelHeight);
     }
@@ -423,6 +424,18 @@ public class ImportViewModelTests
 
         Assert.Equal("converted-notes", _spellImporter.ImportedFolder);
         Assert.Contains("320 spells", _viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task RunCommand_ImportsTheConditionsFromTheSameNotesAndReportsThem()
+    {
+        FillInPaths();
+        _conditionImporter.Result = 15;
+
+        await _viewModel.RunCommand.ExecuteAsync(null);
+
+        Assert.Equal("converted-notes", _conditionImporter.ImportedFolder);
+        Assert.Contains("15 conditions", _viewModel.StatusMessage, StringComparison.Ordinal);
     }
 
     [Fact]

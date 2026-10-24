@@ -6,7 +6,7 @@ namespace DnDInitiative.App.ViewModels;
 /// <summary>
 /// A spell prepared for display: text is formatted and empty parts are left out.
 /// </summary>
-public sealed class SpellDetailsViewModel
+public sealed class SpellDetailsViewModel : IReferenceCard
 {
     public SpellDetailsViewModel(Spell spell)
     {

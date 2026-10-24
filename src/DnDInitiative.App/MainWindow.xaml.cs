@@ -15,34 +15,34 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly IUiStateStore _uiState;
-    private readonly SpellViewerViewModel _spellViewer;
+    private readonly ReferenceViewerViewModel _referenceViewer;
     private readonly ILinkOpener _linkOpener;
 
     public MainWindow(
         MainViewModel viewModel,
         IUiStateStore uiState,
-        SpellViewerViewModel spellViewer,
+        ReferenceViewerViewModel referenceViewer,
         ILinkOpener linkOpener)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _uiState = uiState;
-        _spellViewer = spellViewer;
+        _referenceViewer = referenceViewer;
         _linkOpener = linkOpener;
         DataContext = viewModel;
-        SpellPopup.DataContext = spellViewer;
+        ReferencePopup.DataContext = referenceViewer;
 
         // A clicked link raises RequestNavigate, which travels up from the link through
         // everything that contains it. Listening here catches links on every page. The card
-        // in the popup listens as well: a spell's text can link to other spells, and a popup
+        // in the popup listens as well: a spell's text can link to other spells and conditions, and a popup
         // is a separate little window that may not pass the event on.
         var onLinkClicked = new RequestNavigateEventHandler(OnLinkClicked);
         AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
-        SpellCard.AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
+        ReferenceCard.AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
 
         // Once text in the popup has been clicked, the keyboard belongs to the popup and the
         // window no longer sees its keys. So the card closes itself on Escape as well.
-        SpellCard.PreviewKeyDown += (_, e) => CloseSpellOnEscape(e);
+        ReferenceCard.PreviewKeyDown += (_, e) => ClosePopupOnEscape(e);
 
         // Before the window is shown, so it opens at its old size instead of jumping to it.
         RestoreSize();
@@ -50,11 +50,16 @@ public partial class MainWindow : Window
 
     private void OnLinkClicked(object sender, RequestNavigateEventArgs e)
     {
-        if (SpellLink.ToReference(e.Uri) is { } reference)
+        if (ReferenceLink.Spell.ToReference(e.Uri) is { } spell)
         {
-            _spellViewer.ShowCommand.Execute(reference);
+            _referenceViewer.ShowSpellCommand.Execute(spell);
 
             // Stops the event here, so it is not handled a second time further up.
+            e.Handled = true;
+        }
+        else if (ReferenceLink.Condition.ToReference(e.Uri) is { } condition)
+        {
+            _referenceViewer.ShowConditionCommand.Execute(condition);
             e.Handled = true;
         }
         else if (WebLink.IsWebAddress(e.Uri))
@@ -70,14 +75,14 @@ public partial class MainWindow : Window
         base.OnPreviewKeyDown(e);
 
         // Until something in the popup is clicked, the keyboard is still the window's.
-        CloseSpellOnEscape(e);
+        ClosePopupOnEscape(e);
     }
 
-    private void CloseSpellOnEscape(KeyEventArgs e)
+    private void ClosePopupOnEscape(KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && _spellViewer.IsOpen)
+        if (e.Key == Key.Escape && _referenceViewer.IsOpen)
         {
-            _spellViewer.CloseCommand.Execute(null);
+            _referenceViewer.CloseCommand.Execute(null);
             e.Handled = true;
         }
     }

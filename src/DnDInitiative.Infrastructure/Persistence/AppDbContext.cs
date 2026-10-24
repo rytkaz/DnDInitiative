@@ -17,6 +17,8 @@ internal sealed class AppDbContext : DbContext
 
     public DbSet<SpellEntity> Spells => Set<SpellEntity>();
 
+    public DbSet<ConditionEntity> Conditions => Set<ConditionEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PartyEntity>(party =>
@@ -74,6 +76,15 @@ internal sealed class AppDbContext : DbContext
             // Looked up by name when a link names a spell instead of giving its key.
             spell.Property(entity => entity.Name).IsRequired().UseCollation("NOCASE");
             spell.HasIndex(entity => entity.Name);
+        });
+
+        modelBuilder.Entity<ConditionEntity>(condition =>
+        {
+            condition.ToTable("Conditions");
+            condition.HasKey(entity => entity.Name);
+
+            // On the key itself, so "prone" and "Prone" are the same condition to the database.
+            condition.Property(entity => entity.Name).UseCollation("NOCASE");
         });
     }
 }
