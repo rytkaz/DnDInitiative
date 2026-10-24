@@ -17,6 +17,10 @@ internal sealed class CampaignService : ICampaignService
     private const string ManifestFileName = "campaign.json";
     private const string StateFileName = "app-state.json";
 
+    // The subfolders the repositories keep their items in. A new kind of item needs its folder
+    // added here, or Save As leaves it behind.
+    private static readonly string[] ItemFolders = ["parties", "encounters", "statblocks"];
+
     private readonly CampaignLocation _location;
     private readonly CampaignOptions _options;
     private readonly string _stateFilePath;
@@ -110,16 +114,96 @@ internal sealed class CampaignService : ICampaignService
         return await OpenAsync(_options.DefaultFolder, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<Campaign> SaveAsAsync(string folder, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folder);
+
+        Campaign source = Current ?? throw new InvalidOperationException("No campaign is open.");
+        string target = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+
+        // A copy inside the campaign would be copied again by the next Save As, and end up in its git repository.
+        if (IsSameOrInside(target, source.Folder))
+        {
+            throw new CampaignException($"'{target}' is inside the open campaign. Pick a folder outside it.");
+        }
+
+        if (Inspect(target) != CampaignFolderState.Empty)
+        {
+            throw new CampaignException($"'{target}' is not empty. Pick an empty folder for the copy.");
+        }
+
+        try
+        {
+            CopyItemFiles(source.Folder, target);
+            await WriteManifestAsync(target, NewManifest(target), cancellationToken).ConfigureAwait(false);
+        }
+        catch (IOException exception)
+        {
+            throw CopyFailed(target, exception);
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            throw CopyFailed(target, exception);
+        }
+
+        return await OpenAsync(target, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsSameOrInside(string folder, string campaignFolder)
+    {
+        return folder.Equals(campaignFolder, StringComparison.OrdinalIgnoreCase)
+            || folder.StartsWith(campaignFolder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void CopyItemFiles(string sourceFolder, string targetFolder)
+    {
+        Directory.CreateDirectory(targetFolder);
+
+        // Only the item folders: anything else in the campaign folder, such as .git, belongs to the original.
+        foreach (string subfolder in ItemFolders)
+        {
+            string from = Path.Combine(sourceFolder, subfolder);
+            if (!Directory.Exists(from))
+            {
+                continue;
+            }
+
+            string to = Path.Combine(targetFolder, subfolder);
+            Directory.CreateDirectory(to);
+
+            // Only the item files, not a .tmp left behind by a save that was interrupted.
+            foreach (string file in Directory.EnumerateFiles(from, "*.json"))
+            {
+                File.Copy(file, Path.Combine(to, Path.GetFileName(file)));
+            }
+        }
+    }
+
+    private static CampaignException CopyFailed(string folder, Exception exception)
+    {
+        return new CampaignException($"The campaign could not be copied to '{folder}': {exception.Message}", exception);
+    }
+
+    // Any folder can become a campaign. It is named after the folder to begin with.
+    private static CampaignManifest NewManifest(string folder)
+    {
+        return new CampaignManifest(CurrentFormatVersion, Path.GetFileName(folder));
+    }
+
+    private static async Task WriteManifestAsync(string folder, CampaignManifest manifest, CancellationToken cancellationToken)
+    {
+        string json = JsonSerializer.Serialize(manifest, CampaignJson.Options) + "\n";
+        await File.WriteAllTextAsync(Path.Combine(folder, ManifestFileName), json, cancellationToken).ConfigureAwait(false);
+    }
+
     private static async Task<CampaignManifest> ReadOrCreateManifestAsync(string folder, CancellationToken cancellationToken)
     {
         string path = Path.Combine(folder, ManifestFileName);
 
         if (!File.Exists(path))
         {
-            // Any folder can become a campaign. It is named after the folder to begin with.
-            var created = new CampaignManifest(CurrentFormatVersion, Path.GetFileName(folder));
-            string json = JsonSerializer.Serialize(created, CampaignJson.Options) + "\n";
-            await File.WriteAllTextAsync(path, json, cancellationToken).ConfigureAwait(false);
+            CampaignManifest created = NewManifest(folder);
+            await WriteManifestAsync(folder, created, cancellationToken).ConfigureAwait(false);
             return created;
         }
 

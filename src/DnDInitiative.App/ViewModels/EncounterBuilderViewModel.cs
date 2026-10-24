@@ -371,6 +371,26 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         StatusMessage = $"Saved {editor.Name}.";
     }
 
+    public override async Task<IReadOnlyList<string>> SaveAllAsync()
+    {
+        var failures = new List<string>();
+
+        // A copy of the list, because storing an encounter puts the list back in order.
+        foreach (EncounterEditorViewModel editor in Encounters.Where(encounter => encounter.HasUnsavedChanges).ToList())
+        {
+            if (editor.Validate())
+            {
+                await StoreAsync(editor);
+            }
+            else
+            {
+                failures.Add("Encounter: (no name) needs a name");
+            }
+        }
+
+        return failures;
+    }
+
     [RelayCommand(CanExecute = nameof(HasSelectedEncounter))]
     private async Task DeleteAsync()
     {

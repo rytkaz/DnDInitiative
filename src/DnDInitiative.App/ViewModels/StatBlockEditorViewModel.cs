@@ -119,6 +119,12 @@ public sealed partial class StatBlockEditorViewModel : ObservableValidator
 
     public IReadOnlyList<FeatureListEditorViewModel> FeatureLists { get; }
 
+    /// <summary>Called after the stat block was stored without closing the editor.</summary>
+    public void MarkSaved()
+    {
+        _savedState.MarkSaved();
+    }
+
     public bool Validate()
     {
         ValidateAllProperties();

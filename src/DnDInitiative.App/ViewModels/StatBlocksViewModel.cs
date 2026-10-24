@@ -181,17 +181,48 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
             return;
         }
 
-        if (!editor.Validate())
+        if (await StoreAsync(editor) is not { } statBlock)
         {
             StatusMessage = "Give the stat block a name before saving.";
             return;
         }
 
-        StatBlock statBlock = editor.ToStatBlock();
-        await _repository.SaveAsync(statBlock);
         Editor = null;
         await RefreshListAsync(statBlock.Id);
         StatusMessage = $"Saved {statBlock.Name}.";
+    }
+
+    // Unlike the Save button, this keeps the editor open: saving the whole campaign is
+    // something done in passing, not a sign that the user has finished with the stat block.
+    public override async Task<IReadOnlyList<string>> SaveAllAsync()
+    {
+        if (Editor is not { HasUnsavedChanges: true } editor)
+        {
+            return [];
+        }
+
+        if (await StoreAsync(editor) is not { } statBlock)
+        {
+            return ["Stat block: (no name) needs a name"];
+        }
+
+        // The list behind the editor may show the old name, or not have a new stat block yet.
+        await RefreshListAsync(statBlock.Id);
+        return [];
+    }
+
+    /// <summary>Stores what is in the editor. Returns null, and stores nothing, if it is not valid.</summary>
+    private async Task<StatBlock?> StoreAsync(StatBlockEditorViewModel editor)
+    {
+        if (!editor.Validate())
+        {
+            return null;
+        }
+
+        StatBlock statBlock = editor.ToStatBlock();
+        await _repository.SaveAsync(statBlock);
+        editor.MarkSaved();
+        return statBlock;
     }
 
     [RelayCommand]

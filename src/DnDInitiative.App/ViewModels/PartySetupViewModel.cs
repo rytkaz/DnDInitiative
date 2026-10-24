@@ -100,9 +100,33 @@ public sealed partial class PartySetupViewModel : PageViewModel
             return;
         }
 
+        await StoreAsync(editor);
+        StatusMessage = $"Saved {editor.Name}.";
+    }
+
+    public override async Task<IReadOnlyList<string>> SaveAllAsync()
+    {
+        var failures = new List<string>();
+        foreach (PartyEditorViewModel editor in Parties.Where(party => party.HasUnsavedChanges))
+        {
+            if (editor.Validate())
+            {
+                await StoreAsync(editor);
+            }
+            else
+            {
+                string name = string.IsNullOrWhiteSpace(editor.Name) ? "(no name)" : editor.Name;
+                failures.Add($"Party: {name} has fields that need fixing");
+            }
+        }
+
+        return failures;
+    }
+
+    private async Task StoreAsync(PartyEditorViewModel editor)
+    {
         await _repository.SaveAsync(editor.ToParty());
         editor.MarkSaved();
-        StatusMessage = $"Saved {editor.Name}.";
     }
 
     [RelayCommand(CanExecute = nameof(HasSelectedParty))]

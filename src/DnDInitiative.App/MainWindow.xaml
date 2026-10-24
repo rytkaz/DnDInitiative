@@ -16,151 +16,173 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <!--  As wide as the panel in it, which has two widths: open and folded away  -->
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+    <Window.InputBindings>
+        <KeyBinding Command="{Binding OpenCampaignCommand}" Gesture="Ctrl+O" />
+        <KeyBinding Command="{Binding SaveCampaignCommand}" Gesture="Ctrl+S" />
+        <KeyBinding Command="{Binding SaveCampaignAsCommand}" Gesture="Ctrl+Shift+S" />
+    </Window.InputBindings>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Command="{Binding OpenCampaignCommand}"
+                          Header="_Open Campaign..."
+                          InputGestureText="Ctrl+O"
+                          ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
+                <MenuItem Command="{Binding SaveCampaignCommand}"
+                          Header="_Save Campaign"
+                          InputGestureText="Ctrl+S"
+                          ToolTip="Save every encounter, party and stat block with unsaved changes" />
+                <MenuItem Command="{Binding SaveCampaignAsCommand}"
+                          Header="Save Campaign _As..."
+                          InputGestureText="Ctrl+Shift+S"
+                          ToolTip="Copy the campaign to an empty folder, switch to the copy, and save the unsaved changes there" />
+                <Separator />
+                <MenuItem Click="OnExitClick"
+                          Header="E_xit"
+                          InputGestureText="Alt+F4" />
+            </MenuItem>
+        </Menu>
 
-        <DockPanel Grid.Column="0">
-            <DockPanel.Style>
-                <Style TargetType="DockPanel">
-                    <Style.Triggers>
-                        <!--  Open: the width the user dragged it to. Folded away: no width set, so as narrow as the vertical tabs.  -->
-                        <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="False">
-                            <Setter Property="Width" Value="{Binding NavigationWidth.Value}" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </DockPanel.Style>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <!--  As wide as the panel in it, which has two widths: open and folded away  -->
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-            <!--  Folds the panel away, or brings it back  -->
-            <Button Width="36"
-                    Margin="8"
-                    Padding="0,4"
-                    HorizontalAlignment="Left"
-                    Command="{Binding ToggleNavigationCommand}"
-                    Content="☰"
-                    DockPanel.Dock="Top"
-                    ToolTip="Show or hide the page list" />
-
-            <!--  Folded away: one vertical tab per page, like the tool window tabs at the edge of Visual Studio  -->
-            <ListBox ItemsSource="{Binding Pages}"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     SelectedItem="{Binding CurrentPage}"
-                     Visibility="{Binding IsNavigationCollapsed, Converter={StaticResource BoolToVisibility}}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Margin="0,6"
-                                   Text="{Binding ShortTitle}"
-                                   ToolTip="{Binding Title}">
-                            <!--  Turned a quarter circle, so the text reads from top to bottom  -->
-                            <TextBlock.LayoutTransform>
-                                <RotateTransform Angle="90" />
-                            </TextBlock.LayoutTransform>
-                        </TextBlock>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-
-            <!--  Open: the page list and the campaign. Hidden when the panel is folded away.  -->
-            <DockPanel>
+            <DockPanel Grid.Column="0">
                 <DockPanel.Style>
                     <Style TargetType="DockPanel">
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="True">
-                                <Setter Property="Visibility" Value="Collapsed" />
+                            <!--  Open: the width the user dragged it to. Folded away: no width set, so as narrow as the vertical tabs.  -->
+                            <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="False">
+                                <Setter Property="Width" Value="{Binding NavigationWidth.Value}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
                 </DockPanel.Style>
 
-                <!--  Drag strip on the panel's right edge. Hidden with the rest while folded away.  -->
-                <Thumb Width="6"
-                       behaviors:ResizeHandle.PanelWidth="{Binding NavigationWidth}"
-                       DockPanel.Dock="Right"
-                       Style="{StaticResource ColumnResizeHandle}" />
+                <!--  Folds the panel away, or brings it back  -->
+                <Button Width="36"
+                        Margin="8"
+                        Padding="0,4"
+                        HorizontalAlignment="Left"
+                        Command="{Binding ToggleNavigationCommand}"
+                        Content="☰"
+                        DockPanel.Dock="Top"
+                        ToolTip="Show or hide the page list" />
 
-                <!--  The open campaign, below the page list  -->
-                <StackPanel Margin="12" DockPanel.Dock="Bottom">
-                    <TextBlock Style="{StaticResource SecondaryText}" Text="Campaign" />
-                    <TextBlock FontWeight="SemiBold"
-                               Text="{Binding CampaignName}"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding CampaignName}" />
-                    <TextBlock Margin="0,4,0,0"
-                               Text="{Binding CampaignMessage}"
-                               TextWrapping="Wrap" />
-                    <Button Margin="0,8,0,0"
-                            Padding="12,4"
-                            HorizontalAlignment="Stretch"
-                            Command="{Binding ReloadCampaignCommand}"
-                            Content="Reload"
-                            ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
-                            Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
-                    <Button Margin="0,8,0,0"
-                            Padding="12,4"
-                            HorizontalAlignment="Stretch"
-                            Command="{Binding OpenCampaignCommand}"
-                            Content="Open campaign..."
-                            ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
-                </StackPanel>
+                <!--  Folded away: one vertical tab per page, like the tool window tabs at the edge of Visual Studio  -->
+                <ListBox ItemsSource="{Binding Pages}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         SelectedItem="{Binding CurrentPage}"
+                         Visibility="{Binding IsNavigationCollapsed, Converter={StaticResource BoolToVisibility}}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="0,6"
+                                       Text="{Binding ShortTitle}"
+                                       ToolTip="{Binding Title}">
+                                <!--  Turned a quarter circle, so the text reads from top to bottom  -->
+                                <TextBlock.LayoutTransform>
+                                    <RotateTransform Angle="90" />
+                                </TextBlock.LayoutTransform>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
-                <ListBox DisplayMemberPath="Title"
-                         ItemsSource="{Binding Pages}"
-                         SelectedItem="{Binding CurrentPage}" />
+                <!--  Open: the page list and the campaign. Hidden when the panel is folded away.  -->
+                <DockPanel>
+                    <DockPanel.Style>
+                        <Style TargetType="DockPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DockPanel.Style>
+
+                    <!--  Drag strip on the panel's right edge. Hidden with the rest while folded away.  -->
+                    <Thumb Width="6"
+                           behaviors:ResizeHandle.PanelWidth="{Binding NavigationWidth}"
+                           DockPanel.Dock="Right"
+                           Style="{StaticResource ColumnResizeHandle}" />
+
+                    <!--  The open campaign, below the page list  -->
+                    <StackPanel Margin="12" DockPanel.Dock="Bottom">
+                        <TextBlock Style="{StaticResource SecondaryText}" Text="Campaign" />
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="{Binding CampaignName}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding CampaignName}" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Text="{Binding CampaignMessage}"
+                                   TextWrapping="Wrap" />
+                        <Button Margin="0,8,0,0"
+                                Padding="12,4"
+                                HorizontalAlignment="Stretch"
+                                Command="{Binding ReloadCampaignCommand}"
+                                Content="Reload"
+                                ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
+                                Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+
+                    <ListBox DisplayMemberPath="Title"
+                             ItemsSource="{Binding Pages}"
+                             SelectedItem="{Binding CurrentPage}" />
+                </DockPanel>
             </DockPanel>
-        </DockPanel>
 
-        <ContentControl Grid.Column="1"
-                        Margin="24"
-                        Content="{Binding CurrentPage}">
-            <ContentControl.Resources>
-                <DataTemplate DataType="{x:Type viewModels:PartySetupViewModel}">
-                    <views:PartySetupView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:InitiativeTrackerViewModel}">
-                    <views:InitiativeTrackerView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:StatBlocksViewModel}">
-                    <views:StatBlocksView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:EncounterBuilderViewModel}">
-                    <views:EncounterBuilderView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:ImportViewModel}">
-                    <views:ImportView />
-                </DataTemplate>
-                <DataTemplate DataType="{x:Type viewModels:HomebreweryImportViewModel}">
-                    <views:HomebreweryImportView />
-                </DataTemplate>
-            </ContentControl.Resources>
-        </ContentControl>
+            <ContentControl Grid.Column="1"
+                            Margin="24"
+                            Content="{Binding CurrentPage}">
+                <ContentControl.Resources>
+                    <DataTemplate DataType="{x:Type viewModels:PartySetupViewModel}">
+                        <views:PartySetupView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:InitiativeTrackerViewModel}">
+                        <views:InitiativeTrackerView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:StatBlocksViewModel}">
+                        <views:StatBlocksView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:EncounterBuilderViewModel}">
+                        <views:EncounterBuilderView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:ImportViewModel}">
+                        <views:ImportView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:HomebreweryImportViewModel}">
+                        <views:HomebreweryImportView />
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
 
-        <!--
-            The spell or condition a clicked link refers to. It opens where the mouse is and closes on a click
-            anywhere else. Its data context is the spell viewer, set in the code-behind.
-        -->
-        <Popup x:Name="ReferencePopup"
-               AllowsTransparency="True"
-               IsOpen="{Binding IsOpen, Mode=TwoWay}"
-               Placement="Mouse"
-               PopupAnimation="Fade"
-               StaysOpen="False">
             <!--
-                The size is set on the grid, whose data context is still the viewer; the card's own
-                is the spell or condition. The card is as tall as its text, up to the maximum.
+                The spell or condition a clicked link refers to. It opens where the mouse is and closes on a click
+                anywhere else. Its data context is the spell viewer, set in the code-behind.
             -->
-            <Grid Width="{Binding CardWidth.Value}" MaxHeight="{Binding CardMaxHeight.Value}">
-                <Border BorderBrush="#B8A47E" BorderThickness="1">
-                    <views:ReferenceCardView x:Name="ReferenceCard" DataContext="{Binding Details}" />
-                </Border>
-                <Thumb Margin="0,0,2,2"
-                       behaviors:ResizeHandle.PanelHeight="{Binding CardMaxHeight}"
-                       behaviors:ResizeHandle.PanelWidth="{Binding CardWidth}"
-                       Style="{StaticResource BottomRightResizeHandle}" />
-            </Grid>
-        </Popup>
-    </Grid>
+            <Popup x:Name="ReferencePopup"
+                   AllowsTransparency="True"
+                   IsOpen="{Binding IsOpen, Mode=TwoWay}"
+                   Placement="Mouse"
+                   PopupAnimation="Fade"
+                   StaysOpen="False">
+                <!--
+                    The size is set on the grid, whose data context is still the viewer; the card's own
+                    is the spell or condition. The card is as tall as its text, up to the maximum.
+                -->
+                <Grid Width="{Binding CardWidth.Value}" MaxHeight="{Binding CardMaxHeight.Value}">
+                    <Border BorderBrush="#B8A47E" BorderThickness="1">
+                        <views:ReferenceCardView x:Name="ReferenceCard" DataContext="{Binding Details}" />
+                    </Border>
+                    <Thumb Margin="0,0,2,2"
+                           behaviors:ResizeHandle.PanelHeight="{Binding CardMaxHeight}"
+                           behaviors:ResizeHandle.PanelWidth="{Binding CardWidth}"
+                           Style="{StaticResource BottomRightResizeHandle}" />
+                </Grid>
+            </Popup>
+        </Grid>
+    </DockPanel>
 </Window>

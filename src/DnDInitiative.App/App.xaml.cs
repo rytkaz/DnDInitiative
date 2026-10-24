@@ -121,6 +121,7 @@ public partial class App : Application
         services.AddSingleton<IFolderPicker, FolderPicker>();
         services.AddSingleton<IFilePicker, FilePicker>();
         services.AddSingleton<IConfirmationService, ConfirmationService>();
+        services.AddSingleton<IUnsavedChangesPrompt, UnsavedChangesPrompt>();
         services.AddSingleton<IClipboardService, ClipboardService>();
         services.AddSingleton<ILinkOpener, BrowserLinkOpener>();
         services.AddSingleton<IUiStateStore>(new JsonUiStateStore(Path.Combine(dataDirectory, "ui-state.json")));

@@ -15,6 +15,7 @@ public class MainViewModelTests
 {
     private readonly WeakReferenceMessenger _messenger = new();
     private readonly FakeConfirmation _confirmation = new();
+    private readonly FakeUnsavedChangesPrompt _unsavedChangesPrompt = new();
     private readonly InitiativeTrackerViewModel _tracker;
     private readonly EncounterBuilderViewModel _encounterBuilder;
     private readonly PartySetupViewModel _partySetup;
@@ -73,6 +74,7 @@ public class MainViewModelTests
             homebreweryImport,
             _messenger,
             _confirmation,
+            _unsavedChangesPrompt,
             _campaigns,
             _folderPicker,
             _uiState);
@@ -91,22 +93,23 @@ public class MainViewModelTests
     [Fact]
     public void ConfirmClose_NothingUnsaved_ClosesWithoutAsking()
     {
-        Assert.True(_viewModel.ConfirmClose());
-        Assert.Empty(_confirmation.Questions);
+        Assert.Equal(CloseAction.Close, _viewModel.ConfirmClose());
+        Assert.Empty(_unsavedChangesPrompt.Questions);
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void ConfirmClose_UnsavedParty_NamesItAndFollowsTheAnswer(bool answer)
+    [InlineData(UnsavedChangesChoice.Save, CloseAction.SaveThenClose)]
+    [InlineData(UnsavedChangesChoice.Discard, CloseAction.Close)]
+    [InlineData(UnsavedChangesChoice.Cancel, CloseAction.Stay)]
+    public void ConfirmClose_UnsavedParty_NamesItAndFollowsTheAnswer(UnsavedChangesChoice answer, CloseAction expected)
     {
         _partySetup.NewPartyCommand.Execute(null);
-        _confirmation.Answer = answer;
+        _unsavedChangesPrompt.Answer = answer;
 
-        bool canClose = _viewModel.ConfirmClose();
+        CloseAction action = _viewModel.ConfirmClose();
 
-        Assert.Equal(answer, canClose);
-        Assert.Contains("New party", Assert.Single(_confirmation.Questions), StringComparison.Ordinal);
+        Assert.Equal(expected, action);
+        Assert.Contains("New party", Assert.Single(_unsavedChangesPrompt.Questions), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -148,12 +151,12 @@ public class MainViewModelTests
     {
         _partySetup.NewPartyCommand.Execute(null);
         _folderPicker.FolderToReturn = @"C:\campaigns\Strahd";
-        _confirmation.Answer = false;
+        _unsavedChangesPrompt.Answer = UnsavedChangesChoice.Cancel;
 
         await _viewModel.OpenCampaignCommand.ExecuteAsync(null);
 
         Assert.Equal("First", _viewModel.CampaignName);
-        Assert.Contains("New party", Assert.Single(_confirmation.Questions), StringComparison.Ordinal);
+        Assert.Contains("New party", Assert.Single(_unsavedChangesPrompt.Questions), StringComparison.Ordinal);
         Assert.Single(_partySetup.Parties);
     }
 
@@ -233,7 +236,7 @@ public class MainViewModelTests
 
         Assert.Equal("Pulled from git", Assert.Single(_partySetup.Parties).Name);
         Assert.False(_viewModel.HasPendingExternalChanges);
-        Assert.Single(_confirmation.Questions);
+        Assert.Single(_unsavedChangesPrompt.Questions);
     }
 
     [Fact]
@@ -304,6 +307,7 @@ public class MainViewModelTests
             (HomebreweryImportViewModel)_viewModel.Pages[5],
             messenger,
             _confirmation,
+            _unsavedChangesPrompt,
             _campaigns,
             _folderPicker,
             uiState);

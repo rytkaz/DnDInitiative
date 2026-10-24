@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Globalization;
+
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 
@@ -8,12 +10,21 @@ using DnDInitiative.Core.Campaigns;
 
 namespace DnDInitiative.App.ViewModels;
 
+/// <summary>What the window should do after the user was asked about closing.</summary>
+public enum CloseAction
+{
+    Close,
+    Stay,
+    SaveThenClose,
+}
+
 public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCombatMessage>
 {
     private const string AppTitle = "DnD Initiative";
 
     private readonly InitiativeTrackerViewModel _initiativeTracker;
     private readonly IConfirmationService _confirmation;
+    private readonly IUnsavedChangesPrompt _unsavedChangesPrompt;
     private readonly ICampaignService _campaigns;
     private readonly IFolderPicker _folderPicker;
     private readonly IUiStateStore _uiState;
@@ -29,7 +40,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     [NotifyPropertyChangedFor(nameof(WindowTitle))]
     private string _campaignName;
 
-    /// <summary>Why the last attempt to open a campaign failed, or empty.</summary>
+    /// <summary>The outcome of the last save, or why the last attempt to open a campaign failed, or empty.</summary>
     [ObservableProperty]
     private string _campaignMessage = "";
 
@@ -46,6 +57,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         HomebreweryImportViewModel homebreweryImport,
         IMessenger messenger,
         IConfirmationService confirmation,
+        IUnsavedChangesPrompt unsavedChangesPrompt,
         ICampaignService campaigns,
         IFolderPicker folderPicker,
         IUiStateStore uiState)
@@ -56,6 +68,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
 
         _initiativeTracker = initiativeTracker;
         _confirmation = confirmation;
+        _unsavedChangesPrompt = unsavedChangesPrompt;
         _campaigns = campaigns;
         _folderPicker = folderPicker;
         _uiState = uiState;
@@ -114,16 +127,93 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         }
     }
 
-    /// <summary>Returns false if the user chose to stay because of unsaved changes.</summary>
-    public bool ConfirmClose()
+    /// <summary>Asks about unsaved changes, if there are any, before the window closes.</summary>
+    public CloseAction ConfirmClose()
     {
         List<string> unsaved = Pages.SelectMany(page => page.UnsavedChanges).ToList();
         if (unsaved.Count == 0)
         {
-            return true;
+            return CloseAction.Close;
         }
 
-        return _confirmation.Confirm("Unsaved changes", DescribeLoss(unsaved, "Close anyway?"));
+        return _unsavedChangesPrompt.Ask("Unsaved changes", DescribeUnsaved(unsaved, combatIsLost: false)) switch
+        {
+            UnsavedChangesChoice.Save => CloseAction.SaveThenClose,
+            UnsavedChangesChoice.Discard => CloseAction.Close,
+            _ => CloseAction.Stay,
+        };
+    }
+
+    /// <summary>
+    /// Saves every unsaved encounter, party and stat block, and reports the outcome in
+    /// <see cref="CampaignMessage"/>. Returns false if anything could not be saved.
+    /// </summary>
+    public async Task<bool> SaveAllAsync()
+    {
+        SaveOutcome outcome = await SavePagesAsync();
+        CampaignMessage = outcome.Describe();
+        return outcome.Failures.Count == 0;
+    }
+
+    [RelayCommand]
+    private async Task SaveCampaignAsync()
+    {
+        await SaveAllAsync();
+    }
+
+    [RelayCommand]
+    private async Task SaveCampaignAsAsync()
+    {
+        string? folder = _folderPicker.PickFolder("Pick an empty folder for the copy of the campaign");
+        if (folder is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // The saved files are copied first and the unsaved edits saved after, into the
+            // copy only. The original stays as it was last saved.
+            Campaign campaign = await _campaigns.SaveAsAsync(folder);
+            CampaignName = campaign.Name;
+        }
+        catch (CampaignException exception)
+        {
+            // Nothing was switched; the current campaign is still open.
+            CampaignMessage = exception.Message;
+            ShowCampaignPanel();
+            return;
+        }
+
+        // The pages are not reloaded: they show the same campaign, now in its new folder.
+        SaveOutcome outcome = await SavePagesAsync();
+        CampaignMessage = outcome.Failures.Count == 0
+            ? $"Saved a copy in {folder}."
+            : $"Copied the campaign to {folder}. {outcome.Describe()}";
+    }
+
+    private async Task<SaveOutcome> SavePagesAsync()
+    {
+        int unsavedCount = Pages.Sum(page => page.UnsavedChanges.Count);
+
+        var failures = new List<string>();
+        foreach (PageViewModel page in Pages)
+        {
+            failures.AddRange(await page.SaveAllAsync());
+        }
+
+        // The message saying what failed is in the campaign panel, so it must not stay folded away.
+        if (failures.Count > 0)
+        {
+            ShowCampaignPanel();
+        }
+
+        return new SaveOutcome(unsavedCount - failures.Count, failures);
+    }
+
+    private void ShowCampaignPanel()
+    {
+        IsNavigationCollapsed = false;
     }
 
     [RelayCommand]
@@ -143,7 +233,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             return;
         }
 
-        if (!ConfirmLeavingCampaign())
+        if (!await ConfirmLeavingCampaignAsync("Open another campaign", "Open the campaign anyway?"))
         {
             return;
         }
@@ -165,16 +255,44 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         await ReloadPagesAsync();
     }
 
-    private bool ConfirmLeavingCampaign()
+    /// <summary>
+    /// Before the pages drop what they hold: offers to save unsaved changes, and warns that
+    /// a combat in progress, which cannot be saved, will be lost. Returns false to stay.
+    /// </summary>
+    private async Task<bool> ConfirmLeavingCampaignAsync(string title, string question)
     {
-        List<string> losses = Pages.SelectMany(page => page.UnsavedChanges).ToList();
-        if (_initiativeTracker.Combatants.Count > 0)
+        List<string> unsaved = Pages.SelectMany(page => page.UnsavedChanges).ToList();
+        bool hasCombat = _initiativeTracker.Combatants.Count > 0;
+
+        if (unsaved.Count == 0)
         {
-            losses.Add("The combat in the initiative tracker");
+            // Nothing that could be saved, so there is nothing to offer but going ahead or not.
+            return !hasCombat
+                || _confirmation.Confirm(title, DescribeLoss(["The combat in the initiative tracker"], question));
         }
 
-        return losses.Count == 0
-            || _confirmation.Confirm("Open another campaign", DescribeLoss(losses, "Open the campaign anyway?"));
+        return _unsavedChangesPrompt.Ask(title, DescribeUnsaved(unsaved, hasCombat)) switch
+        {
+            // If anything could not be saved, stay, so it is not lost after all.
+            UnsavedChangesChoice.Save => await SaveAllAsync(),
+            UnsavedChangesChoice.Discard => true,
+            _ => false,
+        };
+    }
+
+    private static string DescribeUnsaved(List<string> items, bool combatIsLost)
+    {
+        string blankLine = Environment.NewLine + Environment.NewLine;
+        string combat = combatIsLost
+            ? blankLine + "The combat in the initiative tracker cannot be saved and will be lost either way."
+            : "";
+
+        return "These have unsaved changes:"
+            + blankLine
+            + string.Join(Environment.NewLine, items)
+            + combat
+            + blankLine
+            + "Save them first?";
     }
 
     private static string DescribeLoss(List<string> items, string question)
@@ -190,7 +308,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     [RelayCommand]
     private async Task ReloadCampaignAsync()
     {
-        if (!ConfirmLeavingCampaign())
+        if (!await ConfirmLeavingCampaignAsync("Reload the campaign", "Reload anyway?"))
         {
             return;
         }
@@ -225,5 +343,27 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     private bool HasSomethingToLose()
     {
         return _initiativeTracker.Combatants.Count > 0 || Pages.Any(page => page.UnsavedChanges.Count > 0);
+    }
+
+    /// <summary>How many things a save stored, and a line for each one it could not.</summary>
+    private sealed record SaveOutcome(int SavedCount, IReadOnlyList<string> Failures)
+    {
+        public string Describe()
+        {
+            if (Failures.Count > 0)
+            {
+                string saved = SavedCount > 0 ? DescribeSaved() + " " : "";
+                return saved + "Not saved:" + Environment.NewLine + string.Join(Environment.NewLine, Failures);
+            }
+
+            return SavedCount == 0 ? "Nothing to save." : DescribeSaved();
+        }
+
+        private string DescribeSaved()
+        {
+            return SavedCount == 1
+                ? "Saved 1 item."
+                : string.Create(CultureInfo.InvariantCulture, $"Saved {SavedCount} items.");
+        }
     }
 }

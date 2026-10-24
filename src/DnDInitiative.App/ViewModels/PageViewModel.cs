@@ -18,6 +18,15 @@ public abstract class PageViewModel : ObservableObject
     public virtual IReadOnlyList<string> UnsavedChanges => [];
 
     /// <summary>
+    /// Saves everything listed in <see cref="UnsavedChanges"/> that can be saved, and keeps it open.
+    /// Returns a line for each thing that could not be saved, saying why.
+    /// </summary>
+    public virtual Task<IReadOnlyList<string>> SaveAllAsync()
+    {
+        return Task.FromResult<IReadOnlyList<string>>([]);
+    }
+
+    /// <summary>
     /// Called after a different campaign was opened. Drop everything that belonged to the old
     /// campaign, unsaved edits included, and load from the new one.
     /// </summary>

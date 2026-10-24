@@ -45,7 +45,7 @@ Built with C# 14, .NET 10 and WPF.
 - Light and dark mode, following the Windows setting
 - The page list folds away to give a page more room
 - Window size and panel sizes are remembered between runs
-- Confirmation before deleting, and a warning before closing with unsaved changes
+- Confirmation before deleting, and an offer to save unsaved changes before closing
 
 ## Install
 
@@ -58,7 +58,15 @@ Requires 64-bit Windows 10 or later.
 
 ## Campaigns
 
-The first run creates a campaign in `Documents\DnD Initiative\My Campaign`. **Open campaign...** in the side panel opens another folder, or starts a new campaign in an empty one.
+The first run creates a campaign in `Documents\DnD Initiative\My Campaign`. The **File** menu manages it:
+
+| Menu item | Shortcut | Does |
+|---|---|---|
+| **Open Campaign...** | Ctrl+O | Opens another campaign folder, or starts a new campaign in an empty one |
+| **Save Campaign** | Ctrl+S | Saves every encounter, party and stat block with unsaved changes |
+| **Save Campaign As...** | Ctrl+Shift+S | Copies the campaign to an empty folder, switches to the copy and saves your unsaved changes there. The original folder stays as it was last saved. |
+
+Closing the app, or opening or reloading a campaign, with unsaved changes asks whether to save them first.
 
 | Path | Contents |
 |---|---|

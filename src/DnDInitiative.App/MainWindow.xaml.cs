@@ -18,6 +18,9 @@ public partial class MainWindow : Window
     private readonly ReferenceViewerViewModel _referenceViewer;
     private readonly ILinkOpener _linkOpener;
 
+    // Set once the unsaved changes have been dealt with, so closing again does not ask again.
+    private bool _isCloseConfirmed;
+
     public MainWindow(
         MainViewModel viewModel,
         IUiStateStore uiState,
@@ -39,6 +42,9 @@ public partial class MainWindow : Window
         var onLinkClicked = new RequestNavigateEventHandler(OnLinkClicked);
         AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
         ReferenceCard.AddHandler(Hyperlink.RequestNavigateEvent, onLinkClicked);
+
+        // A menu item raises Click before it runs its command, so this catches the edit still being typed first.
+        AddHandler(MenuItem.ClickEvent, new RoutedEventHandler((_, _) => PushPendingEdit()));
 
         // Once text in the popup has been clicked, the keyboard belongs to the popup and the
         // window no longer sees its keys. So the card closes itself on Escape as well.
@@ -73,6 +79,12 @@ public partial class MainWindow : Window
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {
         base.OnPreviewKeyDown(e);
+
+        // A shortcut such as Ctrl+S runs its command while the text box being typed in keeps the focus.
+        if (InputBindings.OfType<KeyBinding>().Any(binding => binding.Gesture.Matches(this, e)))
+        {
+            PushPendingEdit();
+        }
 
         // Until something in the popup is clicked, the keyboard is still the window's.
         ClosePopupOnEscape(e);
@@ -120,27 +132,65 @@ public partial class MainWindow : Window
         _uiState.Save(state);
     }
 
+    /// <summary>
+    /// Some text boxes only write to their view model when they lose focus, and clicking the
+    /// window's close button, a menu or a shortcut does not take focus away. Push the text
+    /// across first, or an edit still being typed would be missed.
+    /// </summary>
+    private void PushPendingEdit()
+    {
+        // While a menu is open the keyboard is in the menu, but the text box still has the window's focus.
+        TextBox? textBox = Keyboard.FocusedElement as TextBox ?? FocusManager.GetFocusedElement(this) as TextBox;
+        textBox?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+    }
+
+    private void OnExitClick(object sender, RoutedEventArgs e)
+    {
+        // Through the normal close, so unsaved changes are asked about.
+        Close();
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
+        PushPendingEdit();
 
-        // Most text boxes only write to their view model when they lose focus, and clicking
-        // the window's close button does not take focus away. Push the text across first,
-        // or an edit still being typed would be missed.
-        if (Keyboard.FocusedElement is TextBox textBox)
+        if (!e.Cancel && !_isCloseConfirmed)
         {
-            textBox.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-        }
+            switch (_viewModel.ConfirmClose())
+            {
+                case CloseAction.Close:
+                    break;
 
-        if (!e.Cancel && !_viewModel.ConfirmClose())
-        {
-            e.Cancel = true;
+                case CloseAction.Stay:
+                    e.Cancel = true;
+                    break;
+
+                case CloseAction.SaveThenClose:
+                    // Saving is asynchronous and closing is not, so stay open for now and close again once saved.
+                    e.Cancel = true;
+                    SaveThenCloseAsync().Forget();
+                    break;
+            }
         }
 
         // Only once the window is really closing; a cancelled close will come round again.
         if (!e.Cancel)
         {
             SaveSize();
+        }
+    }
+
+    private async Task SaveThenCloseAsync()
+    {
+        // Close() cannot be called while the window is still in OnClosing, which is where this starts.
+        await System.Windows.Threading.Dispatcher.Yield();
+
+        // If anything could not be saved, stay open: the campaign panel says what, so it can be fixed.
+        if (await _viewModel.SaveAllAsync())
+        {
+            _isCloseConfirmed = true;
+            Close();
         }
     }
 }

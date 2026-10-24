@@ -26,6 +26,13 @@ public interface ICampaignService
 
     /// <summary>Opens the campaign used last time, or the default one if that is not possible.</summary>
     Task<Campaign> OpenLastOrDefaultAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copies the open campaign's saved files to an empty folder and opens the copy, which is
+    /// named after its folder. The original folder is left as it is.
+    /// </summary>
+    /// <exception cref="CampaignException">The folder is not empty, is inside the open campaign, or could not be written.</exception>
+    Task<Campaign> SaveAsAsync(string folder, CancellationToken cancellationToken = default);
 }
 
 /// <summary>What a folder contains, from the point of view of opening it as a campaign.</summary>
