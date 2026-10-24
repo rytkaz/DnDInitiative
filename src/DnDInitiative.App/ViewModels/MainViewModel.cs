@@ -28,6 +28,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     private readonly ICampaignService _campaigns;
     private readonly IFolderPicker _folderPicker;
     private readonly IUiStateStore _uiState;
+    private readonly IWindowService _windows;
     private PageViewModel _currentPage;
     // Brings change notifications from the watcher's background thread to the UI thread.
     private readonly UiProgress<bool> _externalChange;
@@ -53,14 +54,13 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         StatBlocksViewModel statBlocks,
         EncounterBuilderViewModel encounterBuilder,
         PartySetupViewModel partySetup,
-        ImportViewModel import,
-        HomebreweryImportViewModel homebreweryImport,
         IMessenger messenger,
         IConfirmationService confirmation,
         IUnsavedChangesPrompt unsavedChangesPrompt,
         ICampaignService campaigns,
         IFolderPicker folderPicker,
-        IUiStateStore uiState)
+        IUiStateStore uiState,
+        IWindowService windows)
     {
         ArgumentNullException.ThrowIfNull(messenger);
         ArgumentNullException.ThrowIfNull(campaigns);
@@ -72,11 +72,13 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         _campaigns = campaigns;
         _folderPicker = folderPicker;
         _uiState = uiState;
+        _windows = windows;
 
         // Assigned to the field, not the property, so restoring the state does not save it again.
         _isNavigationCollapsed = uiState.Load().IsNavigationCollapsed;
         NavigationWidth = new PanelSize(uiState, "Main.Navigation", defaultValue: 220, minimum: 160, maximum: 480);
-        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import, homebreweryImport];
+        // The imports are not pages: they open in windows of their own from the Import menu.
+        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup];
         _currentPage = initiativeTracker;
 
         // Storage opens a campaign during start-up, before any window exists.
@@ -103,6 +105,12 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     public void Receive(StartCombatMessage message)
     {
         CurrentPage = _initiativeTracker;
+    }
+
+    [RelayCommand]
+    private void ShowImport(ImportKind kind)
+    {
+        _windows.ShowImport(kind);
     }
 
     [RelayCommand]

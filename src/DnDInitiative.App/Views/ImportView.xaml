@@ -13,9 +13,6 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </UserControl.Resources>
     <DockPanel>
-        <TextBlock DockPanel.Dock="Top"
-                   Style="{StaticResource PageTitle}"
-                   Text="{Binding Title}" />
         <TextBlock Margin="0,0,0,12"
                    DockPanel.Dock="Top"
                    Text="Runs ttrpg-convert on your 5eTools data and adds every stat block it produces to the library."

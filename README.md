@@ -95,7 +95,7 @@ Clicking the link opens the app, or brings the running one to the front, and sta
 
 The app does not ship any game content. Stat blocks and spells come from your own data in 5eTools format, converted by [ttrpg-convert-cli](https://github.com/ebullient/ttrpg-convert-cli).
 
-On the **5eTools Import** page:
+Choose **Import → 5eTools...** from the menu bar. The import opens in its own window, so you can keep using the app while a conversion runs:
 
 1. **Choose the data.** Use **Browse...** to pick the `data` folder of your copy, or **From zip...** to unpack it from a zip file you downloaded.
 2. **Tick the books** whose monsters you want. The list has a search box, and **Select all** and **Clear** act on the books the search is showing.
@@ -108,7 +108,7 @@ Spells are imported from every book in the data, whichever books are ticked, bec
 
 ### From the Homebrewery
 
-The **Homebrewery Import** page brings in creatures and conditions written on [the Homebrewery](https://homebrewery.naturalcrit.com):
+**Import → Homebrewery...** opens a window that brings in creatures and conditions written on [the Homebrewery](https://homebrewery.naturalcrit.com):
 
 1. **Choose a PDF** whose links point at Homebrewery documents, such as a monthly creature catalog, and/or **add links** to single documents by hand.
 2. **Name the source.** Every creature is filed under it, and it is part of how encounters find a creature again, so use the same name each time you import the same collection.
@@ -135,8 +135,8 @@ Your campaigns are wherever you put them. Everything else is under `%AppData%\Dn
 | `dndinitiative.db` | Imported stat blocks and spells (SQLite) |
 | `app-state.json` | Which campaign was open last |
 | `ui-state.json` | Window size and panel layout |
-| `conversion-settings.json` | The choices made on the import page |
-| `homebrewery-settings.json` | The choices made on the Homebrewery import page |
+| `conversion-settings.json` | The choices made in the 5eTools import window |
+| `homebrewery-settings.json` | The choices made in the Homebrewery import window |
 | `converter\` | The downloaded converter and the configuration written for it |
 | `source-data\` | Data unpacked from a zip file |
 | `logs\` | One log file per day, kept for 14 days |

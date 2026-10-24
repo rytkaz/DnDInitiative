@@ -24,6 +24,7 @@ public class MainViewModelTests
     private readonly FakeCampaignService _campaigns = new();
     private readonly FakeFolderPicker _folderPicker = new();
     private readonly InMemoryUiStateStore _uiState = new();
+    private readonly FakeWindowService _windows = new();
 
     public MainViewModelTests()
     {
@@ -46,38 +47,18 @@ public class MainViewModelTests
             new InMemoryUiStateStore(),
             new FixedTimeProvider());
         _partySetup = new PartySetupViewModel(_parties, _confirmation, new InMemoryUiStateStore());
-        var import = new ImportViewModel(
-            new InMemoryConversionSettingsStore(),
-            new FakeStatBlockConverter(),
-            new FakeStatBlockImporter(),
-            new FakeFolderPicker(),
-            new FakeFilePicker(),
-            _messenger,
-            new FakeConverterInstaller(),
-            new FakeSourceDataService(),
-            new FakeConverterConfigWriter(),
-            new InMemoryUiStateStore(),
-            new FakeSpellImporter(),
-            new FakeConditionImporter());
-        var homebreweryImport = new HomebreweryImportViewModel(
-            new FakeHomebreweryImporter(),
-            new InMemoryHomebrewerySettingsStore(),
-            new FakeFilePicker(),
-            _messenger,
-            new InMemoryUiStateStore());
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, _confirmation, _messenger, new InMemoryUiStateStore()),
             _encounterBuilder,
             _partySetup,
-            import,
-            homebreweryImport,
             _messenger,
             _confirmation,
             _unsavedChangesPrompt,
             _campaigns,
             _folderPicker,
-            _uiState);
+            _uiState,
+            _windows);
     }
 
     [Fact]
@@ -303,14 +284,13 @@ public class MainViewModelTests
             new StatBlocksViewModel(statBlocks, _confirmation, messenger, new InMemoryUiStateStore()),
             _encounterBuilder,
             _partySetup,
-            (ImportViewModel)_viewModel.Pages[4],
-            (HomebreweryImportViewModel)_viewModel.Pages[5],
             messenger,
             _confirmation,
             _unsavedChangesPrompt,
             _campaigns,
             _folderPicker,
-            uiState);
+            uiState,
+            _windows);
 
         Assert.True(viewModel.IsNavigationCollapsed);
         Assert.Equal(0, uiState.SaveCount);
@@ -319,7 +299,7 @@ public class MainViewModelTests
     [Fact]
     public void Pages_HaveShortNamesForTheFoldedAwayPanel()
     {
-        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party", "Import", "Homebrew"];
+        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party"];
 
         Assert.Equal(expected, _viewModel.Pages.Select(page => page.ShortTitle).ToArray());
     }

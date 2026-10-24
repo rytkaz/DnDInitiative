@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:services="clr-namespace:DnDInitiative.App.Services"
         xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
         xmlns:views="clr-namespace:DnDInitiative.App.Views"
         Title="{Binding WindowTitle}"
@@ -40,6 +41,17 @@
                 <MenuItem Click="OnExitClick"
                           Header="E_xit"
                           InputGestureText="Alt+F4" />
+            </MenuItem>
+            <!--  Each import opens in its own window, so the rest of the app stays usable during a long conversion  -->
+            <MenuItem Header="_Import">
+                <MenuItem Command="{Binding ShowImportCommand}"
+                          CommandParameter="{x:Static services:ImportKind.FiveETools}"
+                          Header="_5eTools..."
+                          ToolTip="Convert your 5eTools data and add its stat blocks, spells and conditions to the library" />
+                <MenuItem Command="{Binding ShowImportCommand}"
+                          CommandParameter="{x:Static services:ImportKind.Homebrewery}"
+                          Header="_Homebrewery..."
+                          ToolTip="Download Homebrewery documents and add their stat blocks and conditions to the library" />
             </MenuItem>
         </Menu>
 
@@ -149,12 +161,6 @@
                     </DataTemplate>
                     <DataTemplate DataType="{x:Type viewModels:EncounterBuilderViewModel}">
                         <views:EncounterBuilderView />
-                    </DataTemplate>
-                    <DataTemplate DataType="{x:Type viewModels:ImportViewModel}">
-                        <views:ImportView />
-                    </DataTemplate>
-                    <DataTemplate DataType="{x:Type viewModels:HomebreweryImportViewModel}">
-                        <views:HomebreweryImportView />
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>

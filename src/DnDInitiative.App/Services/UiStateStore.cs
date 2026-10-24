@@ -13,7 +13,7 @@ public sealed record UiState
     /// <summary>Width of the stat block panel on the tracker page.</summary>
     public double? StatBlockPanelWidth { get; init; }
 
-    /// <summary>Height of the book list on the import page.</summary>
+    /// <summary>Height of the book list in the 5eTools import window.</summary>
     public double? SourcesPanelHeight { get; init; }
 
     /// <summary>Whether the tracker page shows its stat block panel. Null means never changed: shown.</summary>
@@ -34,6 +34,11 @@ public sealed record UiState
     public double? WindowHeight { get; init; }
 
     public bool IsWindowMaximized { get; init; }
+
+    /// <summary>The size of the import windows, shared by all of them.</summary>
+    public double? ImportWindowWidth { get; init; }
+
+    public double? ImportWindowHeight { get; init; }
 
     /// <summary>
     /// The sizes of the panels resized through <see cref="ViewModels.PanelSize"/>, by panel name.

@@ -16,7 +16,7 @@ using Serilog;
 
 namespace DnDInitiative.App.ViewModels;
 
-public sealed partial class ImportViewModel : PageViewModel
+public sealed partial class ImportViewModel : ObservableObject, IImportViewModel
 {
     private const string ToolFilter = "ttrpg-convert (*.exe)|*.exe|All files (*.*)|*.*";
     private const string ConfigFilter = "Configuration (*.json)|*.json|All files (*.*)|*.*";
@@ -129,9 +129,7 @@ public sealed partial class ImportViewModel : PageViewModel
         _uiState.Save(_uiState.Load() with { SourcesPanelHeight = SourcesPanelHeight });
     }
 
-    public override string Title => "5eTools Import";
-
-    public override string ShortTitle => "Import";
+    public string Title => "5eTools Import";
 
     /// <summary>The opposite of <see cref="IsRunning"/>, for disabling the inputs during a run.</summary>
     public bool IsIdle => !IsRunning;
@@ -144,7 +142,7 @@ public sealed partial class ImportViewModel : PageViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
-        // Read once, so paths typed but not yet used survive leaving the page.
+        // Read once, so paths typed but not yet used survive closing the window.
         if (_isLoaded)
         {
             return;

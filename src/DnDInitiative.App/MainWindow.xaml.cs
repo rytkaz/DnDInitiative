@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly IUiStateStore _uiState;
     private readonly ReferenceViewerViewModel _referenceViewer;
     private readonly ILinkOpener _linkOpener;
+    private readonly IWindowService _windows;
 
     // Set once the unsaved changes have been dealt with, so closing again does not ask again.
     private bool _isCloseConfirmed;
@@ -25,13 +26,15 @@ public partial class MainWindow : Window
         MainViewModel viewModel,
         IUiStateStore uiState,
         ReferenceViewerViewModel referenceViewer,
-        ILinkOpener linkOpener)
+        ILinkOpener linkOpener,
+        IWindowService windows)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _uiState = uiState;
         _referenceViewer = referenceViewer;
         _linkOpener = linkOpener;
+        _windows = windows;
         DataContext = viewModel;
         ReferencePopup.DataContext = referenceViewer;
 
@@ -178,6 +181,9 @@ public partial class MainWindow : Window
         if (!e.Cancel)
         {
             SaveSize();
+
+            // The import windows go with it. A running import is cancelled without a second question.
+            _windows.CloseAll();
         }
     }
 

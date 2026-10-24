@@ -11,9 +11,6 @@
              Loaded="OnLoaded"
              mc:Ignorable="d">
     <DockPanel>
-        <TextBlock DockPanel.Dock="Top"
-                   Style="{StaticResource PageTitle}"
-                   Text="{Binding Title}" />
         <TextBlock Margin="0,0,0,12"
                    DockPanel.Dock="Top"
                    Text="Downloads Homebrewery documents and adds the stat blocks and conditions in them to the library. Conditions the library already has from the Player's Handbook or the SRD are kept as they are."

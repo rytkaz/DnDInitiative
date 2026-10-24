@@ -126,6 +126,7 @@ public partial class App : Application
         services.AddSingleton<ILinkOpener, BrowserLinkOpener>();
         services.AddSingleton<IUiStateStore>(new JsonUiStateStore(Path.Combine(dataDirectory, "ui-state.json")));
         services.AddSingleton<EncounterLinkHandler>();
+        services.AddSingleton<IWindowService, WindowService>();
 
         // View models
         services.AddSingleton<InitiativeTrackerViewModel>();

@@ -13,8 +13,10 @@ public sealed class ConfirmationService : IConfirmationService
 
         // With an owner the dialog is centred on the window and stays in front of it.
         // Without one it can end up behind the app, which matters when a link from
-        // Obsidian brings the app forward and asks straight away.
-        Window? owner = Application.Current?.MainWindow;
+        // Obsidian brings the app forward and asks straight away. The owner is the window
+        // being used, so a question from an import window opens over that window.
+        Window? owner = Application.Current?.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive)
+            ?? Application.Current?.MainWindow;
         MessageBoxResult result = owner is { IsLoaded: true }
             ? MessageBox.Show(owner, message, title, Buttons, Icon, Default)
             : MessageBox.Show(message, title, Buttons, Icon, Default);

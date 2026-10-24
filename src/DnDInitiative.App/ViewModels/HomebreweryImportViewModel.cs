@@ -17,7 +17,7 @@ namespace DnDInitiative.App.ViewModels;
 /// Imports creatures and conditions from Homebrewery documents, found through the links in a
 /// PDF catalog and through links typed in by hand.
 /// </summary>
-public sealed partial class HomebreweryImportViewModel : PageViewModel
+public sealed partial class HomebreweryImportViewModel : ObservableObject, IImportViewModel
 {
     private const string PdfFilter = "PDF files (*.pdf)|*.pdf|All files (*.*)|*.*";
 
@@ -70,9 +70,7 @@ public sealed partial class HomebreweryImportViewModel : PageViewModel
     /// <summary>Height of the box for extra links.</summary>
     public PanelSize LinksBoxHeight { get; }
 
-    public override string Title => "Homebrewery Import";
-
-    public override string ShortTitle => "Homebrew";
+    public string Title => "Homebrewery Import";
 
     /// <summary>The opposite of <see cref="IsRunning"/>, for disabling the inputs during a run.</summary>
     public bool IsIdle => !IsRunning;
@@ -84,7 +82,7 @@ public sealed partial class HomebreweryImportViewModel : PageViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
-        // Read once, so what was typed but not yet used survives leaving the page.
+        // Read once, so what was typed but not yet used survives closing the window.
         if (_isLoaded)
         {
             return;
