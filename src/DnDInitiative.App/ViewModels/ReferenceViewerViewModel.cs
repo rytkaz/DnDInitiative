@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using DnDInitiative.App.Services;
+
 using DnDInitiative.Core.Conditions;
 using DnDInitiative.Core.Spells;
 
@@ -25,11 +27,19 @@ public sealed partial class ReferenceViewerViewModel : ObservableObject
     [ObservableProperty]
     private bool _isOpen;
 
-    public ReferenceViewerViewModel(ISpellRepository spells, IConditionRepository conditions)
+    public ReferenceViewerViewModel(ISpellRepository spells, IConditionRepository conditions, IUiStateStore uiState)
     {
         _spells = spells;
         _conditions = conditions;
+        CardWidth = new PanelSize(uiState, "Reference.CardWidth", defaultValue: 460, minimum: 320, maximum: 1000);
+
+        // The card is only as tall as its text, up to this height; then it scrolls.
+        CardMaxHeight = new PanelSize(uiState, "Reference.CardMaxHeight", defaultValue: 620, minimum: 240, maximum: 1400);
     }
+
+    public PanelSize CardWidth { get; }
+
+    public PanelSize CardMaxHeight { get; }
 
     /// <param name="reference">What the link said: a spell's key, or its name.</param>
     // Concurrent on purpose: a second link can be clicked while the first lookup is still running.

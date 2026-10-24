@@ -98,31 +98,42 @@
                     BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="4">
-                <DockPanel Width="340" Height="380">
-                    <TextBox Margin="0,0,0,8"
-                             DockPanel.Dock="Top"
-                             Text="{Binding LibrarySearchText, UpdateSourceTrigger=PropertyChanged}" />
+                <!--
+                    The popup opens above its button, so it grows upwards: the grip is in the top
+                    corner, where the edge that moves is.
+                -->
+                <Grid>
+                    <DockPanel Width="{Binding LibraryPopupWidth.Value}" Height="{Binding LibraryPopupHeight.Value}">
+                        <TextBox Margin="0,0,0,8"
+                                 DockPanel.Dock="Top"
+                                 Text="{Binding LibrarySearchText, UpdateSourceTrigger=PropertyChanged}" />
 
-                    <StackPanel Margin="0,8,0,0"
-                                HorizontalAlignment="Right"
-                                DockPanel.Dock="Bottom"
-                                Orientation="Horizontal">
-                        <TextBlock VerticalAlignment="Center" Text="Count" />
-                        <TextBox Width="60"
-                                 Margin="8,0,0,0"
-                                 Text="{Binding NewQuantity, UpdateSourceTrigger=PropertyChanged}" />
-                        <Button Margin="8,0,0,0"
-                                Padding="12,4"
-                                Command="{Binding AddFromLibraryCommand}"
-                                Content="Add to combat" />
-                    </StackPanel>
+                        <StackPanel Margin="0,8,0,0"
+                                    HorizontalAlignment="Right"
+                                    DockPanel.Dock="Bottom"
+                                    Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="Count" />
+                            <TextBox Width="60"
+                                     Margin="8,0,0,0"
+                                     Text="{Binding NewQuantity, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Margin="8,0,0,0"
+                                    Padding="12,4"
+                                    Command="{Binding AddFromLibraryCommand}"
+                                    Content="Add to combat" />
+                        </StackPanel>
 
-                    <ListBox behaviors:LoadMoreOnScroll.Command="{Binding LoadMoreLibraryResultsCommand}"
-                             ItemTemplate="{StaticResource StatBlockSummaryTemplate}"
-                             ItemsSource="{Binding LibraryResults}"
-                             SelectedItem="{Binding SelectedLibraryStatBlock}"
-                             TextSearch.TextPath="Name" />
-                </DockPanel>
+                        <ListBox behaviors:LoadMoreOnScroll.Command="{Binding LoadMoreLibraryResultsCommand}"
+                                 ItemTemplate="{StaticResource StatBlockSummaryTemplate}"
+                                 ItemsSource="{Binding LibraryResults}"
+                                 SelectedItem="{Binding SelectedLibraryStatBlock}"
+                                 TextSearch.TextPath="Name" />
+                    </DockPanel>
+                    <Thumb Margin="0,-10,-10,0"
+                           behaviors:ResizeHandle.GrowsUp="True"
+                           behaviors:ResizeHandle.PanelHeight="{Binding LibraryPopupHeight}"
+                           behaviors:ResizeHandle.PanelWidth="{Binding LibraryPopupWidth}"
+                           Style="{StaticResource TopRightResizeHandle}" />
+                </Grid>
             </Border>
         </Popup>
     </UserControl.Resources>

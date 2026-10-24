@@ -118,6 +118,12 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         .Select(encounter => $"Encounter: {encounter.Name}")
         .ToList();
 
+    /// <summary>Width of the list of saved encounters, on the left.</summary>
+    public PanelSize EncounterListWidth { get; }
+
+    /// <summary>Width of the stat block library, on the right of the encounter.</summary>
+    public PanelSize LibraryWidth { get; }
+
     public EncounterBuilderViewModel(
         IEncounterRepository encounterRepository,
         IStatBlockRepository statBlockRepository,
@@ -140,6 +146,8 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
         _time = timeProvider;
 
         UiState saved = uiState.Load();
+        EncounterListWidth = new PanelSize(uiState, "EncounterBuilder.EncounterList", defaultValue: 220, minimum: 160, maximum: 500);
+        LibraryWidth = new PanelSize(uiState, "EncounterBuilder.Library", defaultValue: 260, minimum: 180, maximum: 600);
 
         // To the field, so restoring the choice does not save it again.
         _selectedSort = SortOptions[saved.SortEncountersByDate ? 1 : 0];

@@ -44,7 +44,7 @@ public class MainViewModelTests
             _confirmation,
             new InMemoryUiStateStore(),
             new FixedTimeProvider());
-        _partySetup = new PartySetupViewModel(_parties, _confirmation);
+        _partySetup = new PartySetupViewModel(_parties, _confirmation, new InMemoryUiStateStore());
         var import = new ImportViewModel(
             new InMemoryConversionSettingsStore(),
             new FakeStatBlockConverter(),
@@ -62,10 +62,11 @@ public class MainViewModelTests
             new FakeHomebreweryImporter(),
             new InMemoryHomebrewerySettingsStore(),
             new FakeFilePicker(),
-            _messenger);
+            _messenger,
+            new InMemoryUiStateStore());
         _viewModel = new MainViewModel(
             _tracker,
-            new StatBlocksViewModel(statBlocks, _confirmation, _messenger),
+            new StatBlocksViewModel(statBlocks, _confirmation, _messenger, new InMemoryUiStateStore()),
             _encounterBuilder,
             _partySetup,
             import,
@@ -296,7 +297,7 @@ public class MainViewModelTests
                 messenger,
                 _confirmation,
                 new InMemoryUiStateStore()),
-            new StatBlocksViewModel(statBlocks, _confirmation, messenger),
+            new StatBlocksViewModel(statBlocks, _confirmation, messenger, new InMemoryUiStateStore()),
             _encounterBuilder,
             _partySetup,
             (ImportViewModel)_viewModel.Pages[4],

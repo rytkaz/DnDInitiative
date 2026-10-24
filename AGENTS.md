@@ -67,6 +67,11 @@ Inside each project, code is grouped **by feature**, not by kind: `Spells/`, `Co
   - Save with `Save(Load() with { ... })` so other pages' values survive.
   - Restore in the constructor by assigning the field, not the property, so restoring doesn't trigger a save.
   - For drag-resized sizes, save on `DragCompleted`, not on every change.
+- **Every panel can be resized.** Any panel, list, side pane, editor or log area with a size of its own gets a drag handle, in new pages and when an existing page is changed. Follow the existing pattern (the book list on the import page, the stat block side panels):
+  - A `Thumb` strip on the panel's edge, with a `SizeWE` or `SizeNS` cursor and a tooltip. Its `DragDelta` and `DragCompleted` handlers in code-behind only pass the change to the view model; that counts as purely visual work.
+  - The size is a view model property whose setter clamps it between a minimum and a maximum, so a panel can't be dragged shut or past the window.
+  - The size is remembered in `UiState` (a new nullable property) and restored as described above.
+  - A panel that simply fills whatever space is left needs no handle of its own; the handle on its neighbour resizes it.
 
 ## The import pipeline
 
@@ -137,12 +142,9 @@ When converter behaviour matters, check its source (`Tools5eLinkifier`, `QuteMon
 
 - **xUnit** (`Xunit` is a global using). View models are tested with the hand-written fakes in `tests/DnDInitiative.App.Tests/Fakes`, not a mocking library. Add a fake there when a new interface needs one.
 - **Infrastructure tests** use real files in temporary folders and a real SQLite file through `TestDatabase`, which runs the migrations.
-- **Every behaviour change needs tests:**
-  - view model behaviour in App.Tests
-  - parsing and storage in Infrastructure.Tests
-  - rules in Core.Tests
-
-  View code (XAML, code-behind) isn't unit tested. List what to check by hand instead.
+- **Don't write new unit tests.** Changes no longer come with tests of their own.
+  - Existing tests still have to build and pass. When a change breaks one, update it to match the new behaviour, or say why it should go.
+  - Instead of tests, list in your summary what to check by hand.
 - **Use a typed local for collection expressions in assertions:** `string[] expected = ["a", "b"]; Assert.Equal(expected, actual.ToArray());`. An untyped collection expression can make the `Assert.Equal` overload ambiguous.
 - **Watcher tests are timing-based.** Keep their waits generous.
 

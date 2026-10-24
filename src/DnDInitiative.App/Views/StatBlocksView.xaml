@@ -18,13 +18,20 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
+            <!--  The list is as wide as the user dragged it; the gap holds the drag strip.  -->
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="24" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <Thumb Grid.Column="1"
+               behaviors:ResizeHandle.PanelWidth="{Binding ListWidth}"
+               Style="{StaticResource ColumnResizeHandle}" />
+
         <!--  Left: search and list  -->
-        <DockPanel Grid.Column="0" IsEnabled="{Binding IsBrowsing}">
+        <DockPanel Grid.Column="0"
+                   Width="{Binding ListWidth.Value}"
+                   IsEnabled="{Binding IsBrowsing}">
             <TextBlock DockPanel.Dock="Top"
                        Style="{StaticResource PageTitle}"
                        Text="{Binding Title}" />

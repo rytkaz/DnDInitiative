@@ -18,7 +18,7 @@ public class ReferenceViewerViewModelTests
 
     public ReferenceViewerViewModelTests()
     {
-        _viewModel = new ReferenceViewerViewModel(_spells, _conditions);
+        _viewModel = new ReferenceViewerViewModel(_spells, _conditions, new InMemoryUiStateStore());
     }
 
     [Fact]

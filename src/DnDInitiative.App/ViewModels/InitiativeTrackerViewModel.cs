@@ -110,6 +110,11 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
 
     private bool CanAddCreature => !string.IsNullOrWhiteSpace(NewName) && NewMaxHp is null or >= 0;
 
+    /// <summary>Size of the popup that adds creatures from the library.</summary>
+    public PanelSize LibraryPopupWidth { get; }
+
+    public PanelSize LibraryPopupHeight { get; }
+
     public InitiativeTrackerViewModel(
         CombatantFactory combatantFactory,
         IPartyRepository partyRepository,
@@ -129,6 +134,8 @@ public sealed partial class InitiativeTrackerViewModel : PageViewModel, IRecipie
         messenger.Register<StartCombatMessage>(this);
 
         UiState saved = uiState.Load();
+        LibraryPopupWidth = new PanelSize(uiState, "InitiativeTracker.LibraryPopupWidth", defaultValue: 340, minimum: 260, maximum: 900);
+        LibraryPopupHeight = new PanelSize(uiState, "InitiativeTracker.LibraryPopupHeight", defaultValue: 380, minimum: 240, maximum: 900);
 
         // Through the property, not the field, so a size saved by hand in the file is still clamped.
         if (saved.StatBlockPanelWidth is { } savedWidth)

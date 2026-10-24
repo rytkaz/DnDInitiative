@@ -62,6 +62,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
 
         // Assigned to the field, not the property, so restoring the state does not save it again.
         _isNavigationCollapsed = uiState.Load().IsNavigationCollapsed;
+        NavigationWidth = new PanelSize(uiState, "Main.Navigation", defaultValue: 220, minimum: 160, maximum: 480);
         Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, import, homebreweryImport];
         _currentPage = initiativeTracker;
 
@@ -74,6 +75,9 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     }
 
     public IReadOnlyList<PageViewModel> Pages { get; }
+
+    /// <summary>Width of the page list while it is open. Folded away, it is only as wide as its tabs.</summary>
+    public PanelSize NavigationWidth { get; }
 
     public PageViewModel CurrentPage
     {

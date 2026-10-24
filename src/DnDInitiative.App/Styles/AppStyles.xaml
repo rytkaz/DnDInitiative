@@ -20,6 +20,74 @@
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
     </Style>
 
+    <!--
+        Drag handles that resize a panel, used with Behaviors/ResizeHandle. The edge handles are
+        invisible strips: transparent, but still catching the mouse (with no background at all,
+        clicks would pass through). Give them a width or height, or put them in a gap column.
+    -->
+    <Style x:Key="ColumnResizeHandle" TargetType="Thumb">
+        <Setter Property="Cursor" Value="SizeWE" />
+        <Setter Property="ToolTip" Value="Drag to resize" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="RowResizeHandle"
+           BasedOn="{StaticResource ColumnResizeHandle}"
+           TargetType="Thumb">
+        <Setter Property="Cursor" Value="SizeNS" />
+    </Style>
+
+    <!--  For popups: a small visible grip in a corner, since a popup has no edge to find by feel.  -->
+    <Style x:Key="BottomRightResizeHandle" TargetType="Thumb">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="Cursor" Value="SizeNWSE" />
+        <Setter Property="ToolTip" Value="Drag to resize" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent">
+                        <TextBlock HorizontalAlignment="Right"
+                                   VerticalAlignment="Bottom"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="◢" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TopRightResizeHandle" TargetType="Thumb">
+        <Setter Property="Width" Value="14" />
+        <Setter Property="Height" Value="14" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="Cursor" Value="SizeNESW" />
+        <Setter Property="ToolTip" Value="Drag to resize" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent">
+                        <TextBlock HorizontalAlignment="Right"
+                                   VerticalAlignment="Top"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="◥" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!--  The outline around a panel.  -->
     <Style x:Key="PanelBorder" TargetType="Border">
         <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />

@@ -57,13 +57,18 @@ public sealed partial class HomebreweryImportViewModel : PageViewModel
         IHomebreweryImporter importer,
         IHomebrewerySettingsStore settingsStore,
         IFilePicker filePicker,
-        IMessenger messenger)
+        IMessenger messenger,
+        IUiStateStore uiState)
     {
         _importer = importer;
         _settingsStore = settingsStore;
         _filePicker = filePicker;
         _messenger = messenger;
+        LinksBoxHeight = new PanelSize(uiState, "HomebreweryImport.Links", defaultValue: 72, minimum: 40, maximum: 500);
     }
+
+    /// <summary>Height of the box for extra links.</summary>
+    public PanelSize LinksBoxHeight { get; }
 
     public override string Title => "Homebrewery Import";
 

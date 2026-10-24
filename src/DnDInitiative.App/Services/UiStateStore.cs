@@ -34,6 +34,12 @@ public sealed record UiState
     public double? WindowHeight { get; init; }
 
     public bool IsWindowMaximized { get; init; }
+
+    /// <summary>
+    /// The sizes of the panels resized through <see cref="ViewModels.PanelSize"/>, by panel name.
+    /// One dictionary rather than a property each, so a new resizable panel needs nothing here.
+    /// </summary>
+    public IReadOnlyDictionary<string, double>? PanelSizes { get; init; }
 }
 
 /// <summary>Remembers the window's arrangement between runs.</summary>

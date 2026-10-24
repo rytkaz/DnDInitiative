@@ -66,14 +66,19 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
     public StatBlocksViewModel(
         IStatBlockRepository repository,
         IConfirmationService confirmation,
-        IMessenger messenger)
+        IMessenger messenger,
+        IUiStateStore uiState)
     {
         ArgumentNullException.ThrowIfNull(messenger);
 
         _repository = repository;
         _confirmation = confirmation;
+        ListWidth = new PanelSize(uiState, "StatBlocks.List", defaultValue: 280, minimum: 200, maximum: 600);
         messenger.Register(this);
     }
+
+    /// <summary>Width of the search and list, on the left.</summary>
+    public PanelSize ListWidth { get; }
 
     public override async Task ReloadCampaignDataAsync()
     {

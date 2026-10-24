@@ -35,11 +35,15 @@ public sealed partial class PartySetupViewModel : PageViewModel
         .Select(party => $"Party: {party.Name}")
         .ToList();
 
-    public PartySetupViewModel(IPartyRepository repository, IConfirmationService confirmation)
+    public PartySetupViewModel(IPartyRepository repository, IConfirmationService confirmation, IUiStateStore uiState)
     {
         _repository = repository;
         _confirmation = confirmation;
+        PartyListWidth = new PanelSize(uiState, "PartySetup.PartyList", defaultValue: 240, minimum: 160, maximum: 500);
     }
+
+    /// <summary>Width of the list of parties, on the left.</summary>
+    public PanelSize PartyListWidth { get; }
 
     public override async Task ReloadCampaignDataAsync()
     {

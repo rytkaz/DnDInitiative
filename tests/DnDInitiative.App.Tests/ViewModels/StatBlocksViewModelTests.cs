@@ -322,6 +322,7 @@ public class StatBlocksViewModelTests
         return new StatBlocksViewModel(
             repository,
             confirmation ?? new FakeConfirmation(),
-            messenger ?? new WeakReferenceMessenger());
+            messenger ?? new WeakReferenceMessenger(),
+            new InMemoryUiStateStore());
     }
 }

@@ -23,7 +23,7 @@ public class HomebreweryImportViewModelTests
             this,
             (recipient, message) => recipient._received = message);
 
-        _viewModel = new HomebreweryImportViewModel(_importer, _settingsStore, _filePicker, _messenger);
+        _viewModel = new HomebreweryImportViewModel(_importer, _settingsStore, _filePicker, _messenger, new InMemoryUiStateStore());
     }
 
     [Fact]

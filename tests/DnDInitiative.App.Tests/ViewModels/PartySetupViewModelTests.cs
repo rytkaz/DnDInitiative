@@ -139,6 +139,6 @@ public class PartySetupViewModelTests
     InMemoryPartyRepository repository,
     FakeConfirmation? confirmation = null)
     {
-        return new PartySetupViewModel(repository, confirmation ?? new FakeConfirmation());
+        return new PartySetupViewModel(repository, confirmation ?? new FakeConfirmation(), new InMemoryUiStateStore());
     }
 }
