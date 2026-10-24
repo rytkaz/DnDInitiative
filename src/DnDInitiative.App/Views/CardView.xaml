@@ -1,0 +1,160 @@
+﻿<UserControl x:Class="DnDInitiative.App.Views.CardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:formatting="clr-namespace:DnDInitiative.App.Formatting"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             Width="{x:Static formatting:CardLayout.Width}"
+             Height="{x:Static formatting:CardLayout.Height}"
+             d:DataContext="{d:DesignInstance Type=viewModels:SpellCardViewModel}"
+             mc:Ignorable="d"
+             UseLayoutRounding="True">
+    <!--
+        A spell or ability card, 63 × 88 mm drawn in real units (1 unit = 1/96 inch), so the same
+        view serves the screen and the printed page. The data context is a CardViewModel. The
+        heights of the fixed rows come from CardLayout, which fits the description into what is left.
+    -->
+    <UserControl.Resources>
+        <!--  The small name above a value: "Range"  -->
+        <Style x:Key="CardFieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="5.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource StatBlockAccent}" />
+            <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
+        </Style>
+
+        <!--  One line, cut with an ellipsis; the tooltip has all of it  -->
+        <Style x:Key="CardFieldValue" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="7" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <DataTemplate DataType="{x:Type viewModels:SpellCardViewModel}">
+            <StackPanel x:Name="Header">
+                <UniformGrid Height="{x:Static formatting:CardLayout.FieldRowsHeight}"
+                             Columns="3"
+                             Rows="2">
+                    <StackPanel Margin="0,0,3,0">
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Casting Time" />
+                        <TextBlock Style="{StaticResource CardFieldValue}"
+                                   Text="{Binding CastingTime}"
+                                   ToolTip="{Binding CastingTime}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,3,0">
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Range" />
+                        <TextBlock Style="{StaticResource CardFieldValue}"
+                                   Text="{Binding Range}"
+                                   ToolTip="{Binding Range}" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Duration" />
+                        <TextBlock Style="{StaticResource CardFieldValue}"
+                                   Text="{Binding Duration}"
+                                   ToolTip="{Binding Duration}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,3,0">
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Ritual" />
+                        <TextBlock FontFamily="Segoe UI Symbol"
+                                   FontSize="8"
+                                   Text="{Binding Ritual}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,3,0">
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Concentration" />
+                        <TextBlock FontFamily="Segoe UI Symbol"
+                                   FontSize="8"
+                                   Text="{Binding Concentration}" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Level" />
+                        <TextBlock Style="{StaticResource CardFieldValue}" Text="{Binding Level}" />
+                    </StackPanel>
+                </UniformGrid>
+
+                <!--  Wide, because the material text can run long  -->
+                <StackPanel Height="{x:Static formatting:CardLayout.ComponentsHeight}" ClipToBounds="True">
+                    <TextBlock Style="{StaticResource CardFieldLabel}" Text="Components" />
+                    <TextBlock FontSize="7"
+                               Text="{Binding Components}"
+                               TextWrapping="Wrap"
+                               ToolTip="{Binding Components}" />
+                </StackPanel>
+
+                <Polygon Height="3"
+                         Margin="0,1.5"
+                         Style="{StaticResource TaperedRule}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsContinuation}" Value="True">
+                    <Setter TargetName="Header" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type viewModels:AbilityCardViewModel}">
+            <StackPanel x:Name="Header">
+                <StackPanel Height="{x:Static formatting:CardLayout.SubtitleHeight}" ClipToBounds="True">
+                    <TextBlock FontSize="7"
+                               FontStyle="Italic"
+                               Text="{Binding Subtitle}" />
+                    <TextBlock FontSize="6.5"
+                               Text="{Binding Prerequisites}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Polygon Height="3"
+                         Margin="0,1.5"
+                         Style="{StaticResource TaperedRule}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsContinuation}" Value="True">
+                    <Setter TargetName="Header" Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!--  A card that is not in the library has only the name and an explanation, so no header  -->
+        <DataTemplate DataType="{x:Type viewModels:MissingCardViewModel}">
+            <Border />
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Background="{StaticResource StatBlockPaper}"
+            BorderBrush="{StaticResource StatBlockEdge}"
+            BorderThickness="0,4"
+            ClipToBounds="True"
+            TextElement.Foreground="{StaticResource StatBlockInk}">
+        <DockPanel Margin="10,6">
+            <TextBlock Height="{x:Static formatting:CardLayout.FooterHeight}"
+                       VerticalAlignment="Bottom"
+                       DockPanel.Dock="Bottom"
+                       FontSize="5.5"
+                       Opacity="0.75"
+                       Text="{Binding Footer}"
+                       TextWrapping="Wrap" />
+
+            <!--  A long name shrinks to fit the width instead of wrapping  -->
+            <Viewbox Height="{x:Static formatting:CardLayout.NameHeight}"
+                     HorizontalAlignment="Left"
+                     DockPanel.Dock="Top"
+                     StretchDirection="DownOnly">
+                <TextBlock FontFamily="Georgia"
+                           FontSize="13"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource StatBlockAccent}"
+                           Text="{Binding Name}"
+                           Typography.Capitals="SmallCaps" />
+            </Viewbox>
+
+            <Polygon Height="3"
+                     Margin="0,1.5"
+                     DockPanel.Dock="Top"
+                     Style="{StaticResource TaperedRule}" />
+
+            <!--  The fields of a spell or the line under an ability's name; nothing on a continuation  -->
+            <ContentControl Content="{Binding}" DockPanel.Dock="Top" />
+
+            <formatting:CardDescription Blocks="{Binding Blocks}" TextSize="{Binding TextSize}" />
+        </DockPanel>
+    </Border>
+</UserControl>
