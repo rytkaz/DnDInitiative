@@ -57,9 +57,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<SqliteEncounterRepository>();
         services.AddSingleton<SqliteStatBlockRepository>();
         services.AddSingleton<IStatBlockLibrary>(provider => provider.GetRequiredService<SqliteStatBlockRepository>());
-        services.AddSingleton<ISpellRepository, SqliteSpellRepository>();
+        services.AddSingleton<SqliteSpellRepository>();
         services.AddSingleton<IConditionRepository, SqliteConditionRepository>();
-        services.AddSingleton<IAbilityRepository, SqliteAbilityRepository>();
+        services.AddSingleton<SqliteAbilityRepository>();
 
         // The campaign folder. This is what the rest of the app reads and writes.
         services.AddSingleton<CampaignLocation>();
@@ -69,6 +69,12 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<JsonEncounterRepository>();
         services.AddSingleton<CampaignStatBlockRepository>();
         services.AddSingleton<ISpellbookRepository, JsonSpellbookRepository>();
+        services.AddSingleton<CampaignSpellRepository>();
+        services.AddSingleton<CampaignAbilityRepository>();
+        services.AddSingleton<ISpellRepository>(provider => provider.GetRequiredService<CampaignSpellRepository>());
+        services.AddSingleton<ICustomSpellRepository>(provider => provider.GetRequiredService<CampaignSpellRepository>());
+        services.AddSingleton<IAbilityRepository>(provider => provider.GetRequiredService<CampaignAbilityRepository>());
+        services.AddSingleton<ICustomAbilityRepository>(provider => provider.GetRequiredService<CampaignAbilityRepository>());
         services.AddSingleton<IPartyRepository>(provider => provider.GetRequiredService<JsonPartyRepository>());
         services.AddSingleton<IEncounterRepository>(provider => provider.GetRequiredService<JsonEncounterRepository>());
         services.AddSingleton<IStatBlockRepository>(provider => provider.GetRequiredService<CampaignStatBlockRepository>());

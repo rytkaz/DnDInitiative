@@ -33,6 +33,9 @@ public sealed record Ability
     /// <summary>The document it came from, such as "Alternate Fighter".</summary>
     public string Source { get; init; } = "";
 
+    /// <summary>True for an ability the user wrote or changed, which is kept in the campaign folder and not in the library.</summary>
+    public bool IsCustom { get; init; }
+
     /// <summary>The rules text, in Markdown. May run to several paragraphs and lists.</summary>
     public string Description { get; init; } = "";
 }

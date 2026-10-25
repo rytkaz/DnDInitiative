@@ -36,4 +36,5 @@ public sealed record SpellSummary(
     IReadOnlyList<string> Classes,
     string Source,
     string CastingTime,
-    string Range);
+    string Range,
+    bool IsCustom = false);

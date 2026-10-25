@@ -40,6 +40,9 @@ public sealed record Spell
 
     public string Source { get; init; } = "";
 
+    /// <summary>True for a spell the user wrote or changed, which is kept in the campaign folder and not in the library.</summary>
+    public bool IsCustom { get; init; }
+
     /// <summary>The rules text, in Markdown. May run to several paragraphs.</summary>
     public string Description { get; init; } = "";
 }

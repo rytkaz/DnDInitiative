@@ -33,7 +33,8 @@ public sealed record AbilitySummary(
     int Degree,
     string Prerequisites,
     IReadOnlyList<string> Classes,
-    string Source);
+    string Source,
+    bool IsCustom = false);
 
 public interface IAbilityRepository
 {

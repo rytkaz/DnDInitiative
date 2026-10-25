@@ -41,6 +41,14 @@
             </Button>
         </DataTemplate>
 
+        <!--  The form for the entry being written, by kind  -->
+        <DataTemplate DataType="{x:Type viewModels:SpellEditorViewModel}">
+            <views:SpellEditorView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewModels:AbilityEditorViewModel}">
+            <views:AbilityEditorView />
+        </DataTemplate>
+
         <!--  A cell's text in a row of the library  -->
         <Style x:Key="LibraryCell" TargetType="TextBlock">
             <Setter Property="Margin" Value="2,0" />
@@ -91,7 +99,7 @@
                Style="{StaticResource ColumnResizeHandle}" />
 
         <!--  Middle: the open spellbook's pages  -->
-        <DockPanel Grid.Column="2" Visibility="{Binding HasSelectedSpellbook, Converter={StaticResource BoolToVisibility}}">
+        <DockPanel Grid.Column="2" Visibility="{Binding ShowPages, Converter={StaticResource BoolToVisibility}}">
             <StackPanel DockPanel.Dock="Top">
                 <TextBlock Text="Spellbook name" />
                 <TextBox Margin="0,4,0,12" Text="{Binding SelectedSpellbook.Name, UpdateSourceTrigger=PropertyChanged}" />
@@ -174,6 +182,64 @@
             </ScrollViewer>
         </DockPanel>
 
+        <!--  Middle, instead of the pages while a spell or ability is being written: the form, and the card it makes  -->
+        <Grid Grid.Column="2" Visibility="{Binding HasEditor, Converter={StaticResource BoolToVisibility}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <DockPanel Grid.Column="0" Width="{Binding EditorFormWidth.Value}">
+                <TextBlock DockPanel.Dock="Top"
+                           Style="{StaticResource PageTitle}"
+                           Text="{Binding Editor.Heading}" />
+                <TextBlock Margin="0,0,0,8"
+                           DockPanel.Dock="Top"
+                           Style="{StaticResource SecondaryText}"
+                           Text="{Binding Editor.Note}"
+                           TextWrapping="Wrap" />
+                <StackPanel Margin="0,0,0,12"
+                            DockPanel.Dock="Top"
+                            Orientation="Horizontal">
+                    <Button Padding="24,4"
+                            Command="{Binding SaveEditorCommand}"
+                            Content="Save"
+                            IsEnabled="{Binding Editor.CanSave}" />
+                    <Button Margin="8,0,0,0"
+                            Padding="12,4"
+                            Command="{Binding CloseEditorCommand}"
+                            Content="Close" />
+                    <TextBlock Margin="12,0,0,0"
+                               VerticalAlignment="Center"
+                               Text="{Binding StatusMessage}"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ContentControl Margin="0,0,12,0" Content="{Binding Editor}" />
+                </ScrollViewer>
+            </DockPanel>
+
+            <Thumb Grid.Column="1"
+                   behaviors:ResizeHandle.PanelWidth="{Binding EditorFormWidth}"
+                   Style="{StaticResource ColumnResizeHandle}" />
+
+            <ScrollViewer Grid.Column="2"
+                          Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl Margin="16"
+                              HorizontalAlignment="Center"
+                              ItemsSource="{Binding Editor.PreviewCards}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <views:CardView Margin="0,0,0,12" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
         <Thumb Grid.Column="3"
                behaviors:ResizeHandle.GrowsLeft="True"
                behaviors:ResizeHandle.PanelWidth="{Binding LibraryWidth}"
@@ -185,6 +251,33 @@
                        DockPanel.Dock="Top"
                        Style="{StaticResource SectionTitle}"
                        Text="Library" />
+
+            <!--  Writing and changing entries; double-clicking a row still adds it to the spellbook  -->
+            <WrapPanel Margin="0,0,0,8" DockPanel.Dock="Top">
+                <Button Margin="0,0,8,4"
+                        Padding="10,4"
+                        Command="{Binding NewSpellCommand}"
+                        Content="New spell" />
+                <Button Margin="0,0,8,4"
+                        Padding="10,4"
+                        Command="{Binding NewAbilityCommand}"
+                        Content="New ability" />
+                <Button Margin="0,0,8,4"
+                        Padding="10,4"
+                        Command="{Binding EditEntryCommand}"
+                        Content="Edit"
+                        ToolTip="Change the selected spell or ability. An imported one is saved as your own copy." />
+                <Button Margin="0,0,8,4"
+                        Padding="10,4"
+                        Command="{Binding DuplicateEntryCommand}"
+                        Content="Duplicate"
+                        ToolTip="Start a new homebrew entry from the selected one" />
+                <Button Margin="0,0,8,4"
+                        Padding="10,4"
+                        Command="{Binding RemoveCustomCommand}"
+                        Content="{Binding RemoveLabel}"
+                        ToolTip="Delete an entry you wrote, or revert one you changed to the imported version" />
+            </WrapPanel>
             <TextBox Margin="0,0,0,8"
                      DockPanel.Dock="Top"
                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
@@ -307,6 +400,13 @@
                      TextSearch.TextPath="Name"
                      VirtualizingPanel.IsVirtualizing="True">
                 <!--  Short rows, closer together than the theme's, so the list reads as a table  -->
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Command="{Binding EditEntryCommand}" Header="Edit" />
+                        <MenuItem Command="{Binding DuplicateEntryCommand}" Header="Duplicate" />
+                        <MenuItem Command="{Binding RemoveCustomCommand}" Header="{Binding RemoveLabel}" />
+                    </ContextMenu>
+                </ListBox.ContextMenu>
                 <ListBox.ItemContainerStyle>
                     <Style BasedOn="{StaticResource {x:Type ListBoxItem}}" TargetType="ListBoxItem">
                         <Setter Property="Margin" Value="0" />

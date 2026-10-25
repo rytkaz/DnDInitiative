@@ -52,6 +52,8 @@ public class MainViewModelTests
             new InMemorySpellbookRepository(),
             new InMemorySpellRepository(),
             new InMemoryAbilityRepository(),
+            new InMemoryCustomSpellRepository(),
+            new InMemoryCustomAbilityRepository(),
             new FakeCardFactory(),
             new FakeSpellbookPrinter(),
             _confirmation,

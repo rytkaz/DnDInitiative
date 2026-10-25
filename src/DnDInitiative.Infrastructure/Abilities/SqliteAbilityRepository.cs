@@ -94,6 +94,19 @@ internal sealed class SqliteAbilityRepository : IAbilityRepository
             .ConfigureAwait(false);
     }
 
+    /// <summary>Whether there is a stored ability with exactly this key. Upper and lower case are not distinguished.</summary>
+    public async Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        string normalized = NormalizeKey(key);
+
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.Abilities
+            .AnyAsync(ability => ability.Key == normalized, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<string>> GetClassesAsync(CancellationToken cancellationToken = default)
     {
         await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);

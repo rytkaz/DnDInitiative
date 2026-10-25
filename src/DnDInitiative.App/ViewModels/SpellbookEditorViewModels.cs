@@ -270,6 +270,9 @@ public sealed partial class LibraryEntryViewModel : ObservableObject, ISortableE
 
     public string Source { get; }
 
+    /// <summary>True for an entry the user wrote or changed, which is kept in the campaign folder.</summary>
+    public bool IsCustom { get; private init; }
+
     /// <summary>The row's tooltip: the detail, the casting time and range in full, the classes, then the book.</summary>
     public string ToolTip => string.Join("\n", new[]
     {
@@ -293,6 +296,7 @@ public sealed partial class LibraryEntryViewModel : ObservableObject, ISortableE
             spell.School,
             spell.IsRitual ? "ritual" : "",
             spell.IsConcentration ? "concentration" : "",
+            spell.IsCustom ? "custom" : "",
         }.Where(part => part.Length > 0));
 
         return new LibraryEntryViewModel(
@@ -306,6 +310,7 @@ public sealed partial class LibraryEntryViewModel : ObservableObject, ISortableE
             Range = spell.Range.Trim(),
             IsRitual = spell.IsRitual,
             IsConcentration = spell.IsConcentration,
+            IsCustom = spell.IsCustom,
             LevelLabel = spell.LevelNumber == 0 ? "Cantrip" : spell.LevelNumber.ToString(CultureInfo.InvariantCulture),
             Detail = detail,
         };
@@ -318,6 +323,10 @@ public sealed partial class LibraryEntryViewModel : ObservableObject, ISortableE
         string detail = ability.Degree > 0
             ? string.Create(CultureInfo.InvariantCulture, $"Degree {ability.Degree} · {ability.Category}")
             : ability.Category;
+        if (ability.IsCustom)
+        {
+            detail += " · custom";
+        }
 
         return new LibraryEntryViewModel(
             new SpellbookEntry(SpellbookEntryKind.Ability, ability.Key),
@@ -326,6 +335,7 @@ public sealed partial class LibraryEntryViewModel : ObservableObject, ISortableE
             ability.Classes,
             ability.Source)
         {
+            IsCustom = ability.IsCustom,
             LevelLabel = ability.Degree > 0 ? string.Create(CultureInfo.InvariantCulture, $"D{ability.Degree}") : "",
             Detail = detail,
         };

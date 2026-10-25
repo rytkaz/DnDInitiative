@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using DnDInitiative.App.Formatting;
 using DnDInitiative.App.Services;
 using DnDInitiative.Core.Abilities;
+using DnDInitiative.Core.Library;
 using DnDInitiative.Core.Spellbooks;
 using DnDInitiative.Core.Spells;
 
@@ -29,6 +30,8 @@ public sealed partial class SpellbookViewModel : PageViewModel
     private readonly ISpellbookRepository _spellbooks;
     private readonly ISpellRepository _spells;
     private readonly IAbilityRepository _abilities;
+    private readonly ICustomSpellRepository _customSpells;
+    private readonly ICustomAbilityRepository _customAbilities;
     private readonly ICardFactory _cardFactory;
     private readonly ISpellbookPrinter _printer;
     private readonly IConfirmationService _confirmation;
@@ -46,6 +49,9 @@ public sealed partial class SpellbookViewModel : PageViewModel
 
     private bool _spellbooksLoaded;
 
+    // Whether removing the selected custom entry brings back an imported one, so the button can say "Revert".
+    private bool _removeIsRevert;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedSpellbook))]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
@@ -54,7 +60,20 @@ public sealed partial class SpellbookViewModel : PageViewModel
     [NotifyCanExecuteChangedFor(nameof(AddToSpellbookCommand))]
     [NotifyCanExecuteChangedFor(nameof(SortPagesCommand))]
     [NotifyCanExecuteChangedFor(nameof(PrintCommand))]
+    [NotifyPropertyChangedFor(nameof(ShowPages))]
     private SpellbookEditorViewModel? _selectedSpellbook;
+
+    /// <summary>The spell or ability being written or changed. It takes the place of the pages while it is open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasEditor))]
+    [NotifyPropertyChangedFor(nameof(ShowPages))]
+    [NotifyCanExecuteChangedFor(nameof(SaveEditorCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CloseEditorCommand))]
+    private LibraryEditorViewModel? _editor;
+
+    /// <summary>"Delete" for an entry the user wrote, "Revert" for an imported one they changed.</summary>
+    [ObservableProperty]
+    private string _removeLabel = "Delete";
 
     [ObservableProperty]
     private string _searchText = "";
@@ -83,6 +102,9 @@ public sealed partial class SpellbookViewModel : PageViewModel
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddToSpellbookCommand))]
+    [NotifyCanExecuteChangedFor(nameof(EditEntryCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DuplicateEntryCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RemoveCustomCommand))]
     private LibraryEntryViewModel? _selectedLibraryEntry;
 
     /// <summary>The cards of the library row clicked last, so it can be read before it is added.</summary>
@@ -111,6 +133,8 @@ public sealed partial class SpellbookViewModel : PageViewModel
         ISpellbookRepository spellbooks,
         ISpellRepository spells,
         IAbilityRepository abilities,
+        ICustomSpellRepository customSpells,
+        ICustomAbilityRepository customAbilities,
         ICardFactory cardFactory,
         ISpellbookPrinter printer,
         IConfirmationService confirmation,
@@ -122,6 +146,8 @@ public sealed partial class SpellbookViewModel : PageViewModel
         _spellbooks = spellbooks;
         _spells = spells;
         _abilities = abilities;
+        _customSpells = customSpells;
+        _customAbilities = customAbilities;
         _cardFactory = cardFactory;
         _printer = printer;
         _confirmation = confirmation;
@@ -131,6 +157,7 @@ public sealed partial class SpellbookViewModel : PageViewModel
         SpellbookListWidth = new PanelSize(uiState, "Spellbook.SpellbookList", defaultValue: 200, minimum: 140, maximum: 480);
         LibraryWidth = new PanelSize(uiState, "Spellbook.Library", defaultValue: 480, minimum: 340, maximum: 1000);
         PreviewHeight = new PanelSize(uiState, "Spellbook.Preview", defaultValue: 360, minimum: 120, maximum: 900);
+        EditorFormWidth = new PanelSize(uiState, "Spellbook.EditorForm", defaultValue: 440, minimum: 300, maximum: 900);
 
         // To the fields, so restoring the choices does not save them again.
         UiState saved = uiState.Load();
@@ -207,10 +234,31 @@ public sealed partial class SpellbookViewModel : PageViewModel
 
     public bool HasSelectedSpellbook => SelectedSpellbook is not null;
 
-    public override IReadOnlyList<string> UnsavedChanges => Spellbooks
-        .Where(spellbook => spellbook.HasUnsavedChanges)
-        .Select(spellbook => $"Spellbook: {spellbook.Name}")
-        .ToList();
+    public bool HasEditor => Editor is not null;
+
+    /// <summary>Whether the middle of the page shows the open spellbook's pages, rather than the editor.</summary>
+    public bool ShowPages => HasSelectedSpellbook && !HasEditor;
+
+    public override IReadOnlyList<string> UnsavedChanges
+    {
+        get
+        {
+            List<string> unsaved = Spellbooks
+                .Where(spellbook => spellbook.HasUnsavedChanges)
+                .Select(spellbook => $"Spellbook: {spellbook.Name}")
+                .ToList();
+
+            if (Editor is { HasUnsavedChanges: true } editor)
+            {
+                unsaved.Add(DescribeEditor(editor));
+            }
+
+            return unsaved;
+        }
+    }
+
+    /// <summary>Width of the editor's form, with the card it draws taking the rest.</summary>
+    public PanelSize EditorFormWidth { get; }
 
     /// <summary>Width of the list of saved spellbooks, on the left.</summary>
     public PanelSize SpellbookListWidth { get; }
@@ -233,6 +281,7 @@ public sealed partial class SpellbookViewModel : PageViewModel
     {
         Spellbooks.Clear();
         SelectedSpellbook = null;
+        Editor = null;
         StatusMessage = "";
         _spellbooksLoaded = false;
         await LoadAsync();
@@ -253,6 +302,11 @@ public sealed partial class SpellbookViewModel : PageViewModel
             {
                 failures.Add("Spellbook: (no name) needs a name");
             }
+        }
+
+        if (Editor is { HasUnsavedChanges: true } openEditor && await StoreEditorAsync(openEditor) is { } problem)
+        {
+            failures.Add($"{DescribeEditor(openEditor)}: {problem}");
         }
 
         return failures;
@@ -368,6 +422,253 @@ public sealed partial class SpellbookViewModel : PageViewModel
         {
             ShowPreviewAsync(value.Entry).Forget();
         }
+
+        UpdateRemoveLabelAsync(value).Forget();
+    }
+
+    private bool HasSelectedLibraryEntry => SelectedLibraryEntry is not null;
+
+    private bool CanRemoveCustom => SelectedLibraryEntry is { IsCustom: true };
+
+    [RelayCommand]
+    private void NewSpell()
+    {
+        OpenEditor(SpellEditorViewModel.CreateNew(_cardFactory, KnownClasses()));
+    }
+
+    [RelayCommand]
+    private void NewAbility()
+    {
+        OpenEditor(AbilityEditorViewModel.CreateNew(_cardFactory, KnownClasses()));
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedLibraryEntry))]
+    private async Task EditEntryAsync()
+    {
+        if (SelectedLibraryEntry is { } row && await CreateEditorAsync(row.Entry, duplicate: false) is { } editor)
+        {
+            OpenEditor(editor);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelectedLibraryEntry))]
+    private async Task DuplicateEntryAsync()
+    {
+        if (SelectedLibraryEntry is { } row && await CreateEditorAsync(row.Entry, duplicate: true) is { } editor)
+        {
+            OpenEditor(editor);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(HasEditor))]
+    private async Task SaveEditorAsync()
+    {
+        if (Editor is not { } editor)
+        {
+            return;
+        }
+
+        StatusMessage = await StoreEditorAsync(editor) ?? $"Saved {editor.Name.Trim()}.";
+    }
+
+    [RelayCommand(CanExecute = nameof(HasEditor))]
+    private void CloseEditor()
+    {
+        if (ConfirmLeaveEditor())
+        {
+            Editor = null;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRemoveCustom))]
+    private async Task RemoveCustomAsync()
+    {
+        if (SelectedLibraryEntry is not { IsCustom: true } row)
+        {
+            return;
+        }
+
+        bool revert = _removeIsRevert;
+        bool confirmed = revert
+            ? _confirmation.Confirm("Revert to imported", $"Throw away your changes to {row.Name} and use the imported version again?")
+            : _confirmation.Confirm("Delete from the library", $"Delete {row.Name}? A spellbook that has it will show a missing card.");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        if (row.Entry.Kind == SpellbookEntryKind.Spell)
+        {
+            await _customSpells.DeleteAsync(row.Entry.Key);
+        }
+        else
+        {
+            await _customAbilities.DeleteAsync(row.Entry.Key);
+        }
+
+        _resolved.Remove(row.Entry);
+        if (Editor is { OriginalKey: { } openKey } && string.Equals(openKey, row.Entry.Key, StringComparison.OrdinalIgnoreCase) && IsKind(Editor, row.Entry.Kind))
+        {
+            Editor = null;
+        }
+
+        await LoadClassOptionsAsync();
+        await RefreshLibraryAsync();
+        await RebuildPagesAsync();
+        StatusMessage = revert ? $"Reverted {row.Name}." : $"Deleted {row.Name}.";
+    }
+
+    private List<string> KnownClasses()
+    {
+        return ClassOptions.Select(option => option.Value).OfType<string>().ToList();
+    }
+
+    private static bool IsKind(LibraryEditorViewModel editor, SpellbookEntryKind kind)
+    {
+        return kind == SpellbookEntryKind.Spell ? editor is SpellEditorViewModel : editor is AbilityEditorViewModel;
+    }
+
+    private static string DescribeEditor(LibraryEditorViewModel editor)
+    {
+        string name = editor.Name.Trim().Length > 0 ? editor.Name.Trim() : "(no name)";
+        return editor is SpellEditorViewModel ? $"Spell: {name}" : $"Ability: {name}";
+    }
+
+    // The editor holds unsaved text, so replacing it asks first.
+    private void OpenEditor(LibraryEditorViewModel editor)
+    {
+        if (ConfirmLeaveEditor())
+        {
+            StatusMessage = "";
+            Editor = editor;
+        }
+    }
+
+    private bool ConfirmLeaveEditor()
+    {
+        return Editor is not { HasUnsavedChanges: true } open
+            || _confirmation.Confirm("Discard changes", $"Discard the unsaved changes to {DescribeEditor(open)}?");
+    }
+
+    private async Task UpdateRemoveLabelAsync(LibraryEntryViewModel? row)
+    {
+        bool revert = false;
+        if (row is { IsCustom: true })
+        {
+            revert = row.Entry.Kind == SpellbookEntryKind.Spell
+                ? await _customSpells.ExistsInLibraryAsync(row.Entry.Key)
+                : await _customAbilities.ExistsInLibraryAsync(row.Entry.Key);
+        }
+
+        // Another row was selected while this one was being looked up.
+        if (ReferenceEquals(row, SelectedLibraryEntry))
+        {
+            _removeIsRevert = revert;
+            RemoveLabel = revert ? "Revert" : "Delete";
+        }
+    }
+
+    private async Task<LibraryEditorViewModel?> CreateEditorAsync(SpellbookEntry entry, bool duplicate)
+    {
+        IEnumerable<string> classes = KnownClasses();
+
+        if (entry.Kind == SpellbookEntryKind.Ability)
+        {
+            if (await _abilities.FindAsync(entry.Key) is not { } ability)
+            {
+                StatusMessage = "That ability is no longer in the library.";
+                return null;
+            }
+
+            if (duplicate)
+            {
+                return new AbilityEditorViewModel(
+                    _cardFactory,
+                    ability with { Name = $"{ability.Name} (copy)", Source = LibraryEditorViewModel.DefaultSource },
+                    classes,
+                    originalKey: null);
+            }
+
+            return new AbilityEditorViewModel(_cardFactory, ability, classes, ability.Key)
+            {
+                Note = NoteForEdit(ability.IsCustom, await _customAbilities.ExistsInLibraryAsync(ability.Key), "ability"),
+            };
+        }
+
+        if (await _spells.FindAsync(entry.Key) is not { } spell)
+        {
+            StatusMessage = "That spell is no longer in the library.";
+            return null;
+        }
+
+        if (duplicate)
+        {
+            return new SpellEditorViewModel(
+                _cardFactory,
+                spell with { Name = $"{spell.Name} (copy)", Source = LibraryEditorViewModel.DefaultSource },
+                classes,
+                originalKey: null);
+        }
+
+        return new SpellEditorViewModel(_cardFactory, spell, classes, spell.Key)
+        {
+            Note = NoteForEdit(spell.IsCustom, await _customSpells.ExistsInLibraryAsync(spell.Key), "spell"),
+        };
+    }
+
+    private static string NoteForEdit(bool isCustom, bool existsInLibrary, string noun)
+    {
+        return (isCustom, existsInLibrary) switch
+        {
+            (false, _) => $"This {noun} was imported. Saving keeps your version in the campaign, and importing again will not replace it. Revert brings the imported one back.",
+            (true, true) => $"Your version replaces the imported {noun}. Revert brings the imported one back.",
+            _ => "",
+        };
+    }
+
+    /// <returns>What is wrong, or null if the entry was stored.</returns>
+    private async Task<string?> StoreEditorAsync(LibraryEditorViewModel editor)
+    {
+        if (!editor.Validate() || !editor.CanSave)
+        {
+            return $"Give the {editor.Noun} a name before saving.";
+        }
+
+        string key = editor.Key;
+        SpellbookEntryKind kind = editor is SpellEditorViewModel ? SpellbookEntryKind.Spell : SpellbookEntryKind.Ability;
+
+        if (editor.IsNew && await KeyIsTakenAsync(kind, key))
+        {
+            return $"There is already a {editor.Noun} with this name and source. Change one of them.";
+        }
+
+        switch (editor)
+        {
+            case SpellEditorViewModel spell:
+                await _customSpells.SaveAsync(spell.ToSpell());
+                break;
+            case AbilityEditorViewModel ability:
+                await _customAbilities.SaveAsync(ability.ToAbility());
+                break;
+        }
+
+        editor.AdoptKey(key);
+        editor.MarkSaved();
+        editor.Note = "";
+
+        // Cards that were laid out from the old text are drawn again.
+        _resolved.Remove(new SpellbookEntry(kind, key));
+        await LoadClassOptionsAsync();
+        await RefreshLibraryAsync();
+        await RebuildPagesAsync();
+        return null;
+    }
+
+    private async Task<bool> KeyIsTakenAsync(SpellbookEntryKind kind, string key)
+    {
+        return kind == SpellbookEntryKind.Spell
+            ? await _customSpells.FindCustomAsync(key) is not null || await _customSpells.ExistsInLibraryAsync(key)
+            : await _customAbilities.FindCustomAsync(key) is not null || await _customAbilities.ExistsInLibraryAsync(key);
     }
 
     partial void OnSelectedCardChanged(SpellbookCardViewModel? oldValue, SpellbookCardViewModel? newValue)

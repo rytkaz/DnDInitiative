@@ -1,0 +1,53 @@
+﻿<UserControl x:Class="DnDInitiative.App.Views.AbilityEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             xmlns:views="clr-namespace:DnDInitiative.App.Views"
+             d:DataContext="{d:DesignInstance Type=viewModels:AbilityEditorViewModel}"
+             mc:Ignorable="d">
+    <StackPanel>
+        <TextBlock Text="Name" />
+        <TextBox Margin="0,4,0,12" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+        <Grid Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Category" />
+                <TextBox Margin="0,4,0,0" Text="{Binding Category, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Degree" />
+                <ComboBox Margin="0,4,0,0"
+                          HorizontalAlignment="Stretch"
+                          DisplayMemberPath="Label"
+                          ItemsSource="{Binding DegreeOptions}"
+                          SelectedValue="{Binding Degree}"
+                          SelectedValuePath="Value" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Text="Prerequisites" />
+        <TextBox Margin="0,4,0,12" Text="{Binding Prerequisites, UpdateSourceTrigger=PropertyChanged}" />
+
+        <views:ClassPickerView Margin="0,0,0,12" />
+
+        <TextBlock Text="Source" />
+        <TextBox Margin="0,4,0,12"
+                 Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}"
+                 ToolTip="Part of the key for a new ability, so the same name can exist in two sources" />
+
+        <TextBlock Text="Description (Markdown)" />
+        <TextBox MinHeight="200"
+                 Margin="0,4,0,0"
+                 AcceptsReturn="True"
+                 Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto" />
+    </StackPanel>
+</UserControl>

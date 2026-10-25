@@ -81,6 +81,8 @@ Closing the app, or opening or reloading a campaign, with unsaved changes asks w
 | `encounters\` | One file per encounter |
 | `statblocks\` | One file per stat block you created or edited |
 | `spellbooks\` | One file per spellbook. It lists the spells and abilities by their library key, so the cards always show the text of the latest import. |
+| `spells\` | One file per spell you wrote, or changed from an imported one. It takes the place of the imported spell with the same key, and importing again leaves it alone. |
+| `abilities\` | The same for abilities such as martial exploits |
 
 Imported books are not part of the campaign. They stay in a database on each computer (see [Where your data lives](#where-your-data-lives)), so a campaign folder holds only your own work and stays small. An imported stat block you edit is saved to the campaign and takes the place of the imported one.
 
