@@ -24,7 +24,6 @@ public class MainViewModelTests
     private readonly InMemoryPartyRepository _parties = new();
     private readonly FakeCampaignService _campaigns = new();
     private readonly FakeFolderPicker _folderPicker = new();
-    private readonly InMemoryUiStateStore _uiState = new();
     private readonly FakeWindowService _windows = new();
 
     public MainViewModelTests()
@@ -36,7 +35,6 @@ public class MainViewModelTests
             _parties,
             statBlocks,
             _messenger,
-            _confirmation,
             new InMemoryUiStateStore());
         _encounterBuilder = new EncounterBuilderViewModel(
             new InMemoryEncounterRepository(),
@@ -70,7 +68,6 @@ public class MainViewModelTests
             _unsavedChangesPrompt,
             _campaigns,
             _folderPicker,
-            _uiState,
             _windows);
     }
 
@@ -155,7 +152,7 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public async Task OpenCampaignCommand_CombatInProgress_AsksAndThenClearsIt()
+    public async Task OpenCampaignCommand_CombatInProgress_ClearsItWithoutAsking()
     {
         _tracker.NewName = "Goblin";
         _tracker.AddCreatureCommand.Execute(null);
@@ -163,7 +160,8 @@ public class MainViewModelTests
 
         await _viewModel.OpenCampaignCommand.ExecuteAsync(null);
 
-        Assert.Contains("combat", Assert.Single(_confirmation.Questions), StringComparison.Ordinal);
+        Assert.Empty(_confirmation.Questions);
+        Assert.Empty(_unsavedChangesPrompt.Questions);
         Assert.Empty(_tracker.Combatants);
     }
 
@@ -234,86 +232,9 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void ToggleNavigationCommand_FoldsThePanelAwayAndBringsItBack()
+    public void Pages_HaveShortNamesForTheTopBar()
     {
-        Assert.False(_viewModel.IsNavigationCollapsed);
-
-        _viewModel.ToggleNavigationCommand.Execute(null);
-        Assert.True(_viewModel.IsNavigationCollapsed);
-
-        _viewModel.ToggleNavigationCommand.Execute(null);
-        Assert.False(_viewModel.IsNavigationCollapsed);
-    }
-
-    [Fact]
-    public void FilesChangedExternally_PanelFoldedAwayAndEditsUnsaved_ShowsThePanelSoReloadCanBeSeen()
-    {
-        _partySetup.NewPartyCommand.Execute(null);
-        _viewModel.ToggleNavigationCommand.Execute(null);
-
-        _campaigns.RaiseFilesChanged();
-
-        Assert.True(_viewModel.HasPendingExternalChanges);
-        Assert.False(_viewModel.IsNavigationCollapsed);
-    }
-
-    [Fact]
-    public void ToggleNavigationCommand_SavesTheNewStateEachTime()
-    {
-        _viewModel.ToggleNavigationCommand.Execute(null);
-        Assert.True(_uiState.State.IsNavigationCollapsed);
-
-        _viewModel.ToggleNavigationCommand.Execute(null);
-        Assert.False(_uiState.State.IsNavigationCollapsed);
-        Assert.Equal(2, _uiState.SaveCount);
-    }
-
-    [Fact]
-    public void ToggleNavigationCommand_KeepsThePanelSizesTheOtherPagesSaved()
-    {
-        _uiState.State = new UiState { StatBlockPanelWidth = 500, SourcesPanelHeight = 300 };
-
-        _viewModel.ToggleNavigationCommand.Execute(null);
-
-        Assert.Equal(new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500, SourcesPanelHeight = 300 }, _uiState.State);
-    }
-
-    [Fact]
-    public void Constructor_PanelWasFoldedAwayLastTime_StartsFoldedAwayWithoutSavingAgain()
-    {
-        var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true } };
-        var parties = new InMemoryPartyRepository();
-        var statBlocks = new InMemoryStatBlockRepository();
-        var messenger = new WeakReferenceMessenger();
-
-        var viewModel = new MainViewModel(
-            new InitiativeTrackerViewModel(
-                new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
-                parties,
-                statBlocks,
-                messenger,
-                _confirmation,
-                new InMemoryUiStateStore()),
-            new StatBlocksViewModel(statBlocks, _confirmation, messenger, new InMemoryUiStateStore()),
-            _encounterBuilder,
-            _partySetup,
-            _spellbook,
-            messenger,
-            _confirmation,
-            _unsavedChangesPrompt,
-            _campaigns,
-            _folderPicker,
-            uiState,
-            _windows);
-
-        Assert.True(viewModel.IsNavigationCollapsed);
-        Assert.Equal(0, uiState.SaveCount);
-    }
-
-    [Fact]
-    public void Pages_HaveShortNamesForTheFoldedAwayPanel()
-    {
-        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party", "Spellbook"];
+        string[] expected = ["Initiative", "Stat Blocks", "Encounters", "Party", "Spellbook"];
 
         Assert.Equal(expected, _viewModel.Pages.Select(page => page.ShortTitle).ToArray());
     }

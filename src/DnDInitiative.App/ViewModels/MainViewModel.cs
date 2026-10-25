@@ -27,7 +27,6 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     private readonly IUnsavedChangesPrompt _unsavedChangesPrompt;
     private readonly ICampaignService _campaigns;
     private readonly IFolderPicker _folderPicker;
-    private readonly IUiStateStore _uiState;
     private readonly IWindowService _windows;
     private PageViewModel _currentPage;
     // Brings change notifications from the watcher's background thread to the UI thread.
@@ -43,11 +42,8 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
 
     /// <summary>The outcome of the last save, or why the last attempt to open a campaign failed, or empty.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CampaignMessageLine))]
     private string _campaignMessage = "";
-
-    /// <summary>Whether the page list and campaign panel are folded away to give the page more room.</summary>
-    [ObservableProperty]
-    private bool _isNavigationCollapsed;
 
     public MainViewModel(
         InitiativeTrackerViewModel initiativeTracker,
@@ -60,24 +56,18 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         IUnsavedChangesPrompt unsavedChangesPrompt,
         ICampaignService campaigns,
         IFolderPicker folderPicker,
-        IUiStateStore uiState,
         IWindowService windows)
     {
         ArgumentNullException.ThrowIfNull(messenger);
         ArgumentNullException.ThrowIfNull(campaigns);
-        ArgumentNullException.ThrowIfNull(uiState);
 
         _initiativeTracker = initiativeTracker;
         _confirmation = confirmation;
         _unsavedChangesPrompt = unsavedChangesPrompt;
         _campaigns = campaigns;
         _folderPicker = folderPicker;
-        _uiState = uiState;
         _windows = windows;
 
-        // Assigned to the field, not the property, so restoring the state does not save it again.
-        _isNavigationCollapsed = uiState.Load().IsNavigationCollapsed;
-        NavigationWidth = new PanelSize(uiState, "Main.Navigation", defaultValue: 220, minimum: 160, maximum: 480);
         // The imports are not pages: they open in windows of their own from the Import menu.
         Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, spellbook];
         _currentPage = initiativeTracker;
@@ -92,8 +82,11 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
 
     public IReadOnlyList<PageViewModel> Pages { get; }
 
-    /// <summary>Width of the page list while it is open. Folded away, it is only as wide as its tabs.</summary>
-    public PanelSize NavigationWidth { get; }
+    /// <summary>
+    /// <see cref="CampaignMessage"/> on one line, for the status bar. A failed save lists
+    /// each failure on a line of its own; the full message is in the status bar's tooltip.
+    /// </summary>
+    public string CampaignMessageLine => CampaignMessage.ReplaceLineEndings(" ");
 
     public PageViewModel CurrentPage
     {
@@ -114,28 +107,6 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         _windows.ShowImport(kind);
     }
 
-    [RelayCommand]
-    private void ToggleNavigation()
-    {
-        IsNavigationCollapsed = !IsNavigationCollapsed;
-    }
-
-    partial void OnIsNavigationCollapsedChanged(bool value)
-    {
-        // "with" copies the saved state and changes one property, so the pages' panel sizes survive.
-        _uiState.Save(_uiState.Load() with { IsNavigationCollapsed = value });
-    }
-
-    // The Reload button lives in the panel. If the panel is folded away when files change
-    // on disk, bring it back so the offer to reload is not missed.
-    partial void OnHasPendingExternalChangesChanged(bool value)
-    {
-        if (value)
-        {
-            IsNavigationCollapsed = false;
-        }
-    }
-
     /// <summary>Asks about unsaved changes, if there are any, before the window closes.</summary>
     public CloseAction ConfirmClose()
     {
@@ -145,7 +116,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             return CloseAction.Close;
         }
 
-        return _unsavedChangesPrompt.Ask("Unsaved changes", DescribeUnsaved(unsaved, combatIsLost: false)) switch
+        return _unsavedChangesPrompt.Ask("Unsaved changes", DescribeUnsaved(unsaved)) switch
         {
             UnsavedChangesChoice.Save => CloseAction.SaveThenClose,
             UnsavedChangesChoice.Discard => CloseAction.Close,
@@ -190,7 +161,6 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         {
             // Nothing was switched; the current campaign is still open.
             CampaignMessage = exception.Message;
-            ShowCampaignPanel();
             return;
         }
 
@@ -211,18 +181,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             failures.AddRange(await page.SaveAllAsync());
         }
 
-        // The message saying what failed is in the campaign panel, so it must not stay folded away.
-        if (failures.Count > 0)
-        {
-            ShowCampaignPanel();
-        }
-
         return new SaveOutcome(unsavedCount - failures.Count, failures);
-    }
-
-    private void ShowCampaignPanel()
-    {
-        IsNavigationCollapsed = false;
     }
 
     [RelayCommand]
@@ -242,7 +201,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
             return;
         }
 
-        if (!await ConfirmLeavingCampaignAsync("Open another campaign", "Open the campaign anyway?"))
+        if (!await ConfirmLeavingCampaignAsync("Open another campaign"))
         {
             return;
         }
@@ -265,22 +224,18 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
     }
 
     /// <summary>
-    /// Before the pages drop what they hold: offers to save unsaved changes, and warns that
-    /// a combat in progress, which cannot be saved, will be lost. Returns false to stay.
+    /// Before the pages drop what they hold: offers to save unsaved changes. A combat in
+    /// progress is not asked about, as when the app closes. Returns false to stay.
     /// </summary>
-    private async Task<bool> ConfirmLeavingCampaignAsync(string title, string question)
+    private async Task<bool> ConfirmLeavingCampaignAsync(string title)
     {
         List<string> unsaved = Pages.SelectMany(page => page.UnsavedChanges).ToList();
-        bool hasCombat = _initiativeTracker.Combatants.Count > 0;
-
         if (unsaved.Count == 0)
         {
-            // Nothing that could be saved, so there is nothing to offer but going ahead or not.
-            return !hasCombat
-                || _confirmation.Confirm(title, DescribeLoss(["The combat in the initiative tracker"], question));
+            return true;
         }
 
-        return _unsavedChangesPrompt.Ask(title, DescribeUnsaved(unsaved, hasCombat)) switch
+        return _unsavedChangesPrompt.Ask(title, DescribeUnsaved(unsaved)) switch
         {
             // If anything could not be saved, stay, so it is not lost after all.
             UnsavedChangesChoice.Save => await SaveAllAsync(),
@@ -289,35 +244,20 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         };
     }
 
-    private static string DescribeUnsaved(List<string> items, bool combatIsLost)
+    private static string DescribeUnsaved(List<string> items)
     {
         string blankLine = Environment.NewLine + Environment.NewLine;
-        string combat = combatIsLost
-            ? blankLine + "The combat in the initiative tracker cannot be saved and will be lost either way."
-            : "";
-
         return "These have unsaved changes:"
             + blankLine
             + string.Join(Environment.NewLine, items)
-            + combat
             + blankLine
             + "Save them first?";
-    }
-
-    private static string DescribeLoss(List<string> items, string question)
-    {
-        string blankLine = Environment.NewLine + Environment.NewLine;
-        return "These will be lost:"
-            + blankLine
-            + string.Join(Environment.NewLine, items)
-            + blankLine
-            + question;
     }
 
     [RelayCommand]
     private async Task ReloadCampaignAsync()
     {
-        if (!await ConfirmLeavingCampaignAsync("Reload the campaign", "Reload anyway?"))
+        if (!await ConfirmLeavingCampaignAsync("Reload the campaign"))
         {
             return;
         }

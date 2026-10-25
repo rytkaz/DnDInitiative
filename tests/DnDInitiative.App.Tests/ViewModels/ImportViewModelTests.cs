@@ -394,14 +394,14 @@ public class ImportViewModelTests
     [Fact]
     public void SaveLayout_SavesTheSourcesPanelHeightAndKeepsTheRestOfTheState()
     {
-        _uiState.State = new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500 };
+        _uiState.State = new UiState { IsWindowMaximized = true, StatBlockPanelWidth = 500 };
 
         _viewModel.SourcesPanelHeight = 300;
         Assert.Equal(0, _uiState.SaveCount);
 
         _viewModel.SaveLayout();
 
-        Assert.Equal(new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500, SourcesPanelHeight = 300 }, _uiState.State);
+        Assert.Equal(new UiState { IsWindowMaximized = true, StatBlockPanelWidth = 500, SourcesPanelHeight = 300 }, _uiState.State);
     }
 
     [Fact]

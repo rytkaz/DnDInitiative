@@ -427,7 +427,7 @@ public class EncounterBuilderViewModelTests
     [Fact]
     public async Task PanelLayout_IsSavedWithoutDisturbingTheRestOfTheState()
     {
-        var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true } };
+        var uiState = new InMemoryUiStateStore { State = new UiState { IsWindowMaximized = true } };
         EncounterBuilderViewModel viewModel = await CreateLoadedViewModelAsync(uiState: uiState);
 
         viewModel.ShowStatBlockPanel = false;
@@ -435,7 +435,7 @@ public class EncounterBuilderViewModelTests
         viewModel.SaveLayout();
 
         Assert.Equal(
-            new UiState { IsNavigationCollapsed = true, ShowEncounterStatBlockPanel = false, EncounterStatBlockPanelWidth = 500 },
+            new UiState { IsWindowMaximized = true, ShowEncounterStatBlockPanel = false, EncounterStatBlockPanelWidth = 500 },
             uiState.State);
     }
 

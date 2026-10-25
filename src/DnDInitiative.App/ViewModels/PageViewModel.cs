@@ -9,7 +9,7 @@ public abstract class PageViewModel : ObservableObject
 {
     public abstract string Title { get; }
 
-    /// <summary>A one-word name for places with little room, such as the folded-away page list.</summary>
+    /// <summary>A short name for places with little room, such as the page buttons in the top bar.</summary>
     public virtual string ShortTitle => Title;
 
     /// <summary>

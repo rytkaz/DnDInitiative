@@ -6,8 +6,6 @@ namespace DnDInitiative.App.Services;
 /// <summary>How the window was arranged when the app was last used.</summary>
 public sealed record UiState
 {
-    public bool IsNavigationCollapsed { get; init; }
-
     // The sizes are null until the user has dragged something, so each page keeps its own default.
 
     /// <summary>Width of the stat block panel on the tracker page.</summary>

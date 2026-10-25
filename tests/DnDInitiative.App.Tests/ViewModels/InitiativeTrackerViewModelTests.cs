@@ -263,50 +263,6 @@ public class InitiativeTrackerViewModelTests
     }
 
     [Fact]
-    public void NewCombatCommand_EmptyTracker_DoesNotAsk()
-    {
-        var confirmation = new FakeConfirmation();
-        InitiativeTrackerViewModel viewModel = CreateViewModel(confirmation);
-
-        viewModel.NewCombatCommand.Execute(null);
-
-        Assert.Empty(confirmation.Questions);
-    }
-
-    [Fact]
-    public void NewCombatCommand_Declined_KeepsTheCombatInProgress()
-    {
-        var confirmation = new FakeConfirmation { Answer = false };
-        InitiativeTrackerViewModel viewModel = CreateViewModel(confirmation);
-        viewModel.NewName = "Goblin";
-        viewModel.AddCreatureCommand.Execute(null);
-        viewModel.NextCommand.Execute(null);
-
-        viewModel.NewCombatCommand.Execute(null);
-
-        Assert.Single(confirmation.Questions);
-        Assert.Equal("Goblin", Assert.Single(viewModel.Combatants).Name);
-        Assert.Equal(2, viewModel.Round);
-    }
-
-    [Fact]
-    public void StartCombatMessage_Declined_KeepsTheCombatAndTheSelectedParty()
-    {
-        var messenger = new WeakReferenceMessenger();
-        var confirmation = new FakeConfirmation { Answer = false };
-        InitiativeTrackerViewModel viewModel = CreateViewModel(confirmation, messenger);
-        viewModel.NewName = "Leftover";
-        viewModel.AddCreatureCommand.Execute(null);
-        var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
-
-        messenger.Send(new StartCombatMessage("Ambush", [new CombatantBlueprint("Goblin")], party));
-
-        Assert.Equal("", viewModel.CombatName);
-        Assert.Null(viewModel.SelectedParty);
-        Assert.Equal("Leftover", Assert.Single(viewModel.Combatants).Name);
-    }
-
-    [Fact]
     public async Task ClearPartyCommand_UnselectsTheParty_SoTheNextCombatStartsEmpty()
     {
         var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
@@ -411,12 +367,12 @@ public class InitiativeTrackerViewModelTests
     [Fact]
     public void ShowStatBlockPanel_Changed_IsSavedAndKeepsTheRestOfTheState()
     {
-        var uiState = new InMemoryUiStateStore { State = new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500 } };
+        var uiState = new InMemoryUiStateStore { State = new UiState { IsWindowMaximized = true, StatBlockPanelWidth = 500 } };
         InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
 
         viewModel.ShowStatBlockPanel = false;
 
-        Assert.Equal(new UiState { IsNavigationCollapsed = true, StatBlockPanelWidth = 500, ShowStatBlockPanel = false }, uiState.State);
+        Assert.Equal(new UiState { IsWindowMaximized = true, StatBlockPanelWidth = 500, ShowStatBlockPanel = false }, uiState.State);
     }
 
     [Fact]
@@ -424,7 +380,7 @@ public class InitiativeTrackerViewModelTests
     {
         var uiState = new InMemoryUiStateStore
         {
-            State = new UiState { IsNavigationCollapsed = true, SourcesPanelHeight = 300 },
+            State = new UiState { IsWindowMaximized = true, SourcesPanelHeight = 300 },
         };
         InitiativeTrackerViewModel viewModel = CreateViewModel(uiState);
 
@@ -433,7 +389,7 @@ public class InitiativeTrackerViewModelTests
 
         viewModel.SaveLayout();
 
-        Assert.Equal(new UiState { IsNavigationCollapsed = true, SourcesPanelHeight = 300, StatBlockPanelWidth = 500 }, uiState.State);
+        Assert.Equal(new UiState { IsWindowMaximized = true, SourcesPanelHeight = 300, StatBlockPanelWidth = 500 }, uiState.State);
     }
 
     [Fact]
@@ -446,7 +402,6 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(),
             messenger,
-            new FakeConfirmation(),
             new InMemoryUiStateStore());
         var party = new Party(Guid.NewGuid(), "Heroes", [new PlayerCharacter("Aria", Level: 3)]);
         messenger.Send(new StartCombatMessage("Ambush", [new CombatantBlueprint("Goblin", InitiativeModifier: 2)], party));
@@ -467,7 +422,6 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(statBlocks),
             new WeakReferenceMessenger(),
-            new FakeConfirmation(),
             new InMemoryUiStateStore());
     }
 
@@ -478,7 +432,6 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(),
             new WeakReferenceMessenger(),
-            new FakeConfirmation(),
             uiState);
     }
 
@@ -491,7 +444,6 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(),
             new InMemoryStatBlockRepository(goblin),
             messenger,
-            new FakeConfirmation(),
             new InMemoryUiStateStore());
 
         messenger.Send(new StartCombatMessage("Ambush", [goblin.ToBlueprint(), new CombatantBlueprint("Aria")], Party: null));
@@ -510,18 +462,6 @@ public class InitiativeTrackerViewModelTests
             new InMemoryPartyRepository(parties),
             new InMemoryStatBlockRepository(),
             messenger,
-            new FakeConfirmation(),
-            new InMemoryUiStateStore());
-    }
-
-    private static InitiativeTrackerViewModel CreateViewModel(FakeConfirmation confirmation, IMessenger? messenger = null)
-    {
-        return new InitiativeTrackerViewModel(
-            new CombatantFactory(new InitiativeRoller(new FixedDiceRoller(10))),
-            new InMemoryPartyRepository(),
-            new InMemoryStatBlockRepository(),
-            messenger ?? new WeakReferenceMessenger(),
-            confirmation,
             new InMemoryUiStateStore());
     }
 

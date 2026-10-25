@@ -18,15 +18,15 @@ public sealed class JsonUiStateStoreTests : IDisposable
     [Fact]
     public void Load_NothingSaved_ReturnsTheDefaults()
     {
-        Assert.False(new JsonUiStateStore(FilePath).Load().IsNavigationCollapsed);
+        Assert.False(new JsonUiStateStore(FilePath).Load().IsWindowMaximized);
     }
 
     [Fact]
     public void Save_ThenLoadWithANewStore_ReturnsWhatWasSaved()
     {
-        new JsonUiStateStore(FilePath).Save(new UiState { IsNavigationCollapsed = true });
+        new JsonUiStateStore(FilePath).Save(new UiState { IsWindowMaximized = true });
 
-        Assert.True(new JsonUiStateStore(FilePath).Load().IsNavigationCollapsed);
+        Assert.True(new JsonUiStateStore(FilePath).Load().IsWindowMaximized);
     }
 
     [Fact]
@@ -34,7 +34,6 @@ public sealed class JsonUiStateStoreTests : IDisposable
     {
         var saved = new UiState
         {
-            IsNavigationCollapsed = true,
             StatBlockPanelWidth = 512.5,
             SourcesPanelHeight = 300,
             ShowStatBlockPanel = false,
@@ -52,11 +51,11 @@ public sealed class JsonUiStateStoreTests : IDisposable
     public void Load_FileWrittenBeforePanelSizesExisted_LeavesThemUnset()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        File.WriteAllText(FilePath, """{"IsNavigationCollapsed":true}""");
+        File.WriteAllText(FilePath, """{"SortEncountersByDate":true}""");
 
         UiState state = new JsonUiStateStore(FilePath).Load();
 
-        Assert.True(state.IsNavigationCollapsed);
+        Assert.True(state.SortEncountersByDate);
         Assert.Null(state.StatBlockPanelWidth);
         Assert.Null(state.SourcesPanelHeight);
         Assert.Null(state.ShowStatBlockPanel);
@@ -83,6 +82,6 @@ public sealed class JsonUiStateStoreTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
         File.WriteAllText(FilePath, "{ not json");
 
-        Assert.False(new JsonUiStateStore(FilePath).Load().IsNavigationCollapsed);
+        Assert.False(new JsonUiStateStore(FilePath).Load().IsWindowMaximized);
     }
 }

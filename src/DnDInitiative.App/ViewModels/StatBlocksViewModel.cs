@@ -48,8 +48,6 @@ public sealed partial class StatBlocksViewModel : PageViewModel, IRecipient<Stat
 
     public override string Title => "Stat Blocks";
 
-    public override string ShortTitle => "StatBlocks";
-
     public ObservableCollection<StatBlockSummary> FilteredStatBlocks { get; } = [];
 
     public bool IsEditing => Editor is not null;

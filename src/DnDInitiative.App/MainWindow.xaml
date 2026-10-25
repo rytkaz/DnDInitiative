@@ -1,8 +1,8 @@
 ﻿<Window x:Class="DnDInitiative.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:services="clr-namespace:DnDInitiative.App.Services"
         xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
@@ -23,136 +23,149 @@
         <KeyBinding Command="{Binding SaveCampaignAsCommand}" Gesture="Ctrl+Shift+S" />
     </Window.InputBindings>
     <DockPanel>
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File">
-                <MenuItem Command="{Binding OpenCampaignCommand}"
-                          Header="_Open Campaign..."
-                          InputGestureText="Ctrl+O"
-                          ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
-                <MenuItem Command="{Binding SaveCampaignCommand}"
-                          Header="_Save Campaign"
-                          InputGestureText="Ctrl+S"
-                          ToolTip="Save every encounter, party, stat block and spellbook with unsaved changes" />
-                <MenuItem Command="{Binding SaveCampaignAsCommand}"
-                          Header="Save Campaign _As..."
-                          InputGestureText="Ctrl+Shift+S"
-                          ToolTip="Copy the campaign to an empty folder, switch to the copy, and save the unsaved changes there" />
-                <Separator />
-                <MenuItem Click="OnExitClick"
-                          Header="E_xit"
-                          InputGestureText="Alt+F4" />
-            </MenuItem>
-            <!--  Each import opens in its own window, so the rest of the app stays usable during a long conversion  -->
-            <MenuItem Header="_Import">
-                <MenuItem Command="{Binding ShowImportCommand}"
-                          CommandParameter="{x:Static services:ImportKind.FiveETools}"
-                          Header="_5eTools..."
-                          ToolTip="Convert your 5eTools data and add its stat blocks, spells and conditions to the library" />
-                <MenuItem Command="{Binding ShowImportCommand}"
-                          CommandParameter="{x:Static services:ImportKind.Homebrewery}"
-                          Header="_Homebrewery..."
-                          ToolTip="Download Homebrewery documents and add their stat blocks and conditions to the library" />
-                <MenuItem Command="{Binding ShowImportCommand}"
-                          CommandParameter="{x:Static services:ImportKind.MartialExploits}"
-                          Header="_Martial Exploits (GM Binder)..."
-                          ToolTip="Download GM Binder documents, such as the Alternate Fighter, and add their martial exploits to the library" />
-            </MenuItem>
-        </Menu>
+        <!--  The top bar: the menus, then a button for each page  -->
+        <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,0,0,1"
+                DockPanel.Dock="Top">
+            <DockPanel>
+                <Menu VerticalAlignment="Center" DockPanel.Dock="Left">
+                    <MenuItem Header="_File">
+                        <MenuItem Command="{Binding OpenCampaignCommand}"
+                                  Header="_Open Campaign..."
+                                  InputGestureText="Ctrl+O"
+                                  ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
+                        <MenuItem Command="{Binding SaveCampaignCommand}"
+                                  Header="_Save Campaign"
+                                  InputGestureText="Ctrl+S"
+                                  ToolTip="Save every encounter, party, stat block and spellbook with unsaved changes" />
+                        <MenuItem Command="{Binding SaveCampaignAsCommand}"
+                                  Header="Save Campaign _As..."
+                                  InputGestureText="Ctrl+Shift+S"
+                                  ToolTip="Copy the campaign to an empty folder, switch to the copy, and save the unsaved changes there" />
+                        <Separator />
+                        <MenuItem Click="OnExitClick"
+                                  Header="E_xit"
+                                  InputGestureText="Alt+F4" />
+                    </MenuItem>
+                    <!--  Each import opens in its own window, so the rest of the app stays usable during a long conversion  -->
+                    <MenuItem Header="_Import">
+                        <MenuItem Command="{Binding ShowImportCommand}"
+                                  CommandParameter="{x:Static services:ImportKind.FiveETools}"
+                                  Header="_5eTools..."
+                                  ToolTip="Convert your 5eTools data and add its stat blocks, spells and conditions to the library" />
+                        <MenuItem Command="{Binding ShowImportCommand}"
+                                  CommandParameter="{x:Static services:ImportKind.Homebrewery}"
+                                  Header="_Homebrewery..."
+                                  ToolTip="Download Homebrewery documents and add their stat blocks and conditions to the library" />
+                        <MenuItem Command="{Binding ShowImportCommand}"
+                                  CommandParameter="{x:Static services:ImportKind.MartialExploits}"
+                                  Header="_Martial Exploits (GM Binder)..."
+                                  ToolTip="Download GM Binder documents, such as the Alternate Fighter, and add their martial exploits to the library" />
+                    </MenuItem>
+                </Menu>
 
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <!--  As wide as the panel in it, which has two widths: open and folded away  -->
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-
-            <DockPanel Grid.Column="0">
-                <DockPanel.Style>
-                    <Style TargetType="DockPanel">
-                        <Style.Triggers>
-                            <!--  Open: the width the user dragged it to. Folded away: no width set, so as narrow as the vertical tabs.  -->
-                            <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="False">
-                                <Setter Property="Width" Value="{Binding NavigationWidth.Value}" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </DockPanel.Style>
-
-                <!--  Folds the panel away, or brings it back  -->
-                <Button Width="36"
-                        Margin="8"
-                        Padding="0,4"
-                        HorizontalAlignment="Left"
-                        Command="{Binding ToggleNavigationCommand}"
-                        Content="☰"
-                        DockPanel.Dock="Top"
-                        ToolTip="Show or hide the page list" />
-
-                <!--  Folded away: one vertical tab per page, like the tool window tabs at the edge of Visual Studio  -->
-                <ListBox ItemsSource="{Binding Pages}"
+                <!--
+                    One button per page, like tabs: the selected page is underlined. A list box rather than
+                    buttons, because its selection is the current page and the arrow keys move between them.
+                -->
+                <ListBox Margin="16,0,0,0"
+                         VerticalAlignment="Center"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         ItemsSource="{Binding Pages}"
+                         KeyboardNavigation.DirectionalNavigation="Cycle"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         SelectedItem="{Binding CurrentPage}"
-                         Visibility="{Binding IsNavigationCollapsed, Converter={StaticResource BoolToVisibility}}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="0,6"
-                                       Text="{Binding ShortTitle}"
-                                       ToolTip="{Binding Title}">
-                                <!--  Turned a quarter circle, so the text reads from top to bottom  -->
-                                <TextBlock.LayoutTransform>
-                                    <RotateTransform Angle="90" />
-                                </TextBlock.LayoutTransform>
-                            </TextBlock>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         SelectedItem="{Binding CurrentPage}">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="ToolTip" Value="{Binding Title}" />
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <!--  Fluent's own item template is made for vertical lists, with a bar at the left of the selected one  -->
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Tab"
+                                                Margin="2,4"
+                                                Padding="12,4"
+                                                Background="Transparent"
+                                                BorderBrush="Transparent"
+                                                BorderThickness="0,0,0,2"
+                                                CornerRadius="4,4,0,0">
+                                            <TextBlock Text="{Binding ShortTitle}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Tab" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                                <Setter TargetName="Tab" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Tab" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                 </ListBox>
+            </DockPanel>
+        </Border>
 
-                <!--  Open: the page list and the campaign. Hidden when the panel is folded away.  -->
-                <DockPanel>
-                    <DockPanel.Style>
-                        <Style TargetType="DockPanel">
+        <!--  The campaign and the outcome of the last save or reload, on one line at the bottom  -->
+        <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="0,1,0,0"
+                DockPanel.Dock="Bottom">
+            <DockPanel Margin="12,2">
+                <Button Margin="8,2,0,2"
+                        Padding="12,2"
+                        Command="{Binding ReloadCampaignCommand}"
+                        Content="Reload"
+                        DockPanel.Dock="Right"
+                        ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
+                        Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           Style="{StaticResource SecondaryText}"
+                           Text="Campaign:" />
+                <TextBlock MaxWidth="320"
+                           Margin="4,0,0,0"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"
+                           FontWeight="SemiBold"
+                           Text="{Binding CampaignName}"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding CampaignName}" />
+                <!--  A failed save lists what failed on several lines. The tooltip has them all.  -->
+                <TextBlock Margin="16,0,0,0"
+                           VerticalAlignment="Center"
+                           Text="{Binding CampaignMessageLine}"
+                           TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="ToolTip" Value="{Binding CampaignMessage}" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsNavigationCollapsed}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
+                                <!--  An empty tooltip would still open as a small empty box  -->
+                                <DataTrigger Binding="{Binding CampaignMessage}" Value="">
+                                    <Setter Property="ToolTip" Value="{x:Null}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </DockPanel.Style>
-
-                    <!--  Drag strip on the panel's right edge. Hidden with the rest while folded away.  -->
-                    <Thumb Width="6"
-                           behaviors:ResizeHandle.PanelWidth="{Binding NavigationWidth}"
-                           DockPanel.Dock="Right"
-                           Style="{StaticResource ColumnResizeHandle}" />
-
-                    <!--  The open campaign, below the page list  -->
-                    <StackPanel Margin="12" DockPanel.Dock="Bottom">
-                        <TextBlock Style="{StaticResource SecondaryText}" Text="Campaign" />
-                        <TextBlock FontWeight="SemiBold"
-                                   Text="{Binding CampaignName}"
-                                   TextTrimming="CharacterEllipsis"
-                                   ToolTip="{Binding CampaignName}" />
-                        <TextBlock Margin="0,4,0,0"
-                                   Text="{Binding CampaignMessage}"
-                                   TextWrapping="Wrap" />
-                        <Button Margin="0,8,0,0"
-                                Padding="12,4"
-                                HorizontalAlignment="Stretch"
-                                Command="{Binding ReloadCampaignCommand}"
-                                Content="Reload"
-                                ToolTip="Load the changed files. Unsaved edits and the current combat are discarded."
-                                Visibility="{Binding HasPendingExternalChanges, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-
-                    <ListBox DisplayMemberPath="Title"
-                             ItemsSource="{Binding Pages}"
-                             SelectedItem="{Binding CurrentPage}" />
-                </DockPanel>
+                    </TextBlock.Style>
+                </TextBlock>
             </DockPanel>
+        </Border>
 
-            <ContentControl Grid.Column="1"
-                            Margin="24"
-                            Content="{Binding CurrentPage}">
+        <Grid>
+            <ContentControl Margin="24" Content="{Binding CurrentPage}">
                 <ContentControl.Resources>
                     <DataTemplate DataType="{x:Type viewModels:PartySetupViewModel}">
                         <views:PartySetupView />

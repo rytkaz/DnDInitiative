@@ -49,7 +49,7 @@ Built with C# 14, .NET 10 and WPF.
 **General**
 
 - Light and dark mode, following the Windows setting
-- The page list folds away to give a page more room
+- Pages are tabs in the top bar, and a one-line status bar at the bottom shows the campaign and the outcome of the last save
 - Window size and panel sizes are remembered between runs
 - Confirmation before deleting, and an offer to save unsaved changes before closing
 
