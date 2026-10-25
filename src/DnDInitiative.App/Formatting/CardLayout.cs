@@ -22,28 +22,61 @@ public static class CardLayout
     public const double MaxFontSize = 8;
     public const double MinFontSize = 6;
 
-    // The view's border (4 above and below) and margin (10 at the sides, 6 above and below).
-    public const double ContentWidth = Width - (2 * 10);
-    public const double ContentHeight = Height - (2 * 4) - (2 * 6);
+    // The view's border (1 all round) and margin (10 at the sides, 6 above and below).
+    public const double ContentWidth = Width - (2 * 1) - (2 * 10);
+    public const double ContentHeight = Height - (2 * 1) - (2 * 6);
 
     public const double NameHeight = 22;
     public const double RuleHeight = 6;
     public const double FieldRowHeight = 20;
     public const double FieldRowsHeight = 2 * FieldRowHeight;
-    public const double ComponentsHeight = 36;
-    public const double SubtitleHeight = 28;
+
+    /// <summary>
+    /// The most room the duration and the components can take, so very long material text cannot
+    /// crowd out the description. Usually they take less; see <see cref="MeasureTextFields"/>.
+    /// </summary>
+    public const double MaxTextFieldsHeight = 64;
+
+    /// <summary>The most room an ability's subtitle and prerequisites can take; see <see cref="MeasureSubtitle"/>.</summary>
+    public const double MaxSubtitleHeight = 40;
+
     public const double FooterHeight = 14;
-
-    public const double SpellHeaderHeight = FieldRowsHeight + ComponentsHeight + RuleHeight;
-    public const double AbilityHeaderHeight = SubtitleHeight + RuleHeight;
-
-    public const double SpellDescriptionHeight = ContentHeight - NameHeight - RuleHeight - SpellHeaderHeight - FooterHeight;
-    public const double AbilityDescriptionHeight = ContentHeight - NameHeight - RuleHeight - AbilityHeaderHeight - FooterHeight;
 
     /// <summary>A continuation card repeats only the name, so its description has the most room.</summary>
     public const double ContinuationDescriptionHeight = ContentHeight - NameHeight - RuleHeight - FooterHeight;
 
     private const double FontStep = 0.5;
+
+    /// <summary>The room for a spell's description, below fields that take the given height.</summary>
+    public static double SpellDescriptionHeight(double textFieldsHeight)
+    {
+        double header = FieldRowsHeight + textFieldsHeight + RuleHeight;
+        return ContentHeight - NameHeight - RuleHeight - header - FooterHeight;
+    }
+
+    /// <summary>How tall a spell's duration and components are, wrapped to the card's width.</summary>
+    /// <remarks>Measures a real WPF element, so it must run on a thread that may create one.</remarks>
+    public static double MeasureTextFields(string duration, string components)
+    {
+        var fields = new CardTextFields { Duration = duration, Components = components };
+        fields.Measure(new Size(ContentWidth, double.PositiveInfinity));
+        return Math.Min(Math.Ceiling(fields.DesiredSize.Height), MaxTextFieldsHeight);
+    }
+
+    /// <summary>The room for an ability's description, below a subtitle of the given height.</summary>
+    public static double AbilityDescriptionHeight(double subtitleHeight)
+    {
+        return ContentHeight - NameHeight - RuleHeight - (subtitleHeight + RuleHeight) - FooterHeight;
+    }
+
+    /// <summary>How tall an ability's subtitle and prerequisites are, wrapped to the card's width.</summary>
+    /// <remarks>Measures a real WPF element, so it must run on a thread that may create one.</remarks>
+    public static double MeasureSubtitle(string subtitle, string prerequisites)
+    {
+        var lines = new CardSubtitle { Subtitle = subtitle, Prerequisites = prerequisites };
+        lines.Measure(new Size(ContentWidth, double.PositiveInfinity));
+        return Math.Min(Math.Ceiling(lines.DesiredSize.Height), MaxSubtitleHeight);
+    }
 
     /// <summary>
     /// Splits a description over as many cards as it needs. Each card first tries the largest text

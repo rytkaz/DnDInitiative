@@ -107,9 +107,28 @@ internal sealed class SqliteSpellRepository : ISpellRepository
                 spell.IsRitual,
                 spell.IsConcentration,
                 spell.Classes,
-                spell.Source))
+                spell.Source,
+                spell.CastingTime,
+                spell.Range))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    public async Task<IReadOnlyList<string>> GetClassesAsync(CancellationToken cancellationToken = default)
+    {
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        // Only the one column is read. The lists are short, so they are merged here rather than in SQL.
+        List<List<string>> lists = await db.Spells
+            .Select(spell => spell.Classes)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return lists
+            .SelectMany(classes => classes)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public async Task<SpellSaveResult> SaveManyAsync(IReadOnlyCollection<Spell> spells, CancellationToken cancellationToken = default)

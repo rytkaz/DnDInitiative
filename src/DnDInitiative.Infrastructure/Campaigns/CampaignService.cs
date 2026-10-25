@@ -19,7 +19,7 @@ internal sealed class CampaignService : ICampaignService
 
     // The subfolders the repositories keep their items in. A new kind of item needs its folder
     // added here, or Save As leaves it behind.
-    private static readonly string[] ItemFolders = ["parties", "encounters", "statblocks"];
+    private static readonly string[] ItemFolders = ["parties", "encounters", "statblocks", "spellbooks"];
 
     private readonly CampaignLocation _location;
     private readonly CampaignOptions _options;

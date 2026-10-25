@@ -34,4 +34,6 @@ public sealed record SpellSummary(
     bool IsRitual,
     bool IsConcentration,
     IReadOnlyList<string> Classes,
-    string Source);
+    string Source,
+    string CastingTime,
+    string Range);

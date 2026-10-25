@@ -8,7 +8,7 @@ public sealed record TextSegment(string Text, bool IsBold = false, bool IsItalic
 
 /// <summary>
 /// Splits text containing Markdown emphasis (*italic*, **bold**, ***both***) and links
-/// ([text](target)) into styled segments.
+/// ([text](target)) into styled segments. Code spans (`2d6`) are shown as plain text.
 /// </summary>
 public static partial class InlineMarkdown
 {
@@ -19,6 +19,9 @@ public static partial class InlineMarkdown
         {
             return segments;
         }
+
+        // The converter writes dice as code, such as `8d6`; only the text inside is wanted.
+        text = CodeSpan().Replace(text, "$2");
 
         // Emphasis first, then links inside each piece. That order handles a bold or italic
         // run that contains links, which is how a creature's list of spells is written.
@@ -60,6 +63,10 @@ public static partial class InlineMarkdown
     // or an asterisk, then the same number of asterisks again.
     [GeneratedRegex(@"(\*{1,3})(?=[^\s*])(.+?)(?<=[^\s*])\1")]
     private static partial Regex Emphasis();
+
+    // A run of backticks, text, then a run of the same length: `8d6` or ``8d6``.
+    [GeneratedRegex(@"(`+)(?!`)(.+?)(?<!`)\1(?!`)")]
+    private static partial Regex CodeSpan();
 
     // [text](target)
     [GeneratedRegex(@"\[([^\]]+)\]\(([^)]+)\)")]

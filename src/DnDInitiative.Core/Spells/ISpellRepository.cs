@@ -24,6 +24,12 @@ public interface ISpellRepository
         int take = 100,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Every class named on any spell, in alphabetical order, for a list to filter by.
+    /// Empty when the spells were imported before classes were recorded.
+    /// </summary>
+    Task<IReadOnlyList<string>> GetClassesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Adds the spells, replacing any stored spell that has the same key.</summary>
     Task<SpellSaveResult> SaveManyAsync(IReadOnlyCollection<Spell> spells, CancellationToken cancellationToken = default);
 }

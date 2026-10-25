@@ -54,6 +54,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         StatBlocksViewModel statBlocks,
         EncounterBuilderViewModel encounterBuilder,
         PartySetupViewModel partySetup,
+        SpellbookViewModel spellbook,
         IMessenger messenger,
         IConfirmationService confirmation,
         IUnsavedChangesPrompt unsavedChangesPrompt,
@@ -78,7 +79,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCo
         _isNavigationCollapsed = uiState.Load().IsNavigationCollapsed;
         NavigationWidth = new PanelSize(uiState, "Main.Navigation", defaultValue: 220, minimum: 160, maximum: 480);
         // The imports are not pages: they open in windows of their own from the Import menu.
-        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup];
+        Pages = [initiativeTracker, statBlocks, encounterBuilder, partySetup, spellbook];
         _currentPage = initiativeTracker;
 
         // Storage opens a campaign during start-up, before any window exists.

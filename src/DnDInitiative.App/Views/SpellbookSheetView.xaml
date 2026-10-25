@@ -1,0 +1,101 @@
+﻿<UserControl x:Class="DnDInitiative.App.Views.SpellbookSheetView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:behaviors="clr-namespace:DnDInitiative.App.Behaviors"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:formatting="clr-namespace:DnDInitiative.App.Formatting"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewModels="clr-namespace:DnDInitiative.App.ViewModels"
+             xmlns:views="clr-namespace:DnDInitiative.App.Views"
+             Width="{x:Static formatting:SheetLayout.PageWidth}"
+             Height="{x:Static formatting:SheetLayout.PageHeight}"
+             d:DataContext="{d:DesignInstance Type=viewModels:SpellbookPageViewModel}"
+             mc:Ignorable="d"
+             Background="White"
+             UseLayoutRounding="True">
+    <!--
+        One A4 page, drawn in real units like the cards on it, so the preview and the printout
+        are the same. White and not a theme colour: it stands for paper, also in dark mode.
+    -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <Grid>
+        <formatting:CutMarks />
+
+        <ItemsControl Width="{x:Static formatting:SheetLayout.GridWidth}"
+                      Height="{x:Static formatting:SheetLayout.GridHeight}"
+                      Margin="{x:Static views:SpellbookSheetView.GridMargin}"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Top"
+                      ItemsSource="{Binding Cards}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <!--  Fills in reading order; on a short last page the remaining cells stay empty  -->
+                    <UniformGrid Columns="{x:Static formatting:SheetLayout.Columns}" Rows="{x:Static formatting:SheetLayout.Rows}" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type viewModels:SpellbookCardViewModel}">
+                    <!--
+                        Transparent, so the whole card catches the mouse for selecting and dragging. The slot
+                        fills the cell, gap included, so a drop between two cards still lands beside one of them.
+                    -->
+                    <Grid x:Name="Slot"
+                          Background="Transparent"
+                          Tag="CardSlot">
+                        <views:CardView Margin="{x:Static views:SpellbookSheetView.CardMargin}" DataContext="{Binding Card}" />
+
+                        <!--  Only on screen: the selection, the remove button and where a dragged card would land  -->
+                        <Grid Margin="{x:Static views:SpellbookSheetView.CardMargin}" Visibility="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=views:SpellbookSheetView}, Converter={StaticResource BoolToVisibility}}">
+                            <Border x:Name="SelectionFrame"
+                                    BorderBrush="{DynamicResource AccentFillColorDefaultBrush}"
+                                    BorderThickness="2"
+                                    Visibility="Collapsed" />
+                            <Button x:Name="RemoveButton"
+                                    Width="22"
+                                    Height="22"
+                                    Margin="0,6,6,0"
+                                    Padding="0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding DataContext.RemoveEntryCommand, RelativeSource={RelativeSource AncestorType=views:SpellbookView}}"
+                                    CommandParameter="{Binding Entry}"
+                                    Content="×"
+                                    FontSize="12"
+                                    ToolTip="Remove from the spellbook (Delete)"
+                                    Visibility="Collapsed" />
+                            <Rectangle x:Name="DropBefore"
+                                       Width="3"
+                                       HorizontalAlignment="Left"
+                                       Fill="{DynamicResource AccentFillColorDefaultBrush}"
+                                       Visibility="Collapsed" />
+                            <Rectangle x:Name="DropAfter"
+                                       Width="3"
+                                       HorizontalAlignment="Right"
+                                       Fill="{DynamicResource AccentFillColorDefaultBrush}"
+                                       Visibility="Collapsed" />
+                        </Grid>
+                    </Grid>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                            <Setter TargetName="SelectionFrame" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="RemoveButton" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <Trigger SourceName="Slot" Property="IsMouseOver" Value="True">
+                            <Setter TargetName="RemoveButton" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <!--  In a row of cards, "above" is before the card and "below" after it  -->
+                        <Trigger SourceName="Slot" Property="behaviors:DropIndicator.Position" Value="Above">
+                            <Setter TargetName="DropBefore" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger SourceName="Slot" Property="behaviors:DropIndicator.Position" Value="Below">
+                            <Setter TargetName="DropAfter" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</UserControl>

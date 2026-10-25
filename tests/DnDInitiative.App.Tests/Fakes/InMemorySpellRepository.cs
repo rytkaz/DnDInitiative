@@ -54,10 +54,23 @@ internal sealed class InMemorySpellRepository : ISpellRepository
                 spell.IsRitual,
                 spell.IsConcentration,
                 spell.Classes,
-                spell.Source))
+                spell.Source,
+                spell.CastingTime,
+                spell.Range))
             .ToList();
 
         return Task.FromResult(matches);
+    }
+
+    public Task<IReadOnlyList<string>> GetClassesAsync(CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<string> classes = _spells.Values
+            .SelectMany(spell => spell.Classes)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return Task.FromResult(classes);
     }
 
     public Task<SpellSaveResult> SaveManyAsync(IReadOnlyCollection<Spell> spells, CancellationToken cancellationToken = default)

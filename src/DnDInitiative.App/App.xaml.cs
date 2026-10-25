@@ -127,12 +127,15 @@ public partial class App : Application
         services.AddSingleton<IUiStateStore>(new JsonUiStateStore(Path.Combine(dataDirectory, "ui-state.json")));
         services.AddSingleton<EncounterLinkHandler>();
         services.AddSingleton<IWindowService, WindowService>();
+        services.AddSingleton<ICardFactory, CardFactory>();
+        services.AddSingleton<ISpellbookPrinter, SpellbookPrinter>();
 
         // View models
         services.AddSingleton<InitiativeTrackerViewModel>();
         services.AddSingleton<StatBlocksViewModel>();
         services.AddSingleton<EncounterBuilderViewModel>();
         services.AddSingleton<PartySetupViewModel>();
+        services.AddSingleton<SpellbookViewModel>();
         services.AddSingleton<ImportViewModel>();
         services.AddSingleton<HomebreweryImportViewModel>();
         services.AddSingleton<MartialExploitImportViewModel>();

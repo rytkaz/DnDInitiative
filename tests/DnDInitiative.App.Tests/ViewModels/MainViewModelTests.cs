@@ -19,6 +19,7 @@ public class MainViewModelTests
     private readonly InitiativeTrackerViewModel _tracker;
     private readonly EncounterBuilderViewModel _encounterBuilder;
     private readonly PartySetupViewModel _partySetup;
+    private readonly SpellbookViewModel _spellbook;
     private readonly MainViewModel _viewModel;
     private readonly InMemoryPartyRepository _parties = new();
     private readonly FakeCampaignService _campaigns = new();
@@ -47,11 +48,21 @@ public class MainViewModelTests
             new InMemoryUiStateStore(),
             new FixedTimeProvider());
         _partySetup = new PartySetupViewModel(_parties, _confirmation, new InMemoryUiStateStore());
+        _spellbook = new SpellbookViewModel(
+            new InMemorySpellbookRepository(),
+            new InMemorySpellRepository(),
+            new InMemoryAbilityRepository(),
+            new FakeCardFactory(),
+            new FakeSpellbookPrinter(),
+            _confirmation,
+            new InMemoryUiStateStore(),
+            new FixedTimeProvider());
         _viewModel = new MainViewModel(
             _tracker,
             new StatBlocksViewModel(statBlocks, _confirmation, _messenger, new InMemoryUiStateStore()),
             _encounterBuilder,
             _partySetup,
+            _spellbook,
             _messenger,
             _confirmation,
             _unsavedChangesPrompt,
@@ -284,6 +295,7 @@ public class MainViewModelTests
             new StatBlocksViewModel(statBlocks, _confirmation, messenger, new InMemoryUiStateStore()),
             _encounterBuilder,
             _partySetup,
+            _spellbook,
             messenger,
             _confirmation,
             _unsavedChangesPrompt,
@@ -299,7 +311,7 @@ public class MainViewModelTests
     [Fact]
     public void Pages_HaveShortNamesForTheFoldedAwayPanel()
     {
-        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party"];
+        string[] expected = ["Initiative", "StatBlocks", "Encounters", "Party", "Spellbook"];
 
         Assert.Equal(expected, _viewModel.Pages.Select(page => page.ShortTitle).ToArray());
     }

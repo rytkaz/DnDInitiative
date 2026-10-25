@@ -94,6 +94,23 @@ internal sealed class SqliteAbilityRepository : IAbilityRepository
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<string>> GetClassesAsync(CancellationToken cancellationToken = default)
+    {
+        await using AppDbContext db = await _contextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        // Only the one column is read. The lists are short, so they are merged here rather than in SQL.
+        List<List<string>> lists = await db.Abilities
+            .Select(ability => ability.Classes)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return lists
+            .SelectMany(classes => classes)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public async Task<AbilitySaveResult> SaveManyAsync(IReadOnlyCollection<Ability> abilities, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(abilities);

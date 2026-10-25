@@ -8,20 +8,35 @@
              Width="{x:Static formatting:CardLayout.Width}"
              Height="{x:Static formatting:CardLayout.Height}"
              d:DataContext="{d:DesignInstance Type=viewModels:SpellCardViewModel}"
-             mc:Ignorable="d"
-             UseLayoutRounding="True">
+             UseLayoutRounding="True"
+             mc:Ignorable="d">
     <!--
         A spell or ability card, 63 × 88 mm drawn in real units (1 unit = 1/96 inch), so the same
         view serves the screen and the printed page. The data context is a CardViewModel. The
         heights of the fixed rows come from CardLayout, which fits the description into what is left.
+        Black on white only, so the cards print cleanly on any printer.
     -->
     <UserControl.Resources>
         <!--  The small name above a value: "Range"  -->
         <Style x:Key="CardFieldLabel" TargetType="TextBlock">
             <Setter Property="FontSize" Value="5.5" />
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Foreground" Value="{StaticResource StatBlockAccent}" />
             <Setter Property="Typography.Capitals" Value="AllSmallCaps" />
+        </Style>
+
+        <!--  A link in the text, such as a spell's name. Replaces the app's coloured style, which MarkdownText looks up by key.  -->
+        <Style x:Key="{x:Static formatting:MarkdownText.LinkStyleKey}" TargetType="Hyperlink">
+            <Setter Property="Foreground" Value="Black" />
+            <Setter Property="TextDecorations" Value="{x:Null}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <!--  A thin straight line between the parts of the card. Height and margin make CardLayout.RuleHeight.  -->
+        <Style x:Key="CardRule" TargetType="Rectangle">
+            <Setter Property="Height" Value="0.75" />
+            <Setter Property="Margin" Value="0,2.625" />
+            <Setter Property="Fill" Value="Black" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
         </Style>
 
         <!--  One line, cut with an ellipsis; the tooltip has all of it  -->
@@ -48,10 +63,8 @@
                                    ToolTip="{Binding Range}" />
                     </StackPanel>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Duration" />
-                        <TextBlock Style="{StaticResource CardFieldValue}"
-                                   Text="{Binding Duration}"
-                                   ToolTip="{Binding Duration}" />
+                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Level" />
+                        <TextBlock Style="{StaticResource CardFieldValue}" Text="{Binding Level}" />
                     </StackPanel>
                     <StackPanel Margin="0,0,3,0">
                         <TextBlock Style="{StaticResource CardFieldLabel}" Text="Ritual" />
@@ -65,24 +78,15 @@
                                    FontSize="8"
                                    Text="{Binding Concentration}" />
                     </StackPanel>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardFieldLabel}" Text="Level" />
-                        <TextBlock Style="{StaticResource CardFieldValue}" Text="{Binding Level}" />
-                    </StackPanel>
                 </UniformGrid>
 
-                <!--  Wide, because the material text can run long  -->
-                <StackPanel Height="{x:Static formatting:CardLayout.ComponentsHeight}" ClipToBounds="True">
-                    <TextBlock Style="{StaticResource CardFieldLabel}" Text="Components" />
-                    <TextBlock FontSize="7"
-                               Text="{Binding Components}"
-                               TextWrapping="Wrap"
-                               ToolTip="{Binding Components}" />
-                </StackPanel>
+                <!--  Full width and wrapping, because a duration or the material text can run long; as tall as it needs  -->
+                <formatting:CardTextFields Height="{Binding TextFieldsHeight}"
+                                           ClipToBounds="True"
+                                           Components="{Binding Components}"
+                                           Duration="{Binding Duration}" />
 
-                <Polygon Height="3"
-                         Margin="0,1.5"
-                         Style="{StaticResource TaperedRule}" />
+                <Rectangle Style="{StaticResource CardRule}" />
             </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsContinuation}" Value="True">
@@ -93,18 +97,13 @@
 
         <DataTemplate DataType="{x:Type viewModels:AbilityCardViewModel}">
             <StackPanel x:Name="Header">
-                <StackPanel Height="{x:Static formatting:CardLayout.SubtitleHeight}" ClipToBounds="True">
-                    <TextBlock FontSize="7"
-                               FontStyle="Italic"
-                               Text="{Binding Subtitle}" />
-                    <TextBlock FontSize="6.5"
-                               Text="{Binding Prerequisites}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
+                <!--  As tall as its lines need  -->
+                <formatting:CardSubtitle Height="{Binding SubtitleHeight}"
+                                         ClipToBounds="True"
+                                         Prerequisites="{Binding Prerequisites}"
+                                         Subtitle="{Binding Subtitle}" />
 
-                <Polygon Height="3"
-                         Margin="0,1.5"
-                         Style="{StaticResource TaperedRule}" />
+                <Rectangle Style="{StaticResource CardRule}" />
             </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsContinuation}" Value="True">
@@ -119,17 +118,17 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <Border Background="{StaticResource StatBlockPaper}"
-            BorderBrush="{StaticResource StatBlockEdge}"
-            BorderThickness="0,4"
+    <!--  The outline is also where to cut; CardLayout counts its width  -->
+    <Border Background="White"
+            BorderBrush="Black"
+            BorderThickness="1"
             ClipToBounds="True"
-            TextElement.Foreground="{StaticResource StatBlockInk}">
+            TextElement.Foreground="Black">
         <DockPanel Margin="10,6">
             <TextBlock Height="{x:Static formatting:CardLayout.FooterHeight}"
                        VerticalAlignment="Bottom"
                        DockPanel.Dock="Bottom"
                        FontSize="5.5"
-                       Opacity="0.75"
                        Text="{Binding Footer}"
                        TextWrapping="Wrap" />
 
@@ -141,15 +140,11 @@
                 <TextBlock FontFamily="Georgia"
                            FontSize="13"
                            FontWeight="Bold"
-                           Foreground="{StaticResource StatBlockAccent}"
                            Text="{Binding Name}"
                            Typography.Capitals="SmallCaps" />
             </Viewbox>
 
-            <Polygon Height="3"
-                     Margin="0,1.5"
-                     DockPanel.Dock="Top"
-                     Style="{StaticResource TaperedRule}" />
+            <Rectangle DockPanel.Dock="Top" Style="{StaticResource CardRule}" />
 
             <!--  The fields of a spell or the line under an ability's name; nothing on a continuation  -->
             <ContentControl Content="{Binding}" DockPanel.Dock="Top" />

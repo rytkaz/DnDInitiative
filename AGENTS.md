@@ -47,7 +47,7 @@ Inside each project, code is grouped **by feature**, not by kind: `Spells/`, `Co
 - **Dependencies point inward.** Core references nothing, not even EF or WPF. Interfaces that the outer layers implement live in Core, in the feature folder.
 - **EF entities are `internal`** to Infrastructure and mapped to and from Core records. Database concerns never reach Core or App.
 - **Two stores:**
-  - **The campaign folder** holds what the user makes: parties, encounters, their own stat blocks. One readable JSON file each, written through `JsonFolderStore<T>` with the options in `CampaignJson`. It is meant to be kept in git.
+  - **The campaign folder** holds what the user makes: parties, encounters, spellbooks, their own stat blocks. One readable JSON file each, written through `JsonFolderStore<T>` with the options in `CampaignJson`. It is meant to be kept in git.
   - **The SQLite database** (`%AppData%\DnDInitiative`) holds imported content (stat blocks, spells, conditions) and belongs to one computer.
   - `CampaignStatBlockRepository` merges the two. A user's stat block shadows the imported one with the same Id.
 - **Imported stat blocks have deterministic Ids** (`StatBlockIdentity`), so encounters keep pointing at the right creature on every computer and after a re-import. Don't change how those Ids are calculated.

@@ -9,9 +9,10 @@ public sealed class SpellCardViewModel : CardViewModel
     private const string Ticked = "☑";
     private const string Empty = "☐";
 
-    private SpellCardViewModel(Spell spell, CardPage page, bool isContinuation)
+    private SpellCardViewModel(Spell spell, CardPage page, bool isContinuation, double textFieldsHeight)
         : base(NameOf(spell.Name, isContinuation), FooterOf(spell), page, isContinuation)
     {
+        TextFieldsHeight = textFieldsHeight;
         CastingTime = spell.CastingTime.Trim();
         Range = spell.Range.Trim();
         Duration = spell.Duration.Trim();
@@ -39,17 +40,21 @@ public sealed class SpellCardViewModel : CardViewModel
     /// <summary>"Cantrip", "3rd-level".</summary>
     public string Level { get; }
 
+    /// <summary>How tall the duration and components are on this spell's card, as measured.</summary>
+    public double TextFieldsHeight { get; }
+
     /// <summary>The card for a spell, followed by the cards its description spills onto.</summary>
     public static IReadOnlyList<SpellCardViewModel> CreateCards(Spell spell)
     {
         ArgumentNullException.ThrowIfNull(spell);
 
+        double textFields = CardLayout.MeasureTextFields(spell.Duration.Trim(), spell.Components.Trim());
         IReadOnlyList<CardPage> pages = CardLayout.Paginate(
             MarkdownBlocks.Parse(spell.Description),
-            CardLayout.SpellDescriptionHeight,
+            CardLayout.SpellDescriptionHeight(textFields),
             CardLayout.ContinuationDescriptionHeight);
 
-        return [.. pages.Select((page, index) => new SpellCardViewModel(spell, page, index > 0))];
+        return [.. pages.Select((page, index) => new SpellCardViewModel(spell, page, index > 0, textFields))];
     }
 
     private static string FooterOf(Spell spell)

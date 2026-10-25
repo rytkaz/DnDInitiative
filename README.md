@@ -29,6 +29,12 @@ Built with C# 14, .NET 10 and WPF.
 - Start an encounter in the tracker with one click
 - Copy a Markdown link that opens the app and starts the encounter
 
+**Spellbooks**
+
+- Pick spells and martial exploits from the library, filtered by class, level, ritual and concentration, in a table you sort by clicking a column heading
+- See them as black-and-white 63 × 88 mm cards on A4 pages, nine to a page with small gaps and cut marks, and drag the cards into any order
+- Preview and print the pages, or print to PDF, and keep each spellbook in the campaign
+
 **Parties**
 
 - Save parties with each character's level, hit points and armor class
@@ -36,7 +42,7 @@ Built with C# 14, .NET 10 and WPF.
 
 **Campaigns**
 
-- A campaign is a folder: one readable JSON file per party, encounter and stat block
+- A campaign is a folder: one readable JSON file per party, encounter, stat block and spellbook
 - Put the folder in git, or any sync service, to share it or move between computers
 - Files changed outside the app are picked up while it runs
 
@@ -63,7 +69,7 @@ The first run creates a campaign in `Documents\DnD Initiative\My Campaign`. The 
 | Menu item | Shortcut | Does |
 |---|---|---|
 | **Open Campaign...** | Ctrl+O | Opens another campaign folder, or starts a new campaign in an empty one |
-| **Save Campaign** | Ctrl+S | Saves every encounter, party and stat block with unsaved changes |
+| **Save Campaign** | Ctrl+S | Saves every encounter, party, stat block and spellbook with unsaved changes |
 | **Save Campaign As...** | Ctrl+Shift+S | Copies the campaign to an empty folder, switches to the copy and saves your unsaved changes there. The original folder stays as it was last saved. |
 
 Closing the app, or opening or reloading a campaign, with unsaved changes asks whether to save them first.
@@ -74,6 +80,7 @@ Closing the app, or opening or reloading a campaign, with unsaved changes asks w
 | `parties\` | One file per party |
 | `encounters\` | One file per encounter |
 | `statblocks\` | One file per stat block you created or edited |
+| `spellbooks\` | One file per spellbook. It lists the spells and abilities by their library key, so the cards always show the text of the latest import. |
 
 Imported books are not part of the campaign. They stay in a database on each computer (see [Where your data lives](#where-your-data-lives)), so a campaign folder holds only your own work and stays small. An imported stat block you edit is saved to the campaign and takes the place of the imported one.
 

@@ -35,6 +35,15 @@ public sealed record UiState
 
     public bool IsWindowMaximized { get; init; }
 
+    /// <summary>How the Spellbook page's library is sorted, by the name of the order. Null means level, then name.</summary>
+    public string? SpellbookLibrarySort { get; init; }
+
+    /// <summary>Whether that order is reversed, after a second click on the column's heading.</summary>
+    public bool SpellbookLibrarySortDescending { get; init; }
+
+    /// <summary>How large the Spellbook page shows its A4 pages, 1 being real size.</summary>
+    public double? SpellbookZoom { get; init; }
+
     /// <summary>The size of the import windows, shared by all of them.</summary>
     public double? ImportWindowWidth { get; init; }
 

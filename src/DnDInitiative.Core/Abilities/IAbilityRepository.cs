@@ -52,6 +52,9 @@ public interface IAbilityRepository
         int take = 100,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Every class named on any ability, in alphabetical order, for a list to filter by.</summary>
+    Task<IReadOnlyList<string>> GetClassesAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Adds the abilities, replacing any stored ability that has the same key.</summary>
     Task<AbilitySaveResult> SaveManyAsync(IReadOnlyCollection<Ability> abilities, CancellationToken cancellationToken = default);
 }

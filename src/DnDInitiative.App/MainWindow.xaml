@@ -32,7 +32,7 @@
                 <MenuItem Command="{Binding SaveCampaignCommand}"
                           Header="_Save Campaign"
                           InputGestureText="Ctrl+S"
-                          ToolTip="Save every encounter, party and stat block with unsaved changes" />
+                          ToolTip="Save every encounter, party, stat block and spellbook with unsaved changes" />
                 <MenuItem Command="{Binding SaveCampaignAsCommand}"
                           Header="Save Campaign _As..."
                           InputGestureText="Ctrl+Shift+S"
@@ -165,6 +165,9 @@
                     </DataTemplate>
                     <DataTemplate DataType="{x:Type viewModels:EncounterBuilderViewModel}">
                         <views:EncounterBuilderView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type viewModels:SpellbookViewModel}">
+                        <views:SpellbookView />
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>

@@ -4,6 +4,7 @@ using DnDInitiative.Core.Conditions;
 using DnDInitiative.Core.Encounters;
 using DnDInitiative.Core.Homebrewery;
 using DnDInitiative.Core.Parties;
+using DnDInitiative.Core.Spellbooks;
 using DnDInitiative.Core.Spells;
 using DnDInitiative.Core.StatBlocks;
 using DnDInitiative.Infrastructure.Abilities;
@@ -15,6 +16,7 @@ using DnDInitiative.Infrastructure.Homebrewery;
 using DnDInitiative.Infrastructure.Import;
 using DnDInitiative.Infrastructure.Parties;
 using DnDInitiative.Infrastructure.Persistence;
+using DnDInitiative.Infrastructure.Spellbooks;
 using DnDInitiative.Infrastructure.Spells;
 using DnDInitiative.Infrastructure.StatBlocks;
 
@@ -66,6 +68,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<JsonPartyRepository>();
         services.AddSingleton<JsonEncounterRepository>();
         services.AddSingleton<CampaignStatBlockRepository>();
+        services.AddSingleton<ISpellbookRepository, JsonSpellbookRepository>();
         services.AddSingleton<IPartyRepository>(provider => provider.GetRequiredService<JsonPartyRepository>());
         services.AddSingleton<IEncounterRepository>(provider => provider.GetRequiredService<JsonEncounterRepository>());
         services.AddSingleton<IStatBlockRepository>(provider => provider.GetRequiredService<CampaignStatBlockRepository>());

@@ -73,11 +73,6 @@ public sealed class CardDescription : StackPanel
                 text.FontFamily = HeadingFont;
                 text.FontSize = size + 1.5;
                 text.Margin = new Thickness(0, size * 0.6, 0, size * 0.15);
-                if (Application.Current?.TryFindResource("StatBlockAccent") is Brush accent)
-                {
-                    text.Foreground = accent;
-                }
-
                 return text;
 
             case MarkdownBlockKind.Bullet:
