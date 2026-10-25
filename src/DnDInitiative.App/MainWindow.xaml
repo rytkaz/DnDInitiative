@@ -14,6 +14,12 @@
         MinHeight="480"
         d:DataContext="{d:DesignInstance Type=viewModels:MainViewModel}"
         mc:Ignorable="d">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32"
+                      GlassFrameThickness="-1"
+                      ResizeBorderThickness="6"
+                      UseAeroCaptionButtons="True" />
+    </WindowChrome.WindowChrome>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     </Window.Resources>
@@ -23,47 +29,80 @@
         <KeyBinding Command="{Binding SaveCampaignAsCommand}" Gesture="Ctrl+Shift+S" />
     </Window.InputBindings>
     <DockPanel>
-        <!--  The top bar: the menus, then a button for each page  -->
+        <DockPanel.Style>
+            <Style TargetType="DockPanel">
+                <Style.Triggers>
+                    <!--
+                        A maximised window is larger than the screen by its resize border, which the system
+                        title bar used to cover. Without this the top and edges would be cut off.
+                    -->
+                    <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
+                        <Setter Property="Margin" Value="7" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </DockPanel.Style>
+
+        <!--
+            The title row: the menus, with the caption buttons on the right. It is not filled by its last
+            child: the menu takes clicks away from the title bar, so it must be only as wide as its items,
+            or the window could not be dragged and its buttons would not work.
+        -->
+        <DockPanel Height="32"
+                   Background="#19ABABAB"
+                   DockPanel.Dock="Top"
+                   LastChildFill="False">
+            <!--
+                Fluent's top-level menu items are 48 pixels tall, and a row too short for them hides their
+                text altogether. So the menu keeps its height and the negative margin centres it on the 32 pixel
+                row, as tall as Windows' own title bar. The highlight reaches a few pixels past the row; clipping
+                the row to hide that also kept the menus from opening.
+            -->
+            <Menu Margin="0,-8"
+                  VerticalAlignment="Center"
+                  DockPanel.Dock="Left"
+                  WindowChrome.IsHitTestVisibleInChrome="True">
+                <MenuItem Header="_File">
+                    <MenuItem Command="{Binding OpenCampaignCommand}"
+                              Header="_Open Campaign..."
+                              InputGestureText="Ctrl+O"
+                              ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
+                    <MenuItem Command="{Binding SaveCampaignCommand}"
+                              Header="_Save Campaign"
+                              InputGestureText="Ctrl+S"
+                              ToolTip="Save every encounter, party, stat block and spellbook with unsaved changes" />
+                    <MenuItem Command="{Binding SaveCampaignAsCommand}"
+                              Header="Save Campaign _As..."
+                              InputGestureText="Ctrl+Shift+S"
+                              ToolTip="Copy the campaign to an empty folder, switch to the copy, and save the unsaved changes there" />
+                    <Separator />
+                    <MenuItem Click="OnExitClick"
+                              Header="E_xit"
+                              InputGestureText="Alt+F4" />
+                </MenuItem>
+                <!--  Each import opens in its own window, so the rest of the app stays usable during a long conversion  -->
+                <MenuItem Header="_Import">
+                    <MenuItem Command="{Binding ShowImportCommand}"
+                              CommandParameter="{x:Static services:ImportKind.FiveETools}"
+                              Header="_5eTools..."
+                              ToolTip="Convert your 5eTools data and add its stat blocks, spells and conditions to the library" />
+                    <MenuItem Command="{Binding ShowImportCommand}"
+                              CommandParameter="{x:Static services:ImportKind.Homebrewery}"
+                              Header="_Homebrewery..."
+                              ToolTip="Download Homebrewery documents and add their stat blocks and conditions to the library" />
+                    <MenuItem Command="{Binding ShowImportCommand}"
+                              CommandParameter="{x:Static services:ImportKind.MartialExploits}"
+                              Header="_Martial Exploits (GM Binder)..."
+                              ToolTip="Download GM Binder documents, such as the Alternate Fighter, and add their martial exploits to the library" />
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+
+        <!--  The page bar: a button for each page  -->
         <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                 BorderThickness="0,0,0,1"
                 DockPanel.Dock="Top">
             <DockPanel>
-                <Menu VerticalAlignment="Center" DockPanel.Dock="Left">
-                    <MenuItem Header="_File">
-                        <MenuItem Command="{Binding OpenCampaignCommand}"
-                                  Header="_Open Campaign..."
-                                  InputGestureText="Ctrl+O"
-                                  ToolTip="Open another campaign folder, start a new one in an empty folder, or reopen this one to reload it" />
-                        <MenuItem Command="{Binding SaveCampaignCommand}"
-                                  Header="_Save Campaign"
-                                  InputGestureText="Ctrl+S"
-                                  ToolTip="Save every encounter, party, stat block and spellbook with unsaved changes" />
-                        <MenuItem Command="{Binding SaveCampaignAsCommand}"
-                                  Header="Save Campaign _As..."
-                                  InputGestureText="Ctrl+Shift+S"
-                                  ToolTip="Copy the campaign to an empty folder, switch to the copy, and save the unsaved changes there" />
-                        <Separator />
-                        <MenuItem Click="OnExitClick"
-                                  Header="E_xit"
-                                  InputGestureText="Alt+F4" />
-                    </MenuItem>
-                    <!--  Each import opens in its own window, so the rest of the app stays usable during a long conversion  -->
-                    <MenuItem Header="_Import">
-                        <MenuItem Command="{Binding ShowImportCommand}"
-                                  CommandParameter="{x:Static services:ImportKind.FiveETools}"
-                                  Header="_5eTools..."
-                                  ToolTip="Convert your 5eTools data and add its stat blocks, spells and conditions to the library" />
-                        <MenuItem Command="{Binding ShowImportCommand}"
-                                  CommandParameter="{x:Static services:ImportKind.Homebrewery}"
-                                  Header="_Homebrewery..."
-                                  ToolTip="Download Homebrewery documents and add their stat blocks and conditions to the library" />
-                        <MenuItem Command="{Binding ShowImportCommand}"
-                                  CommandParameter="{x:Static services:ImportKind.MartialExploits}"
-                                  Header="_Martial Exploits (GM Binder)..."
-                                  ToolTip="Download GM Binder documents, such as the Alternate Fighter, and add their martial exploits to the library" />
-                    </MenuItem>
-                </Menu>
-
                 <!--
                     One button per page, like tabs: the selected page is underlined. A list box rather than
                     buttons, because its selection is the current page and the arrow keys move between them.
@@ -92,8 +131,8 @@
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
                                         <Border x:Name="Tab"
-                                                Margin="2,4"
-                                                Padding="12,4"
+                                                Margin="2,2"
+                                                Padding="10,3"
                                                 Background="Transparent"
                                                 BorderBrush="Transparent"
                                                 BorderThickness="0,0,0,2"

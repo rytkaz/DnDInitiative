@@ -20,7 +20,8 @@ public enum CloseAction
 
 public sealed partial class MainViewModel : ObservableObject, IRecipient<StartCombatMessage>
 {
-    private const string AppTitle = "DnD Initiative";
+    /// <summary>Shown in the window's title row, where the system title would be.</summary>
+    public const string AppTitle = "DnD Initiative";
 
     private readonly InitiativeTrackerViewModel _initiativeTracker;
     private readonly IConfirmationService _confirmation;
