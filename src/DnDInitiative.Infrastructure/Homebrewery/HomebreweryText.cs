@@ -35,23 +35,30 @@ internal static partial class HomebreweryText
         return LayoutLine().IsMatch(line.Trim());
     }
 
-    /// <summary>Removes {{...}} spans that open and close on one line, such as "{{width:10% }}".</summary>
+    /// <summary>
+    /// Removes {{...}} spans that open and close on one line, such as "{{width:10% }}". A span
+    /// that only styles its text, such as "{{font-variant:small-caps Bob}}", keeps the text.
+    /// </summary>
     public static string WithoutInlineBlocks(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         // Spans can be nested, as in "{{bonus {{x}}}}". Removing the innermost ones until none
-        // are left takes care of that.
+        // are left takes care of that. A span with a class, such as "{{bonus **cr 1/4**}}", is
+        // decoration the parsers read separately, so only style-only spans keep their text.
         string previous;
         do
         {
             previous = text;
-            text = InlineBlock().Replace(text, "");
+            text = InlineBlock().Replace(text, TextOfStyledSpan);
         }
         while (!string.Equals(previous, text, StringComparison.Ordinal));
 
         return text;
     }
+
+    private static string TextOfStyledSpan(Match span) =>
+        StyledSpan().Match(span.Value) is { Success: true } styled ? styled.Groups["text"].Value : "";
 
     /// <summary>
     /// Prepares text for display: HTML and images removed, web links kept, links to a conditions
@@ -82,6 +89,11 @@ internal static partial class HomebreweryText
     // "{{monster,frame" without its closing braces; a lone "}}".
     [GeneratedRegex(@"^(?:\\[A-Za-z]+|:+|_{3,}|-{3,}|`+|\{\{[^}]*|\}\}+)$")]
     private static partial Regex LayoutLine();
+
+    // "{{font-variant:small-caps,color:red text}}": CSS declarations only, separated by commas,
+    // then a space and the text. Quoted values may hold spaces, as in font-family:"Times New Roman".
+    [GeneratedRegex(@"^\{\{[A-Za-z-]+:(?:""[^""]*""|[^\s,{}""]+)(?:,[A-Za-z-]+:(?:""[^""]*""|[^\s,{}""]+))*(?:\s(?<text>[^{}]*))?\}\}$")]
+    private static partial Regex StyledSpan();
 
     [GeneratedRegex(@"\{\{[^{}]*\}\}")]
     private static partial Regex InlineBlock();
