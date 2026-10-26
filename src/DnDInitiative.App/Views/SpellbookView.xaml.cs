@@ -146,6 +146,13 @@ public partial class SpellbookView : UserControl
         }
 
         FrameworkElement? slot = FindCardSlot(e.OriginalSource as DependencyObject);
+
+        // A card only moves when it is dropped on another card; anywhere else it stays where it was.
+        if (slot is null && e.Effects == DragDropEffects.Move)
+        {
+            e.Effects = DragDropEffects.None;
+        }
+
         ShowDropIndicator(slot, slot is null ? DropPosition.None : GetDropPosition(slot, e));
     }
 
@@ -155,7 +162,8 @@ public partial class SpellbookView : UserControl
     }
 
     // Dropped on a card, the dragged one goes before or after it, by which half of the card the
-    // mouse is over. Dropped between the pages, it goes at the end.
+    // mouse is over. A library row dropped anywhere else goes at the end; a card dropped anywhere
+    // else stays where it was.
     private void OnPagesDrop(object sender, DragEventArgs e)
     {
         e.Handled = true;
@@ -172,7 +180,10 @@ public partial class SpellbookView : UserControl
 
         if (e.Data.GetData(typeof(SpellbookCardViewModel)) is SpellbookCardViewModel dragged)
         {
-            viewModel.MoveEntry(dragged.Entry, target, after);
+            if (target is not null)
+            {
+                viewModel.MoveEntry(dragged.Entry, target, after);
+            }
         }
         else if (e.Data.GetData(typeof(LibraryEntryViewModel)) is LibraryEntryViewModel row)
         {
