@@ -44,7 +44,16 @@
                     -->
                     <Grid x:Name="Slot"
                           Background="Transparent"
+                          ContextMenuOpening="OnCardContextMenuOpening"
                           Tag="CardSlot">
+                        <!--  Right-click: what can be done to the card. Only on screen, like the remove button.  -->
+                        <Grid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Click="OnRemoveCardClick"
+                                          Header="Remove"
+                                          InputGestureText="Delete" />
+                            </ContextMenu>
+                        </Grid.ContextMenu>
                         <views:CardView Margin="{x:Static views:SpellbookSheetView.CardMargin}" DataContext="{Binding Card}" />
 
                         <!--  Only on screen: the selection, the remove button and where a dragged card would land  -->

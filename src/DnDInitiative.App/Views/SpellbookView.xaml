@@ -18,7 +18,7 @@
             The library's columns. The heading row and every row use these widths, so they line up;
             the name takes what is left. LibraryHeader's right margin follows the list's scroll bar.
         -->
-        <GridLength x:Key="AddedColumnWidth">18</GridLength>
+        <GridLength x:Key="AddedColumnWidth">22</GridLength>
         <GridLength x:Key="LevelColumnWidth">46</GridLength>
         <GridLength x:Key="TimeColumnWidth">58</GridLength>
         <GridLength x:Key="RangeColumnWidth">70</GridLength>
@@ -359,12 +359,6 @@
                    behaviors:ResizeHandle.PanelHeight="{Binding PreviewHeight}"
                    DockPanel.Dock="Bottom"
                    Style="{StaticResource RowResizeHandle}" />
-            <Button Margin="0,8,0,0"
-                    Padding="12,4"
-                    Command="{Binding AddToSpellbookCommand}"
-                    Content="Add to spellbook"
-                    DockPanel.Dock="Bottom"
-                    ToolTip="Or double-click a row, or drag it onto the pages" />
 
             <!--  The column headings, which sort the list when clicked, and a line under them  -->
             <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
@@ -432,13 +426,24 @@
                                     <ColumnDefinition Width="{StaticResource MarkColumnWidth}" />
                                     <ColumnDefinition Width="{StaticResource MarkColumnWidth}" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="InSpellbookMark"
-                                           Grid.Column="0"
-                                           Foreground="{DynamicResource AccentFillColorDefaultBrush}"
-                                           Style="{StaticResource LibraryCell}"
-                                           Text="✓"
-                                           ToolTip="Already in the open spellbook"
-                                           Visibility="Hidden" />
+                                <!--  "+" adds the row to the open spellbook; once added it shows "✓", which removes it again  -->
+                                <Button x:Name="InSpellbookToggle"
+                                        Grid.Column="0"
+                                        MinWidth="0"
+                                        MinHeight="0"
+                                        Margin="0,0,4,0"
+                                        Padding="0"
+                                        HorizontalAlignment="Stretch"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Command="{Binding DataContext.ToggleInSpellbookCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                        CommandParameter="{Binding}"
+                                        ToolTip="Add to the open spellbook (or double-click the row, or drag it onto the pages)">
+                                    <TextBlock x:Name="InSpellbookMark"
+                                               FontSize="12"
+                                               Style="{StaticResource SecondaryText}"
+                                               Text="+" />
+                                </Button>
                                 <TextBlock Grid.Column="1"
                                            Style="{StaticResource LibraryCell}"
                                            Text="{Binding Name}" />
@@ -463,7 +468,9 @@
                         </Border>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsInSpellbook}" Value="True">
-                                <Setter TargetName="InSpellbookMark" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="InSpellbookMark" Property="Text" Value="✓" />
+                                <Setter TargetName="InSpellbookMark" Property="Foreground" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                <Setter TargetName="InSpellbookToggle" Property="ToolTip" Value="In the open spellbook. Click to remove it." />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>

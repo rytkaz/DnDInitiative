@@ -58,6 +58,7 @@ public sealed partial class SpellbookViewModel : PageViewModel
     [NotifyCanExecuteChangedFor(nameof(CopyCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddToSpellbookCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ToggleInSpellbookCommand))]
     [NotifyCanExecuteChangedFor(nameof(SortPagesCommand))]
     [NotifyCanExecuteChangedFor(nameof(PrintCommand))]
     [NotifyPropertyChangedFor(nameof(ShowPages))]
@@ -757,8 +758,36 @@ public sealed partial class SpellbookViewModel : PageViewModel
     }
 
     /// <summary>
+    /// The button at the start of a library row: adds the row to the end of the open spellbook,
+    /// or, when it is already there, takes it out again.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanToggleInSpellbook))]
+    private void ToggleInSpellbook(LibraryEntryViewModel? row)
+    {
+        if (row is null || SelectedSpellbook is not { } editor)
+        {
+            return;
+        }
+
+        if (editor.Entries.FirstOrDefault(entry => entry.Entry == row.Entry) is { } existing)
+        {
+            RemoveEntry(existing);
+            StatusMessage = $"Removed {row.Name}.";
+        }
+        else
+        {
+            AddEntry(row, target: null, after: false);
+        }
+    }
+
+    private bool CanToggleInSpellbook(LibraryEntryViewModel? row)
+    {
+        return row is not null && SelectedSpellbook is not null;
+    }
+
+    /// <summary>
     /// Adds a library row to the open spellbook, next to a card already there, or at the end
-    /// when there is no target. Called by the Add button, a double-click, and a drop onto the pages.
+    /// when there is no target. Called by a row's add button, a double-click, and a drop onto the pages.
     /// </summary>
     public void AddEntry(LibraryEntryViewModel row, SpellbookEntryViewModel? target, bool after)
     {

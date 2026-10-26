@@ -57,8 +57,9 @@ public partial class SpellbookView : UserControl
 
     private void OnLibraryDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        // Only a double-click on a row adds it, not one on the scroll bar.
-        if (FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject) is not null)
+        // Only a double-click on a row adds it, not one on the scroll bar or on the row's add/remove button.
+        var source = e.OriginalSource as DependencyObject;
+        if (FindAncestor<ListBoxItem>(source) is not null && FindAncestor<ButtonBase>(source) is null)
         {
             ViewModel?.AddToSpellbookCommand.Execute(null);
         }
@@ -66,7 +67,11 @@ public partial class SpellbookView : UserControl
 
     private void OnLibraryPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _dragSource = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject)?.DataContext as LibraryEntryViewModel;
+        // A press on the row's add/remove button is a click, not the start of a drag.
+        var source = e.OriginalSource as DependencyObject;
+        _dragSource = FindAncestor<ButtonBase>(source) is null
+            ? FindAncestor<ListBoxItem>(source)?.DataContext as LibraryEntryViewModel
+            : null;
         _dragStart = e.GetPosition(this);
     }
 
