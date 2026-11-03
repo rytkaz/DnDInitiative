@@ -36,6 +36,7 @@ public sealed class LegacyDatabaseMoverTests : IDisposable
             new CampaignOptions(CampaignFolder),
             storage,
             _watcher,
+            new CampaignDatabase(location, storage, NullLogger<CampaignDatabase>.Instance),
             NullLogger<CampaignService>.Instance);
         campaigns.OpenAsync(CampaignFolder).GetAwaiter().GetResult();
 

@@ -20,4 +20,7 @@ internal static partial class CampaignLog
         Level = LogLevel.Information,
         Message = "Moved {Parties} parties, {Encounters} encounters and {StatBlocks} stat blocks from the database to {Folder}")]
     public static partial void LegacyDataMoved(ILogger logger, int parties, int encounters, int statBlocks, string folder);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Copied the shared database {From} into the campaign as {To}")]
+    public static partial void LegacyDatabaseAdopted(ILogger logger, string from, string to);
 }

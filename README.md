@@ -146,11 +146,14 @@ By default the app writes the converter's configuration for you. To take control
 
 ## Where your data lives
 
-Your campaigns are wherever you put them. Everything else is under `%AppData%\DnDInitiative` and belongs to one computer:
+Your campaigns are wherever you put them. Each campaign folder also holds `library.db`, the imported stat blocks, spells, conditions and martial exploits (SQLite), so every campaign has its own library and **Save Campaign As** copies it. SQLite may keep `library.db-wal` and `library.db-shm` next to it while the app is open. If you keep the campaign in git and would rather not commit the library, add `library.db*` to its `.gitignore`.
+
+Older versions kept the library in `%AppData%\DnDInitiative\dndinitiative.db`. The first campaign you open takes it over, and the old file is renamed to `dndinitiative.moved-to-campaign.db`.
+
+Everything else is under `%AppData%\DnDInitiative` and belongs to one computer:
 
 | Path | Contents |
 |---|---|
-| `dndinitiative.db` | Imported stat blocks, spells, conditions and martial exploits (SQLite) |
 | `app-state.json` | Which campaign was open last |
 | `ui-state.json` | Window size and panel layout |
 | `conversion-settings.json` | The choices made in the 5eTools import window |

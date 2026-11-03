@@ -1,6 +1,6 @@
 ﻿namespace DnDInitiative.Core.Campaigns;
 
-/// <summary>A folder holding one campaign's parties, encounters, stat blocks and spellbooks.</summary>
+/// <summary>A folder holding one campaign's parties, encounters, stat blocks, spellbooks and imported library.</summary>
 public sealed record Campaign(string Folder, string Name);
 
 public interface ICampaignService

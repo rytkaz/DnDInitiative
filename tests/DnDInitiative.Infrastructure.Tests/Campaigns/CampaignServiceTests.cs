@@ -138,6 +138,7 @@ public sealed class CampaignServiceTests : IDisposable
             new CampaignOptions(DefaultFolder),
             new StorageOptions(DataFolder),
             _watcher,
+            new CampaignDatabase(_location, new StorageOptions(DataFolder), NullLogger<CampaignDatabase>.Instance),
             NullLogger<CampaignService>.Instance);
     }
 }

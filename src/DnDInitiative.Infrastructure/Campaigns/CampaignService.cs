@@ -3,6 +3,7 @@
 using DnDInitiative.Core.Campaigns;
 using DnDInitiative.Infrastructure.Persistence;
 
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 namespace DnDInitiative.Infrastructure.Campaigns;
@@ -26,18 +27,21 @@ internal sealed class CampaignService : ICampaignService
     private readonly string _stateFilePath;
     private readonly ILogger<CampaignService> _logger;
     private readonly CampaignFileWatcher _watcher;
+    private readonly CampaignDatabase _database;
 
     public CampaignService(
         CampaignLocation location,
         CampaignOptions options,
         StorageOptions storage,
         CampaignFileWatcher watcher,
+        CampaignDatabase database,
         ILogger<CampaignService> logger)
     {
         _location = location;
         _options = options;
         _stateFilePath = Path.Combine(storage.DataDirectory, StateFileName);
         _watcher = watcher;
+        _database = database;
         _logger = logger;
 
         _watcher.Changed += (_, _) => FilesChangedExternally?.Invoke(this, EventArgs.Empty);
@@ -75,9 +79,10 @@ internal sealed class CampaignService : ICampaignService
         string fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         Directory.CreateDirectory(fullPath);
 
-        // Read (and check) the manifest before changing anything, so a failed open
-        // leaves the previous campaign in place.
+        // Read (and check) the manifest and the database before changing anything, so a
+        // failed open leaves the previous campaign in place.
         CampaignManifest manifest = await ReadOrCreateManifestAsync(fullPath, cancellationToken).ConfigureAwait(false);
+        await _database.PrepareAsync(fullPath, cancellationToken).ConfigureAwait(false);
 
         _location.Folder = fullPath;
         _watcher.Watch(fullPath);
@@ -135,9 +140,14 @@ internal sealed class CampaignService : ICampaignService
         try
         {
             CopyItemFiles(source.Folder, target);
+            await CampaignDatabase.CopyAsync(source.Folder, target, cancellationToken).ConfigureAwait(false);
             await WriteManifestAsync(target, NewManifest(target), cancellationToken).ConfigureAwait(false);
         }
         catch (IOException exception)
+        {
+            throw CopyFailed(target, exception);
+        }
+        catch (SqliteException exception)
         {
             throw CopyFailed(target, exception);
         }

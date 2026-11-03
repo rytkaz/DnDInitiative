@@ -20,7 +20,6 @@ using DnDInitiative.Infrastructure.Spellbooks;
 using DnDInitiative.Infrastructure.Spells;
 using DnDInitiative.Infrastructure.StatBlocks;
 
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -31,7 +30,7 @@ public static class InfrastructureServiceCollectionExtensions
     /// <summary>
     /// Registers storage and import services.
     /// </summary>
-    /// <param name="dataDirectory">Where this computer's own data lives: the database and settings.</param>
+    /// <param name="dataDirectory">Where this computer's own data lives: settings and the converter.</param>
     /// <param name="defaultCampaignDirectory">The campaign folder to create when none has been chosen yet.</param>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
@@ -42,17 +41,13 @@ public static class InfrastructureServiceCollectionExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(defaultCampaignDirectory);
 
-        string connectionString = new SqliteConnectionStringBuilder
-        {
-            DataSource = Path.Combine(dataDirectory, "dndinitiative.db"),
-        }.ToString();
-
         services.AddSingleton(new StorageOptions(dataDirectory));
         services.AddSingleton(new CampaignOptions(defaultCampaignDirectory));
-        services.AddDbContextFactory<AppDbContext>(options => options.UseSqlite(connectionString));
 
-        // The database. It holds the imported stat block library, and whatever is still
-        // waiting to be moved into a campaign folder.
+        // The database, one in each campaign folder. It holds the imported library, and
+        // whatever is still waiting to be moved into the campaign's own files.
+        services.AddSingleton<CampaignDatabase>();
+        services.AddSingleton<IDbContextFactory<AppDbContext>>(provider => provider.GetRequiredService<CampaignDatabase>());
         services.AddSingleton<SqlitePartyRepository>();
         services.AddSingleton<SqliteEncounterRepository>();
         services.AddSingleton<SqliteStatBlockRepository>();

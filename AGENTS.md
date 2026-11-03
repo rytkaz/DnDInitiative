@@ -48,7 +48,8 @@ Inside each project, code is grouped **by feature**, not by kind: `Spells/`, `Co
 - **EF entities are `internal`** to Infrastructure and mapped to and from Core records. Database concerns never reach Core or App.
 - **Two stores:**
   - **The campaign folder** holds what the user makes: parties, encounters, spellbooks, their own stat blocks. One readable JSON file each, written through `JsonFolderStore<T>` with the options in `CampaignJson`. It is meant to be kept in git.
-  - **The SQLite database** (`%AppData%\DnDInitiative`) holds imported content (stat blocks, spells, conditions) and belongs to one computer.
+  - **The SQLite database** (`library.db` in the campaign folder, one per campaign) holds imported content (stat blocks, spells, conditions, abilities). `CampaignDatabase` creates contexts for whichever campaign is open, migrates a campaign's database when it opens, and copies it on Save As. The first campaign opened takes over the old shared `%AppData%\DnDInitiative\dndinitiative.db`, which is then renamed.
+  - `%AppData%\DnDInitiative` keeps only what belongs to one computer: settings, UI state and the converter.
   - `CampaignStatBlockRepository` merges the two. A user's stat block shadows the imported one with the same Id.
 - **Imported stat blocks have deterministic Ids** (`StatBlockIdentity`), so encounters keep pointing at the right creature on every computer and after a re-import. Don't change how those Ids are calculated.
 - **Campaign JSON is a file format.** A new property must be optional (nullable, or with a default), so files written by older versions still load. `CampaignJson` refuses missing *required* values.
