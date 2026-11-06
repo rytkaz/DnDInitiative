@@ -6,10 +6,10 @@
     <PackageVersion Include="AngleSharp" Version="1.8.5" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="coverlet.collector" Version="10.1.0" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
-	<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+	<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="PdfPig" Version="0.1.16" />
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
