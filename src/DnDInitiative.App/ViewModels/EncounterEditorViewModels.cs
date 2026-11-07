@@ -21,14 +21,16 @@ public sealed partial class EncounterCreatureViewModel : ObservableObject
     [ObservableProperty]
     private string _customName = "";
 
+    private string _statBlockName = "";
+    private string _challengeRating = "";
+    private int _xpEach;
+
     public EncounterCreatureViewModel(EncounterCreature creature, StatBlock? statBlock, Action onQuantityChanged)
     {
         ArgumentNullException.ThrowIfNull(creature);
 
         StatBlockId = creature.StatBlockId;
-        StatBlockName = statBlock?.Name ?? "(missing stat block)";
-        ChallengeRating = statBlock?.ChallengeRating ?? "";
-        XpEach = ChallengeRatings.TryGetXp(ChallengeRating, out int xp) ? xp : 0;
+        ShowStatBlock(statBlock);
         Quantity = creature.Quantity;
         CustomName = creature.CustomName ?? "";
 
@@ -37,11 +39,34 @@ public sealed partial class EncounterCreatureViewModel : ObservableObject
 
     public Guid StatBlockId { get; }
 
-    public string StatBlockName { get; }
+    public string StatBlockName
+    {
+        get => _statBlockName;
+        private set => SetProperty(ref _statBlockName, value);
+    }
 
-    public string ChallengeRating { get; }
+    public string ChallengeRating
+    {
+        get => _challengeRating;
+        private set => SetProperty(ref _challengeRating, value);
+    }
 
-    public int XpEach { get; }
+    public int XpEach
+    {
+        get => _xpEach;
+        private set => SetProperty(ref _xpEach, value);
+    }
+
+    /// <summary>
+    /// Shows the stat block's current name and rating. Called again when the page is shown,
+    /// because the stat block may have been edited on the Stat Blocks page in the meantime.
+    /// </summary>
+    public void ShowStatBlock(StatBlock? statBlock)
+    {
+        StatBlockName = statBlock?.Name ?? "(missing stat block)";
+        ChallengeRating = statBlock?.ChallengeRating ?? "";
+        XpEach = ChallengeRatings.TryGetXp(ChallengeRating, out int xp) ? xp : 0;
+    }
 
     public EncounterCreature ToCreature()
     {

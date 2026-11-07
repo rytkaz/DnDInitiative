@@ -294,7 +294,30 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
 
         if (_encountersLoaded)
         {
-            await CacheStatBlocksAsync(_statBlocksById.Keys.ToList());
+            // Read again from scratch, so a stat block deleted in the meantime counts as missing,
+            // and one imported in the meantime is found.
+            List<Guid> ids = Encounters
+                .SelectMany(encounter => encounter.Creatures)
+                .Select(row => row.StatBlockId)
+                .Distinct()
+                .ToList();
+            IReadOnlyList<StatBlock> current = await _statBlockRepository.GetManyAsync(ids);
+
+            foreach (Guid id in ids)
+            {
+                _statBlocksById.Remove(id);
+            }
+
+            foreach (StatBlock statBlock in current)
+            {
+                _statBlocksById[statBlock.Id] = statBlock;
+            }
+
+            // The rows show a stat block's name and XP, which may have been edited since they were made.
+            foreach (EncounterCreatureViewModel row in Encounters.SelectMany(encounter => encounter.Creatures))
+            {
+                row.ShowStatBlock(_statBlocksById.GetValueOrDefault(row.StatBlockId));
+            }
         }
         else
         {
