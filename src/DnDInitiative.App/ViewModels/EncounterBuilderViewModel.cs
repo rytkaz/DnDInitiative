@@ -82,6 +82,14 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     [ObservableProperty]
     private string _difficultyText = "";
 
+    /// <summary>The XP ranges of each difficulty at every level, for a party the size of the selected one.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<LevelXpRangesViewModel> _levelXpRanges = [];
+
+    /// <summary>Explains the XP ranges table, or why it is empty.</summary>
+    [ObservableProperty]
+    private string _levelXpRangesCaption = "Select a party with members to see XP ranges.";
+
     [ObservableProperty]
     private string _statusMessage = "";
 
@@ -233,6 +241,7 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
     partial void OnSelectedPartyChanged(Party? value)
     {
         Recalculate();
+        ShowLevelXpRanges(value);
     }
 
     partial void OnStatBlockSearchTextChanged(string value)
@@ -604,6 +613,20 @@ public sealed partial class EncounterBuilderViewModel : PageViewModel
             : new XpBudget(0, 0, 0);
         TotalXp = SelectedEncounter?.ToEncounter().TotalXp(_statBlocksById) ?? 0;
         DifficultyText = DescribeDifficulty();
+    }
+
+    private void ShowLevelXpRanges(Party? party)
+    {
+        if (party is null || party.Members.Count == 0)
+        {
+            LevelXpRanges = [];
+            LevelXpRangesCaption = "Select a party with members to see XP ranges.";
+            return;
+        }
+
+        LevelXpRanges = LevelXpRangesViewModel.ForParty(party.Members.Select(member => member.Level).ToList());
+        string characters = party.Members.Count == 1 ? "1 character" : $"{party.Members.Count} characters";
+        LevelXpRangesCaption = $"{party.Name}: {characters}, as if all were the same level. Highlighted rows are levels in the party.";
     }
 
     private string DescribeDifficulty()

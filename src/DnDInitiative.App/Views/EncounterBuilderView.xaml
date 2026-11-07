@@ -87,6 +87,116 @@
                                VerticalAlignment="Center"
                                Style="{StaticResource SectionTitle}"
                                Text="{Binding DifficultyText}" />
+                    <ToggleButton x:Name="XpRangesButton"
+                                  Margin="8,0,0,0"
+                                  Padding="8,0"
+                                  VerticalAlignment="Center"
+                                  Content="?"
+                                  ToolTip="XP ranges at every level for the selected party">
+                        <ToggleButton.Style>
+                            <Style BasedOn="{StaticResource {x:Type ToggleButton}}" TargetType="ToggleButton">
+                                <Style.Triggers>
+                                    <!--
+                                        While the popup is open, a click on the button only closes it. Without this
+                                        the same click would close the popup and then open it again.
+                                    -->
+                                    <DataTrigger Binding="{Binding IsOpen, ElementName=XpRangesPopup}" Value="True">
+                                        <Setter Property="IsHitTestVisible" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ToggleButton.Style>
+                    </ToggleButton>
+                    <Popup x:Name="XpRangesPopup"
+                           IsOpen="{Binding IsChecked, ElementName=XpRangesButton}"
+                           Placement="Bottom"
+                           PlacementTarget="{Binding ElementName=XpRangesButton}"
+                           StaysOpen="False">
+                        <Border Padding="12"
+                                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4">
+                            <StackPanel Grid.IsSharedSizeScope="True">
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="XP ranges by level" />
+                                <TextBlock MaxWidth="420"
+                                           Margin="0,4,0,8"
+                                           HorizontalAlignment="Left"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           Text="{Binding LevelXpRangesCaption}"
+                                           TextWrapping="Wrap" />
+                                <Grid Margin="6,0,6,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition SharedSizeGroup="XpLevel" />
+                                        <ColumnDefinition SharedSizeGroup="XpLow" />
+                                        <ColumnDefinition SharedSizeGroup="XpModerate" />
+                                        <ColumnDefinition SharedSizeGroup="XpHigh" />
+                                        <ColumnDefinition SharedSizeGroup="XpAboveHigh" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               FontWeight="SemiBold"
+                                               Text="Level" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="16,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Text="Low" />
+                                    <TextBlock Grid.Column="2"
+                                               Margin="16,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Text="Moderate" />
+                                    <TextBlock Grid.Column="3"
+                                               Margin="16,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Text="High" />
+                                    <TextBlock Grid.Column="4"
+                                               Margin="16,0,0,0"
+                                               FontWeight="SemiBold"
+                                               Text="Above High" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding LevelXpRanges}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type viewModels:LevelXpRangesViewModel}">
+                                            <Border Padding="6,2" CornerRadius="3">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <!--  The levels the party's characters are at.  -->
+                                                            <DataTrigger Binding="{Binding IsPartyLevel}" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition SharedSizeGroup="XpLevel" />
+                                                        <ColumnDefinition SharedSizeGroup="XpLow" />
+                                                        <ColumnDefinition SharedSizeGroup="XpModerate" />
+                                                        <ColumnDefinition SharedSizeGroup="XpHigh" />
+                                                        <ColumnDefinition SharedSizeGroup="XpAboveHigh" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Level}" />
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="16,0,0,0"
+                                                               Text="{Binding Low}" />
+                                                    <TextBlock Grid.Column="2"
+                                                               Margin="16,0,0,0"
+                                                               Text="{Binding Moderate}" />
+                                                    <TextBlock Grid.Column="3"
+                                                               Margin="16,0,0,0"
+                                                               Text="{Binding High}" />
+                                                    <TextBlock Grid.Column="4"
+                                                               Margin="16,0,0,0"
+                                                               Text="{Binding AboveHigh}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
                 </StackPanel>
 
                 <StackPanel Margin="0,4,0,0" Orientation="Horizontal">
